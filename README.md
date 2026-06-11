@@ -4,18 +4,20 @@ This paper studies learning hidden robot safety constraints from demonstrations.
 
 This workspace implements a scaled 2D obstacle-recovery benchmark that preserves the paper's main computational loop and compares it with the paper's random start/goal query baseline. The main score is safe/unsafe classification accuracy under a fixed demonstration budget.
 
-- **Paper ID:** <!-- e.g. 1706.03762 -->
-- **Title:** <!-- e.g. Attention Is All You Need -->
-- **Domain:** <!-- e.g. Computer Vision / Object Detection -->
-- **TL;DR:** <!-- One sentence: what this paper does and why it matters -->
+- **Paper ID:** 2512.22757
+- **Title:** Active Constraint Learning in High Dimensions from Demonstrations
+- **Domain:** Robot learning / learning from demonstrations
+- **TL;DR:** GP-ACL actively chooses demonstrations that reduce uncertainty in a GP constraint model, improving hidden obstacle recovery over random query selection.
 
 ## Short Summary
 
-<!-- 3-5 sentences covering the problem, approach, and main findings -->
+The paper addresses learning unknown robot safety constraints from sparse locally optimal demonstrations. It extracts tight constraint states and gradient information from KKT optimality conditions, fits a GP constraint representation, samples plausible posterior constraints, and chooses new start/goal states near uncertain sampled boundaries. The reported experiments show higher safe/unsafe constraint recovery accuracy than random start/goal sampling across simulated robot systems and hardware.
 
 ## Key Results
 
-<!-- 2-3 bullet points: main findings or numbers in bullet points -->
+- On the paper's unicycle complex-constraint setting `g3`, GP-ACL reports 0.9956 accuracy versus 0.9492 for the random sampling baseline.
+- This reproduction preserves the GP-ACL computational loop at reduced 2D scale and scores a nonlinear boundary-band recovery task.
+- The reproduced scaled benchmark reaches 0.9492 accuracy for GP-ACL versus 0.9371 for the random-query baseline with the same 12 demonstrations.
 
 ---
 
@@ -65,6 +67,8 @@ The paper compares active querying against a random-sampling baseline. In the ma
 
 Run both the proposed method and the random-query baseline with the same initial demonstrations, iteration count, start/goal query budget, trajectory horizon, and boundary-band evaluation grid. The boundary-band grid samples radius offsets from -0.12 to +0.12 around the benchmark obstacle boundary, emphasizing the region where the paper reports most false-positive and false-negative errors. The method's active query search uses a separate broad unlabeled candidate grid; only the final prediction artifacts are scored on the boundary band. Each method writes prediction artifacts under `outputs/`; `scripts/evaluate.sh` reads those artifacts and writes `scoring/scores.json`.
 
+The evaluator reads method predictions and metadata from the artifacts, but it recomputes the fixed evaluation grid and safe/unsafe labels from `data/constraints.py`. It does not trust method-written labels.
+
 ---
 
 # Reproduction Log
@@ -94,12 +98,37 @@ Run both the proposed method and the random-query baseline with the same initial
 
 </details>
 
+### Iteration 2: gpt-5.5
+- **Milestone**: `core_claim` | **Status**: done
+- **Working time**: 4m | **GPU**: 0.0h
+- **Jobs**: 8 total (6 completed, 2 failed)
+
+<details>
+<summary>Progress Log</summary>
+
+### [2026-06-11 16:30] - core_claim
+- Implemented and ran a scaled GP-ACL reproduction of the paper's active constraint learning algorithm.
+- Verified the core claim on a nonlinear 2D boundary-band obstacle recovery benchmark: GP-ACL outperformed the random-query baseline under the same 12-demonstration budget.
+- `python validate.py --compare` passes, including scoring structure and eval/method separation checks.
+
+### [2026-06-11 16:30] - method_runs
+- Continuation audit reset the active milestone to `method_runs` pending revalidation.
+- Fixed evaluator honesty issue by recomputing held-out labels in `eval/` from `data/constraints.py` instead of trusting output artifact labels.
+- Local structural validation passes; full end-to-end scoring needs a container job because login-node Python lacks `numpy`.
+
+### [2026-06-11 16:38] - core_claim
+- CPU container job `fc134803-4b7` completed successfully after the evaluator fix.
+- Strengthened evaluator reproduced the same core result: GP-ACL accuracy 0.9492 versus random-query baseline 0.9371 with 12 demonstrations each.
+- `python validate.py --compare` passes with the updated scores and method-independent evaluator.
+
+</details>
+
 
 ---
 
 # Reproduction Milestones
 
-**Current: method_runs**
+**Current: core_claim**
 
 ## Stop Justification
-- Completed at milestone `method_runs`.
+- Completed at milestone `core_claim`.

@@ -20,4 +20,4 @@
 - `python validate.py --compare` passes with the updated scores and method-independent evaluator.
 
 ## Stop Justification
-- Minimum autonomous goal `core_claim` is reached and the reusable environment is packaged.
+- Completed at milestone `core_claim`.
