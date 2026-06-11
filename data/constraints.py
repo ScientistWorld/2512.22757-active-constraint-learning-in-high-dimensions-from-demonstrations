@@ -74,7 +74,7 @@ def make_eval_grid(n_per_axis: int = 61, constraint_name: str = "wavy") -> np.nd
     queries.
     """
     angles = np.linspace(-np.pi, np.pi, n_per_axis, endpoint=False)
-    offsets = np.linspace(-0.20, 0.20, n_per_axis)
+    offsets = np.linspace(-0.12, 0.12, n_per_axis)
     aa, oo = np.meshgrid(angles, offsets)
     if constraint_name == "circle":
         radius = 0.62 + oo

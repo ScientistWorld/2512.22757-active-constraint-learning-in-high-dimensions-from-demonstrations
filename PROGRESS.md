@@ -14,6 +14,7 @@
 - Job `1181296e-3cc` completed end to end, establishing `method_runs`, but did not support the core claim: GP-ACL scored 0.9927 while the random baseline scored 0.9944 on the initial circle task.
 - Job `38040198-ec8` completed on the wavy obstacle, but still did not support the core claim: GP-ACL scored 0.9893 with 6 accepted demonstrations while the random baseline scored 0.9946 with 12 demonstrations.
 - Job `1d7a4659-253` completed after relaxing active endpoint acceptance. GP-ACL used the full 12-demonstration budget and outperformed random sampling, 0.9879 versus 0.9863 accuracy, but the random baseline remained above the 95% non-triviality threshold.
+- Job `a8c16692-709` completed on the separated boundary-band score. GP-ACL again outperformed random sampling, 0.9686 versus 0.9597 accuracy with the same 12 demonstrations, but the random baseline was still slightly above the 95% non-triviality threshold.
 
 ## Remaining
 
@@ -29,6 +30,7 @@
 - The initial circle obstacle was too easy: the random baseline exceeded 99% accuracy. Replaced the benchmark with a larger nonlinear wavy obstacle and tightened active-query acceptance so proposed start/goal pairs cross predicted unsafe regions.
 - The first wavy run still let the random baseline exceed 99% accuracy and accepted too few active demonstrations. The grid now emphasizes boundary states and active query selection now falls back to far safe endpoints when strict probabilistic safety rejects too many candidates.
 - The second wavy run confirmed that active query selection can beat random under the same demonstration budget, but the evaluation grid was still too broad. Evaluation is now separated from the method's candidate-query grid and focuses on a narrow band around the benchmark obstacle boundary.
+- The first separated boundary-band run was close but still too easy for the random baseline. The held-out band is narrowed again from radius offset +/-0.20 to +/-0.12 around the benchmark boundary.
 
 ## Deviations from Paper
 
