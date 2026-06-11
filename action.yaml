@@ -1,3 +1,4 @@
 action: done
 gpus: 0
-notes: "Angular-sector boundary-band split; 12 train metrics, 12 test metrics; gp_acl train/test accuracy 0.9450/0.9546 and near-boundary balanced accuracy 0.8683/0.8995; proposed beats random on primary/near-boundary metrics on both slices; n_demos is constant at the fixed 12-demo budget."
+milestone: core_claim
+notes: "Core claim supported: GP-ACL accuracy 0.9497 vs random-query baseline 0.9258 on the scaled nonlinear 2D boundary-band obstacle-recovery task, both with 12 demonstrations; split scores are populated and validated."
