@@ -23,7 +23,8 @@ def g_wavy(points: np.ndarray) -> np.ndarray:
     pts = np.atleast_2d(points).astype(float)
     x = pts[:, 0]
     y = pts[:, 1]
-    radius = 0.58 + 0.10 * np.sin(3.0 * np.arctan2(y, x))
+    theta = np.arctan2(y, x)
+    radius = 1.05 + 0.20 * np.sin(3.0 * theta) + 0.13 * np.cos(5.0 * theta)
     return radius**2 - (x**2 + y**2)
 
 

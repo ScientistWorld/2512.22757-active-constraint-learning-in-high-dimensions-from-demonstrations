@@ -89,12 +89,21 @@ class GPModel:
         return grad
 
     def sample_values(self, x_query: np.ndarray, rng: np.random.Generator, n_features: int, alpha: float) -> np.ndarray:
-        mean, _ = self.mean_var(x_query)
+        sample = self.sample_function(rng, n_features=n_features, alpha=alpha)
+        return sample(x_query)
+
+    def sample_function(self, rng: np.random.Generator, n_features: int, alpha: float):
         omega = rng.normal(0.0, 1.0 / self.lengthscale, size=(n_features, 2))
         phase = rng.uniform(0.0, 2 * np.pi, size=n_features)
         weights = rng.normal(0.0, 1.0, size=n_features)
-        features = np.sqrt(2.0 / n_features) * np.cos(x_query @ omega.T + phase)
-        return mean + alpha * (features @ weights)
+
+        def evaluate(x_query: np.ndarray) -> np.ndarray:
+            xq = np.atleast_2d(x_query)
+            mean, _ = self.mean_var(xq)
+            features = np.sqrt(2.0 / n_features) * np.cos(xq @ omega.T + phase)
+            return mean + alpha * (features @ weights)
+
+        return evaluate
 
 
 def smoothness_objective(flat: np.ndarray, start: np.ndarray, goal: np.ndarray, horizon: int) -> float:
@@ -171,34 +180,50 @@ def active_queries(gp: GPModel, rng: np.random.Generator, n_pairs: int, n_featur
     grid = make_eval_grid(75)
     mean, var = gp.mean_var(grid)
     pairs = []
-    for _ in range(max(1, n_pairs // 2)):
-        sample = gp.sample_values(grid, rng, n_features=n_features, alpha=alpha)
-        boundary = np.where(np.abs(sample) <= np.quantile(np.abs(sample), 0.08))[0]
+    for _ in range(max(2, n_pairs)):
+        sample_fn = gp.sample_function(rng, n_features=n_features, alpha=alpha)
+        sample = sample_fn(grid)
+        boundary = np.where(np.abs(sample) <= np.quantile(np.abs(sample), 0.12))[0]
         boundary = boundary[mean[boundary] <= np.quantile(mean, 0.8)] if len(boundary) else np.arange(len(grid))
         k_mi = grid[boundary[np.argmax(var[boundary])]]
-        grad = gp.grad_mean(k_mi)
+        grad = finite_difference_grad(sample_fn, k_mi)
         norm = np.linalg.norm(grad)
         if norm < 1e-6:
-            grad = rng.normal(size=2)
+            grad = gp.grad_mean(k_mi)
             norm = np.linalg.norm(grad)
+        if norm < 1e-6:
+            continue
         grad = grad / norm
         perp = np.array([-grad[1], grad[0]])
         for direction in (perp, grad):
-            center = k_mi + 0.08 * grad
+            center = k_mi + 0.12 * grad
+            if sample_fn(center)[0] <= 0.0:
+                center = k_mi - 0.12 * grad
             safe = []
             for sign in (-1.0, 1.0):
                 for tau in np.linspace(0.15, 2.5, 80):
                     cand = np.clip(center + sign * tau * direction, -1.95, 1.95)
                     m, v = gp.mean_var(cand)
                     prob_safe = ndtr((-m[0]) / np.sqrt(v[0]))
-                    if m[0] <= -delta and prob_safe >= 0.50:
+                    if sample_fn(cand)[0] <= -delta and prob_safe >= 0.50:
                         safe.append(cand)
                         break
             if len(safe) == 2:
-                pairs.append((safe[0], safe[1]))
+                segment = np.linspace(safe[0], safe[1], 25)
+                if np.max(sample_fn(segment)) > delta:
+                    pairs.append((safe[0], safe[1]))
             if len(pairs) >= n_pairs:
                 return pairs
     return pairs
+
+
+def finite_difference_grad(func, x: np.ndarray, eps: float = 1e-4) -> np.ndarray:
+    grad = np.zeros(2)
+    for d in range(2):
+        step = np.zeros(2)
+        step[d] = eps
+        grad[d] = (func(x + step)[0] - func(x - step)[0]) / (2 * eps)
+    return grad
 
 
 def random_safe_pairs(rng: np.random.Generator, g_func, n_pairs: int) -> list[tuple[np.ndarray, np.ndarray]]:
@@ -268,7 +293,7 @@ def run_experiment(args: argparse.Namespace) -> dict:
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser()
     p.add_argument("--mode", choices=["active", "random"], default="active")
-    p.add_argument("--constraint", choices=sorted(CONSTRAINTS), default="circle")
+    p.add_argument("--constraint", choices=sorted(CONSTRAINTS), default="wavy")
     p.add_argument("--iterations", type=int, default=3)
     p.add_argument("--pairs-per-iter", type=int, default=4)
     p.add_argument("--horizon", type=int, default=24)
@@ -277,7 +302,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--alpha", type=float, default=0.3)
     p.add_argument("--delta", type=float, default=0.001)
     p.add_argument("--seed", type=int, default=7)
-    p.add_argument("--output", type=Path, default=Path("outputs/gp_acl_circle.json"))
+    p.add_argument("--output", type=Path, default=Path("outputs/gp_acl_wavy.json"))
     return p
 
 

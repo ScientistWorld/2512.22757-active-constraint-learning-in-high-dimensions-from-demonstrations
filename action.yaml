@@ -30,5 +30,5 @@
 action: submit
 gpus: 0
 test: true
-milestone: none
-notes: "Retry CPU smoke test after fixing JSON serialization of Path settings; runs baseline, GP-ACL method, and evaluator."
+milestone: method_runs
+notes: "Run revised nonlinear wavy-obstacle benchmark after method_runs; tests whether GP-ACL beats the random baseline on a non-trivial CPU setting."

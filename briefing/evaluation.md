@@ -6,7 +6,7 @@ The primary metric is constraint recovery accuracy: the fraction of sampled cons
 
 ## Baselines and Targets
 
-The paper compares active querying against a random-sampling baseline. In the closest 2D double-integrator setting reported in Appendix B.2, the active method reaches 0.9952 accuracy on constraint `g1` over 2500 samples, while the random baseline reaches 0.9900. The main text reports larger gaps for unicycle and quadcopter settings.
+The paper compares active querying against a random-sampling baseline. In the main unicycle setting for the complex constraint `g3`, the active method reaches 0.9956 accuracy over 2500 sampled constraint states, while the random baseline reaches 0.9492.
 
 ## Evaluation Protocol
 

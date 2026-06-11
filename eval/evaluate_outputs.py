@@ -48,8 +48,8 @@ def load_result(path: Path) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--experiment", default="scaled_2d_obstacle_recovery")
-    parser.add_argument("--active", type=Path, default=Path("outputs/gp_acl_circle.json"))
-    parser.add_argument("--baseline", type=Path, default=Path("outputs/random_baseline_circle.json"))
+    parser.add_argument("--active", type=Path, default=Path("outputs/gp_acl_wavy.json"))
+    parser.add_argument("--baseline", type=Path, default=Path("outputs/random_baseline_wavy.json"))
     parser.add_argument("--output", type=Path, default=Path("scoring/scores.json"))
     args = parser.parse_args()
 

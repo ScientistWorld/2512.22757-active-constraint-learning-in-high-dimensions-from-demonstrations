@@ -10,7 +10,7 @@ from method.gp_acl import build_parser, run_experiment
 
 def main() -> None:
     parser = build_parser()
-    parser.set_defaults(mode="random", output=Path("outputs/random_baseline_circle.json"))
+    parser.set_defaults(mode="random", output=Path("outputs/random_baseline_wavy.json"))
     args = parser.parse_args()
     args.mode = "random"
     result = run_experiment(args)

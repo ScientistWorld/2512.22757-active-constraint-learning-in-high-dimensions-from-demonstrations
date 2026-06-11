@@ -19,13 +19,13 @@ cd /home/user
 export PYTHONPATH=/home/user:${PYTHONPATH:-}
 
 python baseline/random_sampling.py \
-  --constraint circle \
+  --constraint wavy \
   --iterations 3 \
   --pairs-per-iter 4 \
   --horizon 24 \
   --eval-grid 61 \
   --n-features 300 \
   --alpha 0.3 \
-  --output outputs/random_baseline_circle.json
+  --output outputs/random_baseline_wavy.json
 
 bash scripts/evaluate.sh
