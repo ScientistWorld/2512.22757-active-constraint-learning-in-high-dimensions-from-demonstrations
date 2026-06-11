@@ -28,5 +28,9 @@
 - GP-ACL scored 0.9497 accuracy versus 0.9258 for random sampling on the scaled nonlinear 2D boundary-band obstacle recovery task.
 - Both methods used 12 demonstrations, so the result supports the paper's central claim that active constraint-learning queries improve recovery without increasing the demonstration budget.
 
+### [2026-06-11 17:30] - core_claim
+- Expanded evaluator reporting to include the constraint-balance metrics declared in `scoring/reference.json`.
+- Submitting a CPU validation job to regenerate `scoring/scores.json` and rerun `python validate.py --compare` through the standard reproduction path.
+
 ## Stop Justification
 - Completed at milestone `core_claim`.

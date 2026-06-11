@@ -23,10 +23,17 @@ def confusion(pred: np.ndarray, truth: np.ndarray) -> dict[str, float]:
     fp = np.sum(~safe_pred & safe_true)
     fn = np.sum(safe_pred & ~safe_true)
     total = len(pred)
+    safe_total = max(1, np.sum(safe_true))
+    unsafe_total = max(1, np.sum(~safe_true))
+    safe_recall = float(tp / safe_total)
+    unsafe_recall = float(tn / unsafe_total)
     return {
         "accuracy": float((tp + tn) / total),
-        "false_positive_rate": float(fp / max(1, np.sum(safe_true))),
-        "false_negative_rate": float(fn / max(1, np.sum(~safe_true))),
+        "balanced_accuracy": float(0.5 * (safe_recall + unsafe_recall)),
+        "safe_recall": safe_recall,
+        "unsafe_recall": unsafe_recall,
+        "false_positive_rate": float(fp / safe_total),
+        "false_negative_rate": float(fn / unsafe_total),
     }
 
 
@@ -41,12 +48,19 @@ def load_result(path: Path) -> dict:
         raise ValueError(f"{path} references unknown constraint {constraint_name!r}")
     eval_grid = int(data.get("settings", {}).get("eval_grid", 61))
     grid = make_eval_grid(eval_grid, constraint_name)
-    truth = (CONSTRAINTS[constraint_name]["function"](grid) <= 0.0).astype(int)
+    signed_distance = CONSTRAINTS[constraint_name]["function"](grid)
+    truth = (signed_distance <= 0.0).astype(int)
     if pred.shape != truth.shape:
         raise ValueError(f"{path} predictions and truth shapes differ: {pred.shape} vs {truth.shape}")
     all_metrics = confusion(pred, truth)
+    near_boundary = np.abs(signed_distance) <= np.quantile(np.abs(signed_distance), 0.5)
+    near_boundary_metrics = confusion(pred[near_boundary], truth[near_boundary])
     metrics = {
         "accuracy": all_metrics["accuracy"],
+        "balanced_accuracy": all_metrics["balanced_accuracy"],
+        "near_boundary_balanced_accuracy": near_boundary_metrics["balanced_accuracy"],
+        "safe_recall": all_metrics["safe_recall"],
+        "unsafe_recall": all_metrics["unsafe_recall"],
         "n_demos": float(data.get("n_demos", 0)),
     }
     return data["method"], metrics

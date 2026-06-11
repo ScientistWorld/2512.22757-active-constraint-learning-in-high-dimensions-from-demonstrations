@@ -25,12 +25,14 @@
 - Job `a86544e3-6dd` completed successfully with fresh artifacts after the stale-output cleanup. The result remains only `method_runs`: GP-ACL scored 0.9315 accuracy with 10 accepted demonstrations versus random sampling at 0.9258 with 12 demonstrations. This is a valid run, but the accuracy gap is too weak and the demonstration budgets are unequal.
 - The active method driver now keeps issuing paper-style active query rounds until it fills the requested accepted-demonstration budget, bounded by `--max-query-rounds`, and records whether the query budget was exhausted.
 - Job `13644732-d99` completed after the equal-budget active-query fix and restores `core_claim`: GP-ACL scored 0.9497 accuracy versus random sampling at 0.9258, with both methods using 12 demonstrations. The random baseline remains below 95%, so the scaled benchmark is non-trivial.
+- Updated the evaluator to emit all metrics declared in `scoring/reference.json`: balanced accuracy, near-boundary balanced accuracy, safe recall, unsafe recall, and demonstration count. A CPU validation job is being submitted to regenerate `scoring/scores.json` through `scripts/reproduce.sh`.
 
 ## Remaining
 
 - Higher milestones would require reproducing additional paper settings such as the double-integrator/unicycle dynamics variants, the higher-dimensional quadcopter/robot-arm experiments, or a second non-trivial constraint family with paper-aligned reference targets.
 - The current environment is ready for future agents to optimize the scaled nonlinear 2D obstacle-recovery benchmark through `scripts/reproduce.sh` and `scripts/evaluate.sh`.
 - Higher milestones would require broadening beyond the current radial 2D benchmark family. The current code is intentionally packaged at `core_claim` rather than claiming unsupported generality.
+- Refresh `scoring/scores.json` with the expanded evaluator metrics and confirm `python validate.py --compare` still passes in the compute container.
 
 ## Issues
 

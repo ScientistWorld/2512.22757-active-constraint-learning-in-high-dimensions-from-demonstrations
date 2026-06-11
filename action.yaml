@@ -1,4 +1,5 @@
-action: done
+action: submit
 gpus: 0
+test: true
 milestone: core_claim
-notes: "Packager audit complete: no external artifacts are required, download.sh creates data/downloads, shared-path validation passes, and future scheduler job artifacts are ignored."
+notes: "CPU validation job to rerun scripts/reproduce.sh after expanding evaluator metrics, then run python validate.py --compare."
