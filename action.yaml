@@ -1,4 +1,4 @@
 action: done
 gpus: 0
 milestone: core_claim
-notes: "Core claim supported: GP-ACL accuracy 0.9497 vs random-query baseline 0.9258 on the scaled nonlinear 2D boundary-band obstacle-recovery task, both with 12 demonstrations; split scores are populated and validated."
+notes: "Packager audit complete: no external artifacts are required, download.sh creates data/downloads, shared-path validation passes, and future scheduler job artifacts are ignored."
