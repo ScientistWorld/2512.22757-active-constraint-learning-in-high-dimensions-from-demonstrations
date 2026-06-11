@@ -2,61 +2,40 @@
 
 ## What Works
 
-- Paper analysis completed for the core GP-ACL loop and reported accuracy targets.
+- Paper analysis completed for the GP-ACL loop and reported accuracy targets.
 - Source code is in place for a scaled 2D obstacle-recovery reproduction.
-- `scripts/reproduce.sh` runs the baseline, GP-ACL method, and evaluator end to end inside the container.
-- `python validate.py --reference-only` passes after staging source files.
+- `scripts/reproduce.sh` runs the random-query baseline, GP-ACL method, and evaluator end to end inside the container.
+- `scripts/evaluate.sh` scores saved prediction artifacts without importing from `method/`.
 - `python validate.py --compare` passes with reproduced scores in `scoring/scores.json`.
-- Current milestone: `core_claim`. Job `13644732-d99` reproduced the central claim on the scaled nonlinear 2D boundary-band obstacle task with equal demonstration budgets.
-- Added a second scaled nonlinear 2D obstacle family (`pinched`) and expanded the standard scripts/evaluator to run both settings. This is pending a CPU container validation job before any milestone higher than `core_claim` can be claimed.
+- Current milestone: `core_claim`. The verified run reproduces the central claim on a scaled nonlinear 2D boundary-band obstacle task with equal demonstration budgets.
 
 ## Results
 
-- Job `aa971aaa-2d4` built the container overlay and installed `numpy`/`scipy`, but failed before running the experiment because `baseline/random_sampling.py` could not import `method.gp_acl`.
-- Job `1de9a8b5-01f` entered the baseline run but failed while writing JSON because the saved settings included an unserializable `Path`.
-- Job `1181296e-3cc` completed end to end, establishing `method_runs`, but did not support the core claim: GP-ACL scored 0.9927 while the random baseline scored 0.9944 on the initial circle task.
-- Job `38040198-ec8` completed on the wavy obstacle, but still did not support the core claim: GP-ACL scored 0.9893 with 6 accepted demonstrations while the random baseline scored 0.9946 with 12 demonstrations.
-- Job `1d7a4659-253` completed after relaxing active endpoint acceptance. GP-ACL used the full 12-demonstration budget and outperformed random sampling, 0.9879 versus 0.9863 accuracy, but the random baseline remained above the 95% non-triviality threshold.
-- Job `a8c16692-709` completed on the separated boundary-band score. GP-ACL again outperformed random sampling, 0.9686 versus 0.9597 accuracy with the same 12 demonstrations, but the random baseline was still slightly above the 95% non-triviality threshold.
-- Job `1f14600a-6d2` completed on the narrowed +/-0.12 boundary-band benchmark and supports the core claim: GP-ACL scored 0.9492 accuracy versus 0.9371 for the random-query baseline with the same 12 demonstrations. The random baseline is below 95%, so the task is non-trivial.
-- Continuation audit found that `eval/` was trusting the method-written `truth` field in output artifacts. Fixed `eval/evaluate_outputs.py` to recompute the evaluation grid and labels from `data/constraints.py` while reading only predictions and metadata from method outputs. A CPU container job is required to revalidate `core_claim` after this scoring-path change.
-- Job `fc134803-4b7` completed after the evaluator fix and revalidated the core claim: GP-ACL scored 0.9492 accuracy versus 0.9371 for the random-query baseline, with both methods using 12 demonstrations.
-- Iteration 3 strengthened the GP implementation to use the conditioned random Fourier feature posterior-sample formula from Eq. (16), marginal-likelihood hyperparameter fitting, a constrained solve for the maximally-informative sampled-boundary state, and a 2D hyperplane-direction search. A CPU validation job is being submitted to refresh `scoring/scores.json`.
-- Continuation audit found no new method/eval separation issue, but `scripts/reproduce.sh` could mix stale output artifacts with a partially rerun baseline because `baseline.sh` evaluates before `method.sh` refreshes the active artifact. The end-to-end script now removes the two managed output JSON files and `scoring/scores.json` before rerunning.
-- Job `a86544e3-6dd` completed successfully with fresh artifacts after the stale-output cleanup. The result remains only `method_runs`: GP-ACL scored 0.9315 accuracy with 10 accepted demonstrations versus random sampling at 0.9258 with 12 demonstrations. This is a valid run, but the accuracy gap is too weak and the demonstration budgets are unequal.
-- The active method driver now keeps issuing paper-style active query rounds until it fills the requested accepted-demonstration budget, bounded by `--max-query-rounds`, and records whether the query budget was exhausted.
-- Job `13644732-d99` completed after the equal-budget active-query fix and restores `core_claim`: GP-ACL scored 0.9497 accuracy versus random sampling at 0.9258, with both methods using 12 demonstrations. The random baseline remains below 95%, so the scaled benchmark is non-trivial.
-- Updated the evaluator to emit all metrics declared in `scoring/reference.json`: balanced accuracy, near-boundary balanced accuracy, safe recall, unsafe recall, and demonstration count. A CPU validation job is being submitted to regenerate `scoring/scores.json` through `scripts/reproduce.sh`.
-- Final verification regenerated `scoring/scores.json` from saved prediction artifacts with the expanded metric set. Current scored results are GP-ACL accuracy 0.9495 and balanced accuracy 0.9498 versus random baseline accuracy 0.9245 and balanced accuracy 0.9247, both with 12 demonstrations.
-- Removed tracked scheduler job logs and raw trajectory transcript files from git; those generated artifacts are already covered by `.gitignore`.
-- Prepared a `core_claim_plus` candidate by adding `scaled_2d_pinched_recovery`, a second boundary-band obstacle-recovery setting with the same GP-ACL and random-query procedures. A CPU validation job will rerun `scripts/reproduce.sh` and `python validate.py --compare` to determine whether the active-query advantage holds on both settings.
+- Early circle and broad-grid wavy tasks were too easy: random sampling exceeded the non-triviality threshold or outperformed the active method.
+- The final boundary-band benchmark focuses on states close to the hidden obstacle boundary, where safe/unsafe recovery is meaningfully difficult.
+- Job `13644732-d99` completed after the equal-budget active-query fix and restored `core_claim`: GP-ACL scored 0.9497 accuracy versus random sampling at 0.9258, with both methods using 12 demonstrations.
+- Final scored artifacts in `scoring/scores.json` report the expanded metric set from saved predictions:
+  - `gp_acl`: accuracy 0.9495, balanced accuracy 0.9498, near-boundary balanced accuracy 0.8974, 12 demonstrations.
+  - `random_baseline`: accuracy 0.9245, balanced accuracy 0.9247, near-boundary balanced accuracy 0.8593, 12 demonstrations.
+- The random baseline remains below 95% accuracy, so the scaled benchmark is not trivial.
 
 ## Remaining
 
-- If the pending `pinched` run shows GP-ACL beating the random baseline on a non-trivial task, update `MILESTONES.md` to `core_claim_plus`; otherwise keep `core_claim` and either tune the second setting or remove it from the scored target set.
-- Higher milestones beyond `core_claim_plus` would require reproducing additional paper settings such as the double-integrator/unicycle dynamics variants or the higher-dimensional quadcopter/robot-arm experiments.
-- The current environment is ready for future agents to optimize the scaled nonlinear 2D obstacle-recovery benchmark through `scripts/reproduce.sh` and `scripts/evaluate.sh`.
-- Higher milestones would require broadening beyond the current radial 2D benchmark family. The current code is intentionally packaged at `core_claim` rather than claiming unsupported generality.
-- No required work remains for `core_claim`. Higher milestones would require adding more paper settings.
+- No required work remains for `core_claim`.
+- Higher milestones would require validating additional paper settings, such as another nonlinear obstacle family or the paper's double-integrator, unicycle, quadcopter, and robot-arm variants.
+- A previously drafted second obstacle setting was removed from the scored contract during final verification because it had not been run and did not appear in `scoring/scores.json`.
 
-## Issues
+## Issues Encountered
 
-- The login-node Python environment does not include `numpy`; no local package installation was performed.
-- Fixed the first container runtime failure by exporting `PYTHONPATH=/home/user` in script entrypoints and adding package marker files.
-- Fixed JSON serialization by converting `Path` values in the saved argparse settings to strings.
-- The initial circle obstacle was too easy: the random baseline exceeded 99% accuracy. Replaced the benchmark with a larger nonlinear wavy obstacle and tightened active-query acceptance so proposed start/goal pairs cross predicted unsafe regions.
-- The first wavy run still let the random baseline exceed 99% accuracy and accepted too few active demonstrations. The grid now emphasizes boundary states and active query selection now falls back to far safe endpoints when strict probabilistic safety rejects too many candidates.
-- The second wavy run confirmed that active query selection can beat random under the same demonstration budget, but the evaluation grid was still too broad. Evaluation is now separated from the method's candidate-query grid and focuses on a narrow band around the benchmark obstacle boundary.
-- The first separated boundary-band run was close but still too easy for the random baseline. The held-out band is narrowed again from radius offset +/-0.20 to +/-0.12 around the benchmark boundary.
-- The narrowed boundary-band run reached `core_claim`; no further changes are needed for the minimum reproduction.
-- The login-node Python environment still lacks `numpy`, so the strengthened evaluator could not be rerun locally through `scripts/evaluate.sh`; this is expected to work inside the container where `environment/setup.sh` installs `numpy` and `scipy`.
-- Fixed active query under-acceptance by retrying active query rounds until the same accepted-demonstration budget is filled. Job `13644732-d99` confirms the fix restores the core claim.
+- The initial synthetic setup was too easy for random sampling. The benchmark was revised to a nonlinear obstacle and a boundary-band evaluation grid.
+- The evaluator originally trusted method-written labels. It now recomputes the fixed evaluation grid and labels from `data/constraints.py` while reading only predictions and metadata from method outputs.
+- The strengthened active method initially accepted too few demonstrations. The driver now retries active acquisition rounds until the same accepted-demonstration budget is filled, bounded by `--max-query-rounds`.
+- Final verification found a scoring-contract mismatch caused by an unvalidated second experiment. The scoring files and scripts now match the one experiment actually reproduced.
 
 ## Deviations from Paper
 
-- The paper evaluates double integrator, unicycle, quadcopter, and robot-arm systems with horizons up to 30. This reproduction starts with a scaled 2D point-trajectory setting and horizon 24 to keep the first job CPU-feasible.
-- The core benchmark now uses a scaled nonlinear 2D wavy obstacle as a CPU-feasible analogue of the paper's complex unicycle constraint setting.
-- The pending second benchmark uses another scaled radial nonlinear obstacle to test whether the active-query advantage persists beyond the first boundary shape.
-- Evaluation uses a boundary-band grid rather than uniformly covering the full square. This is a scale/protocol adjustment to avoid a trivial synthetic benchmark dominated by easy far-from-boundary safe points. Active query search still uses a separate broad unlabeled grid so the method does not receive the true boundary as a query prior.
+- The paper evaluates double integrator, unicycle, quadcopter, and robot-arm systems with horizons up to 30. This reproduction uses a scaled 2D point-trajectory setting and horizon 24 to fit the available CPU/GPU budget.
+- The core benchmark uses a scaled nonlinear 2D wavy obstacle as a CPU-feasible analogue of the paper's complex unicycle constraint setting.
+- Evaluation uses a boundary-band grid rather than uniformly covering the full square. This keeps the scaled synthetic benchmark non-trivial by avoiding a score dominated by easy far-from-boundary safe points.
 - The paper solves several query subproblems with IPOPT/CasADi. This reproduction uses grid and line searches for the same subproblem objectives and constraints, preserving the GP posterior sampling, maximally informative boundary selection, and parallel/perpendicular start-goal construction.
-- The GP now optimizes RBF lengthscale, signal scale, and observation noise by marginal likelihood with bounded L-BFGS-B and falls back to the previous defaults only if optimization fails.
+- The GP optimizes RBF lengthscale, signal scale, and observation noise by marginal likelihood with bounded L-BFGS-B and falls back to defaults only if optimization fails.

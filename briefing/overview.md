@@ -2,7 +2,7 @@
 
 This paper studies learning hidden robot safety constraints from demonstrations. Its core result is GP-ACL, which repeatedly learns a GP boundary model from KKT-derived tight points and gradients, samples plausible constraints, and asks for demonstrations that should reduce posterior uncertainty near likely obstacle boundaries.
 
-This workspace implements scaled 2D obstacle-recovery benchmarks that preserve the paper's main computational loop and compare it with the paper's random start/goal query baseline. The main score is safe/unsafe classification accuracy under a fixed demonstration budget.
+This workspace implements a scaled 2D obstacle-recovery benchmark that preserves the paper's main computational loop and compares it with the paper's random start/goal query baseline. The main score is safe/unsafe classification accuracy under a fixed demonstration budget.
 
 - **Paper ID:** 2512.22757
 - **Title:** Active Constraint Learning in High Dimensions from Demonstrations

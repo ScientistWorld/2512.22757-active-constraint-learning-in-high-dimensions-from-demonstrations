@@ -3,7 +3,7 @@
     "scaled_2d_obstacle_recovery": {
       "description": "Scaled nonlinear 2D obstacle recovery benchmark mirroring the paper's unicycle complex-constraint recovery protocol.",
       "notes": "Paper values are the reported unicycle g3 recovery accuracies from Sec. 4.2. The gym uses a CPU-feasible scaled 2D boundary-band analogue with the same safe/unsafe recovery objective and equal demonstration-budget constraint.",
-      "weight": 0.5,
+      "weight": 1.0,
       "primary_metric": "accuracy",
       "metrics": {
         "accuracy": {
@@ -46,56 +46,6 @@
         "gp_acl": {
           "type": "proposed",
           "accuracy": 0.9956,
-          "n_demos": 12.0
-        }
-      }
-    },
-    "scaled_2d_pinched_recovery": {
-      "description": "Second scaled nonlinear 2D obstacle recovery setting for testing whether the active-query advantage persists beyond one boundary family.",
-      "notes": "Paper values are the reported unicycle g1 recovery accuracies from Sec. 4.2. The gym uses another CPU-feasible radial nonlinear boundary with the same demonstration-budget constraint.",
-      "weight": 0.5,
-      "primary_metric": "accuracy",
-      "metrics": {
-        "accuracy": {
-          "higher_is_better": true,
-          "coefficient": 1.0,
-          "description": "Overall safe/unsafe classification accuracy on the scored boundary-band slice."
-        },
-        "balanced_accuracy": {
-          "higher_is_better": true,
-          "coefficient": 0.5,
-          "description": "Mean of safe-state and unsafe-state recall on the boundary-band split."
-        },
-        "near_boundary_balanced_accuracy": {
-          "higher_is_better": true,
-          "coefficient": 0.6,
-          "description": "Balanced accuracy restricted to states closest to the inferred obstacle boundary."
-        },
-        "safe_recall": {
-          "higher_is_better": true,
-          "coefficient": 0.25,
-          "description": "Fraction of truly safe boundary-band states classified as safe."
-        },
-        "unsafe_recall": {
-          "higher_is_better": true,
-          "coefficient": 0.25,
-          "description": "Fraction of truly unsafe boundary-band states classified as unsafe."
-        },
-        "n_demos": {
-          "higher_is_better": false,
-          "coefficient": -0.05,
-          "description": "Number of requested demonstrations."
-        }
-      },
-      "results": {
-        "random_baseline": {
-          "type": "baseline",
-          "accuracy": 0.9788,
-          "n_demos": 12.0
-        },
-        "gp_acl": {
-          "type": "proposed",
-          "accuracy": 0.9996,
           "n_demos": 12.0
         }
       }

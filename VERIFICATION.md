@@ -1,21 +1,28 @@
 # Verification Report
 
 ## Initial Assessment
-The workspace claimed `core_claim` and contained a working scaled reproduction of GP-ACL on a nonlinear 2D obstacle-recovery task. The claimed milestone is justified: the implementation preserves the paper's active constraint-learning loop, the random-query baseline is non-trivial, and GP-ACL outperforms it under the same 12-demonstration budget.
+
+The workspace claimed `core_claim` and contained valid saved results for one scaled 2D obstacle-recovery experiment. That claim was broadly justified: GP-ACL outperformed the random-query baseline under the same 12-demonstration budget, and the baseline stayed below 95% accuracy.
+
+However, the handoff state had started expanding the gym to a second obstacle setting. That setting was present in `reference.json`, run scripts, and documentation, but it had not been run and was absent from `scoring/scores.json`.
 
 ## Issues Found
-- **Minor:** `scoring/scores.json` had not yet been refreshed after the evaluator was expanded to report all metrics declared in `scoring/reference.json`.
-- **Minor:** Scheduler job logs and raw trajectory transcript files were tracked in git even though they are generated artifacts and already ignored for future runs.
-- **Cosmetic:** The overview used stale reproduction numbers, and `reference.json` did not explicitly state that the paper values are used as context for a scaled 2D analogue.
+
+- **Critical:** `reference.json`, `TARGETS.md`, `EXPERIMENTS.md`, and the standard run scripts listed `scaled_2d_pinched_recovery`, but `scores.json`, `scores_train.json`, and `scores_test.json` only contained `scaled_2d_obstacle_recovery`. This would create a phantom target and an inconsistent gym contract.
+- **Minor:** `briefing/evaluation.md` described the proposed method's active query search in a method-agnostic file.
+- **Minor:** `PROGRESS.md` and `MILESTONES.md` still described the unvalidated second setting as pending submission.
 
 ## Fixes Applied
-- Regenerated `scoring/scores.json` from the saved prediction artifacts with accuracy, balanced accuracy, near-boundary balanced accuracy, safe recall, unsafe recall, and demonstration count.
-- Removed tracked `jobs/` and `trajectory/` artifacts from git.
-- Added a reference note documenting the scaled benchmark and updated the overview/progress text to match current scores.
-- Ran `python validate.py --compare`; all checks pass.
+
+- Removed the unvalidated second setting from `scoring/reference.json`, `scoring/TARGETS.md`, `scoring/EXPERIMENTS.md`, `scoring/CONSTRAINTS.md`, `data/constraints.py`, `eval/evaluate_outputs.py`, and the standard run scripts.
+- Reworded `briefing/problem.md` and `briefing/evaluation.md` so from-scratch agents see the task and scoring interface without method details.
+- Updated `PROGRESS.md` and `MILESTONES.md` to reflect the verified one-experiment `core_claim` state.
+- Revalidated the workspace with `python validate.py --compare`, method/eval py-compilation, and a `shared/` reference scan.
+- Checked `scripts/evaluate.sh` for standalone use. Running it directly on the login-node Python is blocked by the expected missing `numpy` dependency; `environment/setup.sh` installs `numpy` and `scipy` for the compute container where the reproduced scores were generated.
 
 ## Final Judgment
-The workspace is ready to serve as a research gym for the `core_claim` milestone. Improve-mode agents can run the packaged method and baseline, while from-scratch agents can use the method-agnostic problem, data, and evaluator without importing `method/`. The main limitation is that the gym covers a CPU-feasible scaled 2D analogue rather than the full high-dimensional robot experiments.
+
+The workspace is ready to serve as a research gym for the `core_claim` milestone. Improve-mode agents can run the packaged method and baseline, while from-scratch agents can use the problem definition, data module, and evaluator without importing the paper method. The scoring contract now matches the experiments actually reproduced.
 
 - Milestone: core_claim
 - Ready for gym use: yes

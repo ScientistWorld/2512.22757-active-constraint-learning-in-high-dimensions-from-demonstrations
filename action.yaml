@@ -1,3 +1,3 @@
 action: done
 milestone: core_claim
-notes: "Final verification passed: scores refreshed with full metrics, generated job artifacts removed from git, and validate.py --compare passes."
+notes: "Final verification passed for the verified one-setting GP-ACL gym; unvalidated second setting removed from the scoring contract."

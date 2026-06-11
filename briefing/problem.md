@@ -10,4 +10,4 @@ Robots deployed around unknown obstacles or task restrictions need to infer safe
 
 ## Success Criteria
 
-A successful system asks for informative demonstrations, fits a constraint representation from the resulting trajectories, and correctly classifies held-out constraint states as safe or unsafe. It should improve over a random start/goal query strategy under the same demonstration budget.
+A successful system uses a small budget of demonstrations, fits a constraint representation from the resulting trajectories, and correctly classifies held-out constraint states as safe or unsafe. It should improve over a random start/goal query strategy under the same demonstration budget.

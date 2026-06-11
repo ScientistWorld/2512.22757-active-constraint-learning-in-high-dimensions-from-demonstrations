@@ -32,19 +32,6 @@ def wavy_radius(theta: np.ndarray) -> np.ndarray:
     return 1.05 + 0.20 * np.sin(3.0 * theta) + 0.13 * np.cos(5.0 * theta)
 
 
-def g_pinched(points: np.ndarray) -> np.ndarray:
-    pts = np.atleast_2d(points).astype(float)
-    x = pts[:, 0]
-    y = pts[:, 1]
-    theta = np.arctan2(y, x)
-    radius = pinched_radius(theta)
-    return radius**2 - (x**2 + y**2)
-
-
-def pinched_radius(theta: np.ndarray) -> np.ndarray:
-    return 1.00 + 0.18 * np.sin(4.0 * theta + 0.35) - 0.14 * np.cos(7.0 * theta) + 0.07 * np.sin(2.0 * theta)
-
-
 CONSTRAINTS = {
     "circle": {
         "name": "circle",
@@ -58,13 +45,6 @@ CONSTRAINTS = {
         "bounds": BOUNDS,
         "paper_reference": "nonlinear 2D obstacle boundary",
         "radius_function": wavy_radius,
-    },
-    "pinched": {
-        "name": "pinched",
-        "function": g_pinched,
-        "bounds": BOUNDS,
-        "paper_reference": "second nonlinear 2D obstacle boundary for core_claim_plus",
-        "radius_function": pinched_radius,
     },
 }
 

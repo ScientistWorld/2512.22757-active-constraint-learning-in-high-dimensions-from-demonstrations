@@ -39,7 +39,6 @@ def confusion(pred: np.ndarray, truth: np.ndarray) -> dict[str, float]:
 
 EXPERIMENT_BY_CONSTRAINT = {
     "wavy": "scaled_2d_obstacle_recovery",
-    "pinched": "scaled_2d_pinched_recovery",
 }
 
 
@@ -90,8 +89,6 @@ def main() -> None:
         artifact_paths = [
             Path("outputs/gp_acl_wavy.json"),
             Path("outputs/random_baseline_wavy.json"),
-            Path("outputs/gp_acl_pinched.json"),
-            Path("outputs/random_baseline_pinched.json"),
         ]
 
     experiments: dict[str, dict[str, dict[str, float]]] = {}
