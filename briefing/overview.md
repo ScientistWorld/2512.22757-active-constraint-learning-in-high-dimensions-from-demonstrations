@@ -4,15 +4,17 @@ This paper studies learning hidden robot safety constraints from demonstrations.
 
 This workspace implements a scaled 2D obstacle-recovery benchmark that preserves the paper's main computational loop and compares it with the paper's random start/goal query baseline. The main score is safe/unsafe classification accuracy under a fixed demonstration budget.
 
-- **Paper ID:** <!-- e.g. 1706.03762 -->
-- **Title:** <!-- e.g. Attention Is All You Need -->
-- **Domain:** <!-- e.g. Computer Vision / Object Detection -->
-- **TL;DR:** <!-- One sentence: what this paper does and why it matters -->
+- **Paper ID:** 2512.22757
+- **Title:** Active Constraint Learning in High Dimensions from Demonstrations
+- **Domain:** Robot learning / learning from demonstrations
+- **TL;DR:** GP-ACL actively chooses demonstrations that reduce uncertainty in a GP constraint model, improving hidden obstacle recovery over random query selection.
 
 ## Short Summary
 
-<!-- 3-5 sentences covering the problem, approach, and main findings -->
+The paper addresses learning unknown robot safety constraints from sparse locally optimal demonstrations. It extracts tight constraint states and gradient information from KKT optimality conditions, fits a GP constraint representation, samples plausible posterior constraints, and chooses new start/goal states near uncertain sampled boundaries. The reported experiments show higher safe/unsafe constraint recovery accuracy than random start/goal sampling across simulated robot systems and hardware.
 
 ## Key Results
 
-<!-- 2-3 bullet points: main findings or numbers in bullet points -->
+- On the paper's unicycle complex-constraint setting `g3`, GP-ACL reports 0.9956 accuracy versus 0.9492 for the random sampling baseline.
+- This reproduction preserves the GP-ACL computational loop at reduced 2D scale and scores a nonlinear boundary-band recovery task.
+- The reproduced scaled benchmark reaches 0.9492 accuracy for GP-ACL versus 0.9371 for the random-query baseline with the same 12 demonstrations.

@@ -12,6 +12,8 @@ from pathlib import Path
 
 import numpy as np
 
+from data.constraints import CONSTRAINTS, make_eval_grid
+
 
 def confusion(pred: np.ndarray, truth: np.ndarray) -> dict[str, float]:
     safe_pred = pred == 1
@@ -30,11 +32,16 @@ def confusion(pred: np.ndarray, truth: np.ndarray) -> dict[str, float]:
 
 def load_result(path: Path) -> dict:
     data = json.loads(path.read_text())
-    for key in ("method", "predictions", "truth"):
+    for key in ("method", "predictions"):
         if key not in data:
             raise ValueError(f"{path} is missing required key {key!r}")
     pred = np.asarray(data["predictions"], dtype=int)
-    truth = np.asarray(data["truth"], dtype=int)
+    constraint_name = data.get("constraint", "wavy")
+    if constraint_name not in CONSTRAINTS:
+        raise ValueError(f"{path} references unknown constraint {constraint_name!r}")
+    eval_grid = int(data.get("settings", {}).get("eval_grid", 61))
+    grid = make_eval_grid(eval_grid, constraint_name)
+    truth = (CONSTRAINTS[constraint_name]["function"](grid) <= 0.0).astype(int)
     if pred.shape != truth.shape:
         raise ValueError(f"{path} predictions and truth shapes differ: {pred.shape} vs {truth.shape}")
     all_metrics = confusion(pred, truth)

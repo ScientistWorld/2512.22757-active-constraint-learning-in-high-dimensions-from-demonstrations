@@ -7,7 +7,7 @@
 - `scripts/reproduce.sh` runs the baseline, GP-ACL method, and evaluator end to end inside the container.
 - `python validate.py --reference-only` passes after staging source files.
 - `python validate.py --compare` passes with reproduced scores in `scoring/scores.json`.
-- Current milestone: `core_claim`.
+- Current milestone under audit: `method_runs`; `core_claim` is being revalidated after strengthening the evaluator.
 
 ## Results
 
@@ -18,11 +18,13 @@
 - Job `1d7a4659-253` completed after relaxing active endpoint acceptance. GP-ACL used the full 12-demonstration budget and outperformed random sampling, 0.9879 versus 0.9863 accuracy, but the random baseline remained above the 95% non-triviality threshold.
 - Job `a8c16692-709` completed on the separated boundary-band score. GP-ACL again outperformed random sampling, 0.9686 versus 0.9597 accuracy with the same 12 demonstrations, but the random baseline was still slightly above the 95% non-triviality threshold.
 - Job `1f14600a-6d2` completed on the narrowed +/-0.12 boundary-band benchmark and supports the core claim: GP-ACL scored 0.9492 accuracy versus 0.9371 for the random-query baseline with the same 12 demonstrations. The random baseline is below 95%, so the task is non-trivial.
+- Continuation audit found that `eval/` was trusting the method-written `truth` field in output artifacts. Fixed `eval/evaluate_outputs.py` to recompute the evaluation grid and labels from `data/constraints.py` while reading only predictions and metadata from method outputs. A CPU container job is required to revalidate `core_claim` after this scoring-path change.
 
 ## Remaining
 
 - Higher milestones would require reproducing additional paper settings such as the circle constraint, double-integrator/unicycle dynamics variants, or the higher-dimensional quadcopter/robot-arm experiments.
 - The current environment is ready for future agents to optimize the scaled nonlinear 2D obstacle-recovery benchmark through `scripts/reproduce.sh` and `scripts/evaluate.sh`.
+- Await the revalidation job for the strengthened evaluator before restoring `core_claim`.
 
 ## Issues
 
@@ -34,6 +36,7 @@
 - The second wavy run confirmed that active query selection can beat random under the same demonstration budget, but the evaluation grid was still too broad. Evaluation is now separated from the method's candidate-query grid and focuses on a narrow band around the benchmark obstacle boundary.
 - The first separated boundary-band run was close but still too easy for the random baseline. The held-out band is narrowed again from radius offset +/-0.20 to +/-0.12 around the benchmark boundary.
 - The narrowed boundary-band run reached `core_claim`; no further changes are needed for the minimum reproduction.
+- The login-node Python environment still lacks `numpy`, so the strengthened evaluator could not be rerun locally through `scripts/evaluate.sh`; this is expected to work inside the container where `environment/setup.sh` installs `numpy` and `scipy`.
 
 ## Deviations from Paper
 
