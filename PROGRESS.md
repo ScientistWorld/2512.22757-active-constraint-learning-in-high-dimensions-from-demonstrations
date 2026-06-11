@@ -9,6 +9,7 @@
 ## Results
 
 - No reproduced scores yet. The local Python environment lacks `numpy`, so runtime validation is deferred to the container job where `environment/setup.sh` installs dependencies.
+- Job `aa971aaa-2d4` built the container overlay and installed `numpy`/`scipy`, but failed before running the experiment because `baseline/random_sampling.py` could not import `method.gp_acl`.
 
 ## Remaining
 
@@ -19,6 +20,7 @@
 ## Issues
 
 - The login-node Python environment does not include `numpy`; no local package installation was performed.
+- Fixed the first container runtime failure by exporting `PYTHONPATH=/home/user` in script entrypoints and adding package marker files.
 
 ## Deviations from Paper
 

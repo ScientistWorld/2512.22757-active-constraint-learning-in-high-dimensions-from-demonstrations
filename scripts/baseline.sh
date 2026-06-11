@@ -16,6 +16,7 @@
 set -e
 
 cd /home/user
+export PYTHONPATH=/home/user:${PYTHONPATH:-}
 
 python baseline/random_sampling.py \
   --constraint circle \

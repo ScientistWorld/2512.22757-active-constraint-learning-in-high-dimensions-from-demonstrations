@@ -9,6 +9,7 @@
 set -e
 
 cd /home/user
+export PYTHONPATH=/home/user:${PYTHONPATH:-}
 
 python method/gp_acl.py \
   --mode active \

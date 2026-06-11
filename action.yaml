@@ -31,4 +31,4 @@ action: submit
 gpus: 0
 test: true
 milestone: none
-notes: "CPU smoke test for the full GP-ACL reproduction pipeline inside the container; installs numpy/scipy via setup.sh and runs baseline, method, and evaluator."
+notes: "Retry CPU smoke test after fixing workspace imports with PYTHONPATH and package markers; runs baseline, GP-ACL method, and evaluator."
