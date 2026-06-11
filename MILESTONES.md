@@ -31,4 +31,4 @@
 - The random baseline stayed below the 95% non-triviality threshold, so the scaled benchmark can distinguish active constraint learning from random sampling.
 
 ## Stop Justification
-- Not stopped.
+- Completed at milestone `core_claim`.
