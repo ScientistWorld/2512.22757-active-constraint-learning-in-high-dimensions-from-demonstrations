@@ -18,5 +18,10 @@
 - Audited method and evaluation separation after milestone reset.
 - Fixed `scripts/reproduce.sh` to clear managed output artifacts before an end-to-end rerun, preventing stale scores if a later stage fails.
 
+### [2026-06-11 17:18] - method_runs
+- Job `a86544e3-6dd` reran successfully with fresh artifacts, but the strengthened method only scored 0.9315 versus 0.9258 for random sampling.
+- Diagnosed the weak result as active query under-acceptance: GP-ACL ended with 10 demonstrations while the baseline used 12.
+- Updated the method driver to keep issuing active acquisition rounds until the requested accepted-demonstration budget is filled, bounded by `--max-query-rounds`.
+
 ## Stop Justification
-- Not stopped. A CPU validation job is being submitted to rerun the revised reproduction.
+- Not stopped. A CPU validation job is being submitted to rerun the equal-budget active-query fix.

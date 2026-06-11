@@ -380,17 +380,32 @@ def run_experiment(args: argparse.Namespace) -> dict:
         if iteration == args.iterations - 1:
             history.append(entry)
             break
-        if args.mode == "active":
-            pairs = active_queries(gp, rng, args.pairs_per_iter, args.n_features, args.alpha, args.delta)
-        else:
-            pairs = random_safe_pairs(rng, g_func, args.pairs_per_iter)
         accepted = 0
-        for start, goal in pairs:
-            path = generate_demo(start, goal, g_func, args.horizon, rng)
-            if path is not None:
-                demos.append(path)
-                accepted += 1
-        entry.update({"n_pairs_proposed": len(pairs), "n_pairs_accepted": accepted})
+        proposed = 0
+        query_rounds = 0
+        while accepted < args.pairs_per_iter and query_rounds < args.max_query_rounds:
+            remaining = args.pairs_per_iter - accepted
+            if args.mode == "active":
+                pairs = active_queries(gp, rng, remaining, args.n_features, args.alpha, args.delta)
+            else:
+                pairs = random_safe_pairs(rng, g_func, remaining)
+            query_rounds += 1
+            proposed += len(pairs)
+            for start, goal in pairs:
+                if accepted >= args.pairs_per_iter:
+                    break
+                path = generate_demo(start, goal, g_func, args.horizon, rng)
+                if path is not None:
+                    demos.append(path)
+                    accepted += 1
+        entry.update(
+            {
+                "n_pairs_proposed": proposed,
+                "n_pairs_accepted": accepted,
+                "n_query_rounds": query_rounds,
+                "query_budget_exhausted": accepted < args.pairs_per_iter,
+            }
+        )
         history.append(entry)
 
     mean, var = gp.mean_var(grid)
@@ -422,6 +437,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--n-features", type=int, default=300)
     p.add_argument("--alpha", type=float, default=0.3)
     p.add_argument("--delta", type=float, default=0.001)
+    p.add_argument("--max-query-rounds", type=int, default=5)
     p.add_argument("--seed", type=int, default=7)
     p.add_argument("--output", type=Path, default=Path("outputs/gp_acl_wavy.json"))
     return p

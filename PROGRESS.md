@@ -7,7 +7,7 @@
 - `scripts/reproduce.sh` runs the baseline, GP-ACL method, and evaluator end to end inside the container.
 - `python validate.py --reference-only` passes after staging source files.
 - `python validate.py --compare` passes with reproduced scores in `scoring/scores.json`.
-- Current milestone: `method_runs` for the revised implementation; the previous `core_claim` score must be revalidated after strengthening posterior sampling and GP fitting.
+- Current milestone: `method_runs` for the revised implementation. Job `a86544e3-6dd` produced fresh valid scores, but the margin was too small to restore `core_claim`; the next job tests an equal-demonstration-budget active acquisition fix.
 
 ## Results
 
@@ -22,6 +22,8 @@
 - Job `fc134803-4b7` completed after the evaluator fix and revalidated the core claim: GP-ACL scored 0.9492 accuracy versus 0.9371 for the random-query baseline, with both methods using 12 demonstrations.
 - Iteration 3 strengthened the GP implementation to use the conditioned random Fourier feature posterior-sample formula from Eq. (16), marginal-likelihood hyperparameter fitting, a constrained solve for the maximally-informative sampled-boundary state, and a 2D hyperplane-direction search. A CPU validation job is being submitted to refresh `scoring/scores.json`.
 - Continuation audit found no new method/eval separation issue, but `scripts/reproduce.sh` could mix stale output artifacts with a partially rerun baseline because `baseline.sh` evaluates before `method.sh` refreshes the active artifact. The end-to-end script now removes the two managed output JSON files and `scoring/scores.json` before rerunning.
+- Job `a86544e3-6dd` completed successfully with fresh artifacts after the stale-output cleanup. The result remains only `method_runs`: GP-ACL scored 0.9315 accuracy with 10 accepted demonstrations versus random sampling at 0.9258 with 12 demonstrations. This is a valid run, but the accuracy gap is too weak and the demonstration budgets are unequal.
+- The active method driver now keeps issuing paper-style active query rounds until it fills the requested accepted-demonstration budget, bounded by `--max-query-rounds`, and records whether the query budget was exhausted.
 
 ## Remaining
 
@@ -40,7 +42,7 @@
 - The first separated boundary-band run was close but still too easy for the random baseline. The held-out band is narrowed again from radius offset +/-0.20 to +/-0.12 around the benchmark boundary.
 - The narrowed boundary-band run reached `core_claim`; no further changes are needed for the minimum reproduction.
 - The login-node Python environment still lacks `numpy`, so the strengthened evaluator could not be rerun locally through `scripts/evaluate.sh`; this is expected to work inside the container where `environment/setup.sh` installs `numpy` and `scipy`.
-- The latest strengthened method has not yet produced fresh container scores in this continuation; a CPU test job is required before restoring `core_claim`.
+- The latest strengthened method produced fresh scores in job `a86544e3-6dd`, but active query under-acceptance left GP-ACL with fewer demonstrations than the baseline and a thin accuracy margin. The acquisition loop now retries active query rounds to fill the same accepted-demonstration budget before the next evaluation.
 
 ## Deviations from Paper
 
