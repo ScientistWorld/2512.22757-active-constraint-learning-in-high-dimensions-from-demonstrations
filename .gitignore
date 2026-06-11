@@ -68,6 +68,7 @@ docker_*.tar.xz
 # Swarm/worker artifacts
 trajectory/
 .empty_*/
+.git-shims/
 outputs/
 logs/
 .venv/

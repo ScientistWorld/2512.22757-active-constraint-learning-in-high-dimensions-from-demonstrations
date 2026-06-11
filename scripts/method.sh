@@ -10,5 +10,15 @@ set -e
 
 cd /home/user
 
-# TODO: run the paper's method
-# TODO: call scripts/evaluate.sh to score
+python method/gp_acl.py \
+  --mode active \
+  --constraint circle \
+  --iterations 3 \
+  --pairs-per-iter 4 \
+  --horizon 24 \
+  --eval-grid 61 \
+  --n-features 300 \
+  --alpha 0.3 \
+  --output outputs/gp_acl_circle.json
+
+bash scripts/evaluate.sh

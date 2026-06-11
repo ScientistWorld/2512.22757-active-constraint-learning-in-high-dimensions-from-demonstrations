@@ -17,4 +17,14 @@ set -e
 
 cd /home/user
 
-# TODO: run baseline
+python baseline/random_sampling.py \
+  --constraint circle \
+  --iterations 3 \
+  --pairs-per-iter 4 \
+  --horizon 24 \
+  --eval-grid 61 \
+  --n-features 300 \
+  --alpha 0.3 \
+  --output outputs/random_baseline_circle.json
+
+bash scripts/evaluate.sh

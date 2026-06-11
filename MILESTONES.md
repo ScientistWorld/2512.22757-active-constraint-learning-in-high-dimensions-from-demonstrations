@@ -15,7 +15,11 @@
 
 ## Progress Log
 
-<!-- Write your progress here -->
+### [2026-06-11 00:00] - none
+- Read the paper and appendix notes for the GP-ACL algorithm.
+- Implemented a scaled 2D reproduction of the paper's computational loop: constrained smoothness demonstrations, KKT-style tight point and gradient extraction, GP training with derivative observations, posterior-sample-guided active querying, and random-query baseline.
+- Added evaluation, scripts, briefing, and scoring reference files.
+- Submitted a CPU test job is still required before claiming `method_runs`.
 
 ## Stop Justification
-- Completed at milestone `none`.
+- Not stopped.

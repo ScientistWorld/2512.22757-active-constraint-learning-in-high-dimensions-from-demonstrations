@@ -2,36 +2,26 @@
 
 ## What Works
 
-<!-- What has been successfully reproduced so far. -->
+- Paper analysis completed for the core GP-ACL loop and reported accuracy targets.
+- Source code is in place for a scaled 2D obstacle-recovery reproduction.
+- `python validate.py --reference-only` passes after staging source files.
 
 ## Results
 
-<!-- Reproduced numbers compared to the paper's reported numbers. -->
+- No reproduced scores yet. The local Python environment lacks `numpy`, so runtime validation is deferred to the container job where `environment/setup.sh` installs dependencies.
 
 ## Remaining
 
-<!-- What still needs to be done to reach higher milestones. -->
+- Run the full `scripts/reproduce.sh` pipeline in a CPU job.
+- Inspect `scoring/scores.json`; if GP-ACL does not beat the random baseline, tune the reduced-scale benchmark while preserving the algorithm.
+- After successful run, update milestone to `method_runs` or `core_claim` as justified by the results.
 
 ## Issues
 
-<!-- Blockers, bugs, or difficulties encountered. -->
+- The login-node Python environment does not include `numpy`; no local package installation was performed.
 
 ## Deviations from Paper
 
-<!-- Do not edit this section unless you deviated from the paper's original setup.
-     For each deviation, document: what the paper used, what you substituted, and why.
-
-     ACCEPTABLE deviations (data/resource/scale substitutions — milestones still valid):
-       - Replaced a proprietary dataset with a public one
-       - Used a smaller model of the same architecture
-       - Scaled down training (fewer epochs, smaller batch)
-       - Used a different library for the same algorithm
-
-     UNACCEPTABLE deviations (algorithm substitutions — milestones above 'none' are void):
-       - Replaced the paper's algorithm with a fundamentally different one
-       - Wrote a generic model trained to approximate the method's outputs
-         instead of implementing the method's computational steps
-
-     The test: could someone reading your code identify which algorithm from
-     the paper you implemented? If not, you replaced the method. -->
-
+- The paper evaluates double integrator, unicycle, quadcopter, and robot-arm systems with horizons up to 30. This reproduction starts with a scaled 2D point-trajectory setting and horizon 24 to keep the first job CPU-feasible.
+- The paper solves several query subproblems with IPOPT/CasADi. This reproduction uses grid and line searches for the same subproblem objectives and constraints, preserving the GP posterior sampling, maximally informative boundary selection, and parallel/perpendicular start-goal construction.
+- The paper optimizes GP hyperparameters by marginal likelihood. This initial reproduction uses fixed RBF hyperparameters to reduce setup risk; the GP still conditions jointly on boundary values and derivative observations.

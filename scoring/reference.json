@@ -1,0 +1,25 @@
+{
+  "experiments": {
+    "scaled_2d_obstacle_recovery": {
+      "description": "Scaled 2D obstacle recovery benchmark mirroring the paper's double-integrator/unicycle constraint recovery protocol.",
+      "weight": 1.0,
+      "primary_metric": "accuracy",
+      "metrics": {
+        "accuracy": {"higher_is_better": true, "coefficient": 1.0},
+        "n_demos": {"higher_is_better": false, "coefficient": -0.05}
+      },
+      "results": {
+        "random_baseline": {
+          "type": "baseline",
+          "accuracy": 0.9900,
+          "n_demos": 12.0
+        },
+        "gp_acl": {
+          "type": "proposed",
+          "accuracy": 0.9952,
+          "n_demos": 12.0
+        }
+      }
+    }
+  }
+}
