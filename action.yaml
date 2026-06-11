@@ -2,8 +2,8 @@
 # Once you set action to 'done', STOP immediately.
 # Do NOT sleep, poll, or wait. The system reads this file
 # only after your turn ends.
-action: done
+action: pending
 gpus: 0
 test: false
 milestone: core_claim
-notes: "Even/odd boundary-grid train/test split; 5 metrics per slice (accuracy, balanced_accuracy, safe_recall, unsafe_recall, n_demos); scripts written, scores produced later."
+notes: ""
