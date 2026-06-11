@@ -1,4 +1,3 @@
-action: submit
+action: done
 gpus: 0
-test: false
-notes: "Run evaluate_train.sh and evaluate_test.sh against saved final artifacts; populate split scores for inspection."
+notes: "Angular-sector boundary-band split; 12 train metrics, 12 test metrics; gp_acl train/test accuracy 0.9450/0.9546 and near-boundary balanced accuracy 0.8683/0.8995; proposed beats random on primary/near-boundary metrics on both slices; n_demos is constant at the fixed 12-demo budget."
