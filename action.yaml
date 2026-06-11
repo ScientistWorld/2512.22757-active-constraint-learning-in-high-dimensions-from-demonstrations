@@ -1,6 +1,9 @@
-# IMPORTANT: Once you set action to 'submit' or 'done', STOP immediately.
-# Do NOT sleep, poll, or wait for jobs. The system reads this file
-# only after your turn ends. Sleeping blocks the entire pipeline.
-action: done
+# This iteration writes files only — do NOT submit compute jobs.
+# Once you set action to 'done', STOP immediately.
+# Do NOT sleep, poll, or wait. The system reads this file
+# only after your turn ends.
+action: pending
+gpus: 0
+test: false
 milestone: core_claim
-notes: "Reproduced the core claim on the packaged scaled 2D obstacle-recovery benchmark. Final scores: GP-ACL accuracy 0.9497 vs random baseline 0.9258, both with 12 demonstrations; validation passes."
+notes: ""
