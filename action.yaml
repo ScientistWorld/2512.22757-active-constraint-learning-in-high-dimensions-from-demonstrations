@@ -31,4 +31,4 @@ action: submit
 gpus: 0
 test: true
 milestone: none
-notes: "Retry CPU smoke test after fixing workspace imports with PYTHONPATH and package markers; runs baseline, GP-ACL method, and evaluator."
+notes: "Retry CPU smoke test after fixing JSON serialization of Path settings; runs baseline, GP-ACL method, and evaluator."

@@ -10,6 +10,7 @@
 
 - No reproduced scores yet. The local Python environment lacks `numpy`, so runtime validation is deferred to the container job where `environment/setup.sh` installs dependencies.
 - Job `aa971aaa-2d4` built the container overlay and installed `numpy`/`scipy`, but failed before running the experiment because `baseline/random_sampling.py` could not import `method.gp_acl`.
+- Job `1de9a8b5-01f` entered the baseline run but failed while writing JSON because the saved settings included an unserializable `Path`.
 
 ## Remaining
 
@@ -21,6 +22,7 @@
 
 - The login-node Python environment does not include `numpy`; no local package installation was performed.
 - Fixed the first container runtime failure by exporting `PYTHONPATH=/home/user` in script entrypoints and adding package marker files.
+- Fixed JSON serialization by converting `Path` values in the saved argparse settings to strings.
 
 ## Deviations from Paper
 

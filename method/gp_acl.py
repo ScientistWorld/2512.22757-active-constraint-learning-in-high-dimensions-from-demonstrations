@@ -250,6 +250,7 @@ def run_experiment(args: argparse.Namespace) -> dict:
     mean, var = gp.mean_var(grid)
     pred = (mean <= 0.0).astype(int)
     true = (g_func(grid) <= 0.0).astype(int)
+    settings = {k: str(v) if isinstance(v, Path) else v for k, v in vars(args).items()}
     return {
         "method": method_name,
         "constraint": args.constraint,
@@ -260,7 +261,7 @@ def run_experiment(args: argparse.Namespace) -> dict:
         "history": history,
         "n_demos": len(demos),
         "n_tight": int(len(tp)),
-        "settings": vars(args),
+        "settings": settings,
     }
 
 
