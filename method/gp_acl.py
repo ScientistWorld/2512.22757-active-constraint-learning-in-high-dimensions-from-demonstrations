@@ -21,7 +21,7 @@ import numpy as np
 from scipy.optimize import minimize
 from scipy.special import ndtr
 
-from data.constraints import CONSTRAINTS, default_initial_pairs, make_eval_grid
+from data.constraints import CONSTRAINTS, default_initial_pairs, make_eval_grid, make_query_grid
 
 
 @dataclass
@@ -179,7 +179,7 @@ def predict_grid(gp: GPModel, grid: np.ndarray) -> np.ndarray:
 
 
 def active_queries(gp: GPModel, rng: np.random.Generator, n_pairs: int, n_features: int, alpha: float, delta: float) -> list[tuple[np.ndarray, np.ndarray]]:
-    grid = make_eval_grid(75)
+    grid = make_query_grid(75)
     mean, var = gp.mean_var(grid)
     pairs = []
     for _ in range(max(2, n_pairs)):
@@ -262,7 +262,7 @@ def run_experiment(args: argparse.Namespace) -> dict:
         tp = np.vstack(tight_points)
         tg = np.vstack(tight_grads)
         gp = train_gp(tp, tg)
-        grid = make_eval_grid(args.eval_grid)
+        grid = make_eval_grid(args.eval_grid, args.constraint)
         pred = predict_grid(gp, grid)
         true = (g_func(grid) <= 0.0).astype(int)
         entry = {"iteration": iteration, "accuracy": float(np.mean(pred == true)), "n_demos": len(demos), "n_tight": int(len(tp))}

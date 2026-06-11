@@ -31,4 +31,4 @@ action: submit
 gpus: 0
 test: true
 milestone: method_runs
-notes: "Run boundary-focused nonlinear wavy benchmark with relaxed active endpoints and query diagnostics; tests GP-ACL against random baseline for core claim."
+notes: "Run boundary-band wavy obstacle benchmark with separate unlabeled query grid; tests whether GP-ACL beats random on a non-trivial score."

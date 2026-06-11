@@ -1,7 +1,7 @@
 # Evaluation Targets
 
 ## Primary: scaled_2d_obstacle_recovery
-Tests whether a learner can recover the safe/unsafe split of an unknown 2D obstacle from sparse demonstrations.
+Tests whether a learner can recover the safe/unsafe split of an unknown 2D obstacle from sparse demonstrations on held-out boundary-band states.
 - **Metric**: accuracy (higher is better)
 
 ## Constraint: scaled_2d_obstacle_recovery
