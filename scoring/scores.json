@@ -3,11 +3,19 @@
     "scaled_2d_obstacle_recovery": {
       "results": {
         "gp_acl": {
-          "accuracy": 0.9497446922870196,
+          "accuracy": 0.9494759473259876,
+          "balanced_accuracy": 0.9498373420007222,
+          "safe_recall": 0.9034666666666666,
+          "unsafe_recall": 0.9962080173347779,
+          "near_boundary_balanced_accuracy": 0.8973931075913539,
           "n_demos": 12.0
         },
         "random_baseline": {
-          "accuracy": 0.9258263907551734,
+          "accuracy": 0.9244826659500134,
+          "balanced_accuracy": 0.9247231491513181,
+          "safe_recall": 0.8938666666666667,
+          "unsafe_recall": 0.9555796316359697,
+          "near_boundary_balanced_accuracy": 0.8592665118589633,
           "n_demos": 12.0
         }
       }

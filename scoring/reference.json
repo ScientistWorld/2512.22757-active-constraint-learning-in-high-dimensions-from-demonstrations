@@ -2,6 +2,7 @@
   "experiments": {
     "scaled_2d_obstacle_recovery": {
       "description": "Scaled nonlinear 2D obstacle recovery benchmark mirroring the paper's unicycle complex-constraint recovery protocol.",
+      "notes": "Paper values are the reported unicycle g3 recovery accuracies from Sec. 4.2. The gym uses a CPU-feasible scaled 2D boundary-band analogue with the same safe/unsafe recovery objective and equal demonstration-budget constraint.",
       "weight": 1.0,
       "primary_metric": "accuracy",
       "metrics": {

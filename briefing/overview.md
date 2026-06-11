@@ -17,4 +17,4 @@ The paper addresses learning unknown robot safety constraints from sparse locall
 
 - On the paper's unicycle complex-constraint setting `g3`, GP-ACL reports 0.9956 accuracy versus 0.9492 for the random sampling baseline.
 - This reproduction preserves the GP-ACL computational loop at reduced 2D scale and scores a nonlinear boundary-band recovery task.
-- The reproduced scaled benchmark reaches 0.9492 accuracy for GP-ACL versus 0.9371 for the random-query baseline with the same 12 demonstrations.
+- The reproduced scaled benchmark reaches 0.9495 accuracy for GP-ACL versus 0.9245 for the random-query baseline with the same 12 demonstrations.

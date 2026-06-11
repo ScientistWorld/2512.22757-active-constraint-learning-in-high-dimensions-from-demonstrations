@@ -26,13 +26,15 @@
 - The active method driver now keeps issuing paper-style active query rounds until it fills the requested accepted-demonstration budget, bounded by `--max-query-rounds`, and records whether the query budget was exhausted.
 - Job `13644732-d99` completed after the equal-budget active-query fix and restores `core_claim`: GP-ACL scored 0.9497 accuracy versus random sampling at 0.9258, with both methods using 12 demonstrations. The random baseline remains below 95%, so the scaled benchmark is non-trivial.
 - Updated the evaluator to emit all metrics declared in `scoring/reference.json`: balanced accuracy, near-boundary balanced accuracy, safe recall, unsafe recall, and demonstration count. A CPU validation job is being submitted to regenerate `scoring/scores.json` through `scripts/reproduce.sh`.
+- Final verification regenerated `scoring/scores.json` from saved prediction artifacts with the expanded metric set. Current scored results are GP-ACL accuracy 0.9495 and balanced accuracy 0.9498 versus random baseline accuracy 0.9245 and balanced accuracy 0.9247, both with 12 demonstrations.
+- Removed tracked scheduler job logs and raw trajectory transcript files from git; those generated artifacts are already covered by `.gitignore`.
 
 ## Remaining
 
 - Higher milestones would require reproducing additional paper settings such as the double-integrator/unicycle dynamics variants, the higher-dimensional quadcopter/robot-arm experiments, or a second non-trivial constraint family with paper-aligned reference targets.
 - The current environment is ready for future agents to optimize the scaled nonlinear 2D obstacle-recovery benchmark through `scripts/reproduce.sh` and `scripts/evaluate.sh`.
 - Higher milestones would require broadening beyond the current radial 2D benchmark family. The current code is intentionally packaged at `core_claim` rather than claiming unsupported generality.
-- Refresh `scoring/scores.json` with the expanded evaluator metrics and confirm `python validate.py --compare` still passes in the compute container.
+- No required work remains for `core_claim`. Higher milestones would require adding more paper settings.
 
 ## Issues
 
