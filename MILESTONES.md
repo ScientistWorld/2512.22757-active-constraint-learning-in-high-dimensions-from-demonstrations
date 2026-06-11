@@ -29,4 +29,4 @@
 - Both methods used 12 demonstrations, so the result supports the paper's central claim that active constraint-learning queries improve recovery without increasing the demonstration budget.
 
 ## Stop Justification
-- Stopping at `core_claim`. The core GP-ACL result is reproduced on the packaged scaled benchmark; higher milestones would require additional paper settings beyond the current CPU-feasible environment.
+- Completed at milestone `core_claim`.

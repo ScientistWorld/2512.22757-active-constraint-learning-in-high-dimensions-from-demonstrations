@@ -123,12 +123,46 @@ The evaluator reads method predictions and metadata from the artifacts, but it r
 
 </details>
 
+### Iteration 3: gpt-5.5
+- **Milestone**: `core_claim` | **Status**: done
+- **Working time**: 11m | **GPU**: 0.0h
+- **Jobs**: 10 total (8 completed, 2 failed)
+
+<details>
+<summary>Progress Log</summary>
+
+### [2026-06-11 16:41] - core_claim
+- Verified existing GP-ACL reproduction artifacts and scoring contract.
+- `python validate.py --compare` passes.
+- Saved scores support the core claim on the scaled nonlinear 2D obstacle-recovery task: GP-ACL accuracy 0.9492 versus random-query baseline accuracy 0.9371 with the same 12 demonstrations.
+
+### [2026-06-11 16:45] - method_runs
+- Strengthened the method implementation to use the paper's conditioned random Fourier feature posterior-sample formula and marginal-likelihood GP hyperparameter fitting.
+- Replaced the active query boundary pick with a constrained solve for the maximally-informative tight state, and added the 2D version of the hyperplane-direction search.
+- The previous core-claim scores are now stale until the revised method is rerun in the compute container.
+
+### [2026-06-11 17:00] - method_runs
+- Audited method and evaluation separation after milestone reset.
+- Fixed `scripts/reproduce.sh` to clear managed output artifacts before an end-to-end rerun, preventing stale scores if a later stage fails.
+
+### [2026-06-11 17:18] - method_runs
+- Job `a86544e3-6dd` reran successfully with fresh artifacts, but the strengthened method only scored 0.9315 versus 0.9258 for random sampling.
+- Diagnosed the weak result as active query under-acceptance: GP-ACL ended with 10 demonstrations while the baseline used 12.
+- Updated the method driver to keep issuing active acquisition rounds until the requested accepted-demonstration budget is filled, bounded by `--max-query-rounds`.
+
+### [2026-06-11 17:25] - core_claim
+- Job `13644732-d99` reran successfully after the equal-budget active-query fix.
+- GP-ACL scored 0.9497 accuracy versus 0.9258 for random sampling on the scaled nonlinear 2D boundary-band obstacle recovery task.
+- Both methods used 12 demonstrations, so the result supports the paper's central claim that active constraint-learning queries improve recovery without increasing the demonstration budget.
+
+</details>
+
 
 ---
 
 # Reproduction Milestones
 
-**Current: method_runs**
+**Current: core_claim**
 
 ## Stop Justification
-- Completed at milestone `method_runs`.
+- Completed at milestone `core_claim`.
