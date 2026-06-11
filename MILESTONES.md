@@ -1,6 +1,6 @@
 # Reproduction Milestones
 
-**Current: method_runs**
+**Current: core_claim**
 
 ## Progress Log
 
@@ -14,5 +14,10 @@
 - Fixed evaluator honesty issue by recomputing held-out labels in `eval/` from `data/constraints.py` instead of trusting output artifact labels.
 - Local structural validation passes; full end-to-end scoring needs a container job because login-node Python lacks `numpy`.
 
+### [2026-06-11 16:38] - core_claim
+- CPU container job `fc134803-4b7` completed successfully after the evaluator fix.
+- Strengthened evaluator reproduced the same core result: GP-ACL accuracy 0.9492 versus random-query baseline 0.9371 with 12 demonstrations each.
+- `python validate.py --compare` passes with the updated scores and method-independent evaluator.
+
 ## Stop Justification
-- Not stopped; submitting a CPU test job to revalidate the strengthened evaluation path.
+- Minimum autonomous goal `core_claim` is reached and the reusable environment is packaged.

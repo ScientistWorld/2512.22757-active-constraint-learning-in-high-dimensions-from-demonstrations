@@ -1,8 +1,8 @@
 # IMPORTANT: Once you set action to 'submit' or 'done', STOP immediately.
 # Do NOT sleep, poll, or wait for jobs. The system reads this file
 # only after your turn ends. Sleeping blocks the entire pipeline.
-action: submit
+action: done
 gpus: 0
-test: true
-milestone: method_runs
-notes: "CPU test revalidation after fixing evaluator to recompute labels independently from method output artifacts. Runs scripts/reproduce.sh end to end in the container."
+test: false
+milestone: core_claim
+notes: "Core claim revalidated by CPU container job fc134803-4b7 after strengthening eval to recompute labels independently. GP-ACL 0.9492 vs random baseline 0.9371 with 12 demonstrations."

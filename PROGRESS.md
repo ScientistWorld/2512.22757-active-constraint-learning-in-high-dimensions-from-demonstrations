@@ -7,7 +7,7 @@
 - `scripts/reproduce.sh` runs the baseline, GP-ACL method, and evaluator end to end inside the container.
 - `python validate.py --reference-only` passes after staging source files.
 - `python validate.py --compare` passes with reproduced scores in `scoring/scores.json`.
-- Current milestone under audit: `method_runs`; `core_claim` is being revalidated after strengthening the evaluator.
+- Current milestone: `core_claim`.
 
 ## Results
 
@@ -19,12 +19,13 @@
 - Job `a8c16692-709` completed on the separated boundary-band score. GP-ACL again outperformed random sampling, 0.9686 versus 0.9597 accuracy with the same 12 demonstrations, but the random baseline was still slightly above the 95% non-triviality threshold.
 - Job `1f14600a-6d2` completed on the narrowed +/-0.12 boundary-band benchmark and supports the core claim: GP-ACL scored 0.9492 accuracy versus 0.9371 for the random-query baseline with the same 12 demonstrations. The random baseline is below 95%, so the task is non-trivial.
 - Continuation audit found that `eval/` was trusting the method-written `truth` field in output artifacts. Fixed `eval/evaluate_outputs.py` to recompute the evaluation grid and labels from `data/constraints.py` while reading only predictions and metadata from method outputs. A CPU container job is required to revalidate `core_claim` after this scoring-path change.
+- Job `fc134803-4b7` completed after the evaluator fix and revalidated the core claim: GP-ACL scored 0.9492 accuracy versus 0.9371 for the random-query baseline, with both methods using 12 demonstrations.
 
 ## Remaining
 
 - Higher milestones would require reproducing additional paper settings such as the circle constraint, double-integrator/unicycle dynamics variants, or the higher-dimensional quadcopter/robot-arm experiments.
 - The current environment is ready for future agents to optimize the scaled nonlinear 2D obstacle-recovery benchmark through `scripts/reproduce.sh` and `scripts/evaluate.sh`.
-- Await the revalidation job for the strengthened evaluator before restoring `core_claim`.
+- Higher milestones would require broadening beyond the current radial 2D benchmark family. The current code is intentionally packaged at `core_claim` rather than claiming unsupported generality.
 
 ## Issues
 
