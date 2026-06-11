@@ -1,9 +1,4 @@
-# This iteration writes files only — do NOT submit compute jobs.
-# Once you set action to 'done', STOP immediately.
-# Do NOT sleep, poll, or wait. The system reads this file
-# only after your turn ends.
-action: done
+action: submit
 gpus: 0
 test: false
-milestone: core_claim
-notes: "Improvements: angular-sector train/test split, near-boundary balanced accuracy, complete metric descriptions. Notes: residual visible procedural constraint oracle documented in DESIGN_NOTES.md."
+notes: "Run evaluate_train.sh and evaluate_test.sh against saved final artifacts; populate split scores for inspection."
