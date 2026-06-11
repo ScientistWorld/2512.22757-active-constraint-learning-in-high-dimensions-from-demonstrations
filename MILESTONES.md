@@ -35,4 +35,3 @@
 
 ## Stop Justification
 - Completed at milestone `core_claim`.
-- The packaged environment demonstrates the paper's central claim on a non-trivial, CPU-feasible scaled 2D obstacle-recovery benchmark. Higher milestones would require additional validated robot-system settings or a freshly run second benchmark.
