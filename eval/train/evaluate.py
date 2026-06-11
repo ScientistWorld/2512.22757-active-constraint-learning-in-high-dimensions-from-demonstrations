@@ -18,8 +18,10 @@ from data.constraints import CONSTRAINTS, make_eval_grid
 
 
 SLICE_NAME = "train"
-SPLIT_STYLE = "even-indexed half of the fixed boundary-band evaluation grid"
-SPLIT_REMAINDER = 0
+SPLIT_STYLE = "visible alternating angular sectors of the fixed boundary-band evaluation grid"
+TRAIN_SECTORS = {0, 2, 4, 6}
+N_SECTORS = 8
+NEAR_BOUNDARY_FRACTION = 0.35
 
 
 def _as_int(value: object, default: int) -> int:
@@ -49,6 +51,21 @@ def discover_result_paths(outputs_dir: Path, constraint: str) -> list[Path]:
 
 def explicit_result_paths(paths: Iterable[Path | None]) -> list[Path]:
     return [path for path in paths if path is not None and path.exists()]
+
+
+def split_indices(n_per_axis: int) -> np.ndarray:
+    linear = np.arange(n_per_axis * n_per_axis)
+    angle_index = linear % n_per_axis
+    sectors = np.floor(angle_index * N_SECTORS / n_per_axis).astype(int)
+    return np.flatnonzero(np.isin(sectors, sorted(TRAIN_SECTORS)))
+
+
+def near_boundary_indices(indices: np.ndarray, n_per_axis: int) -> np.ndarray:
+    offset_index = indices // n_per_axis
+    center = (n_per_axis - 1) / 2.0
+    distance = np.abs(offset_index - center)
+    cutoff = max(1.0, (n_per_axis * NEAR_BOUNDARY_FRACTION) / 2.0)
+    return indices[distance <= cutoff]
 
 
 def confusion_metrics(pred: np.ndarray, truth: np.ndarray) -> dict[str, float]:
@@ -81,8 +98,11 @@ def load_result(path: Path) -> tuple[str, dict[str, float]]:
     if pred.shape != truth.shape:
         raise ValueError(f"{path} predictions and truth shapes differ: {pred.shape} vs {truth.shape}")
 
-    indices = np.flatnonzero(np.arange(len(truth)) % 2 == SPLIT_REMAINDER)
+    indices = split_indices(eval_grid)
     metrics = confusion_metrics(pred[indices], truth[indices])
+    near_indices = near_boundary_indices(indices, eval_grid)
+    near_metrics = confusion_metrics(pred[near_indices], truth[near_indices])
+    metrics["near_boundary_balanced_accuracy"] = near_metrics["balanced_accuracy"]
     metrics["n_demos"] = float(data.get("n_demos", 0))
     return str(data["method"]), metrics
 

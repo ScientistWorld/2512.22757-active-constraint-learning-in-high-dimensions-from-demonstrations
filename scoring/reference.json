@@ -5,11 +5,20 @@
       "weight": 1.0,
       "primary_metric": "accuracy",
       "metrics": {
-        "accuracy": {"higher_is_better": true, "coefficient": 1.0},
+        "accuracy": {
+          "higher_is_better": true,
+          "coefficient": 1.0,
+          "description": "Overall safe/unsafe classification accuracy on the scored boundary-band slice."
+        },
         "balanced_accuracy": {
           "higher_is_better": true,
           "coefficient": 0.5,
           "description": "Mean of safe-state and unsafe-state recall on the boundary-band split, which catches class-balance shortcuts."
+        },
+        "near_boundary_balanced_accuracy": {
+          "higher_is_better": true,
+          "coefficient": 0.6,
+          "description": "Balanced accuracy restricted to states closest to the inferred obstacle boundary, where recovery quality is hardest to fake with coarse rules."
         },
         "safe_recall": {
           "higher_is_better": true,
@@ -21,7 +30,11 @@
           "coefficient": 0.25,
           "description": "Fraction of truly unsafe boundary-band states classified as unsafe, preserving obstacle-detection quality."
         },
-        "n_demos": {"higher_is_better": false, "coefficient": -0.05}
+        "n_demos": {
+          "higher_is_better": false,
+          "coefficient": -0.05,
+          "description": "Number of requested demonstrations, penalizing methods that improve classification only by using a larger query budget."
+        }
       },
       "results": {
         "random_baseline": {
