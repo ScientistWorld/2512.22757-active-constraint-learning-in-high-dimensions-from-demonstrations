@@ -10,4 +10,4 @@ The paper compares active querying against a random-sampling baseline. In the ma
 
 ## Evaluation Protocol
 
-Run both the proposed method and the random-query baseline with the same initial demonstrations, iteration count, start/goal query budget, trajectory horizon, and evaluation grid. Each method writes prediction artifacts under `outputs/`; `scripts/evaluate.sh` reads those artifacts and writes `scoring/scores.json`.
+Run both the proposed method and the random-query baseline with the same initial demonstrations, iteration count, start/goal query budget, trajectory horizon, and boundary-focused evaluation grid. The boundary-focused grid keeps the scaled benchmark non-trivial by emphasizing the region where the paper reports most false-positive and false-negative errors. Each method writes prediction artifacts under `outputs/`; `scripts/evaluate.sh` reads those artifacts and writes `scoring/scores.json`.

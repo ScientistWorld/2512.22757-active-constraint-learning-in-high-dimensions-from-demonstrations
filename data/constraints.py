@@ -49,10 +49,10 @@ def labels_for(points: np.ndarray, constraint_name: str = "circle") -> np.ndarra
 
 
 def make_eval_grid(n_per_axis: int = 61) -> np.ndarray:
-    xs = np.linspace(BOUNDS[0, 0], BOUNDS[0, 1], n_per_axis)
-    ys = np.linspace(BOUNDS[1, 0], BOUNDS[1, 1], n_per_axis)
-    xx, yy = np.meshgrid(xs, ys)
-    return np.column_stack([xx.ravel(), yy.ravel()])
+    radii = np.linspace(0.55, 1.60, n_per_axis)
+    angles = np.linspace(-np.pi, np.pi, n_per_axis, endpoint=False)
+    rr, tt = np.meshgrid(radii, angles)
+    return np.column_stack([rr.ravel() * np.cos(tt.ravel()), rr.ravel() * np.sin(tt.ravel())])
 
 
 def default_initial_pairs() -> list[tuple[list[float], list[float]]]:

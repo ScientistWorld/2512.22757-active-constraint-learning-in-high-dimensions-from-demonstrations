@@ -119,13 +119,15 @@ def unpack_path(flat: np.ndarray, start: np.ndarray, goal: np.ndarray, horizon: 
 
 
 def generate_demo(start: np.ndarray, goal: np.ndarray, g_func, horizon: int, rng: np.random.Generator) -> np.ndarray | None:
+    if np.any(g_func(np.vstack([start, goal])) > 0.0):
+        return None
     line = np.linspace(start, goal, horizon)
     angle = rng.uniform(0, 2 * np.pi)
     bow = np.column_stack([np.sin(np.linspace(0, np.pi, horizon)) * np.cos(angle), np.sin(np.linspace(0, np.pi, horizon)) * np.sin(angle)])
     best = None
     for scale in [0.0, 0.35, -0.35, 0.70, -0.70, 1.05, -1.05]:
         init = (line + scale * bow)[1:-1].ravel()
-        cons = [{"type": "ineq", "fun": lambda z, t=t: -g_func(unpack_path(z, start, goal, horizon)[t : t + 1])[0]} for t in range(1, horizon - 1)]
+        cons = [{"type": "ineq", "fun": lambda z, t=t: -g_func(unpack_path(z, start, goal, horizon)[t : t + 1])[0]} for t in range(horizon)]
         res = minimize(
             smoothness_objective,
             init,
@@ -201,16 +203,19 @@ def active_queries(gp: GPModel, rng: np.random.Generator, n_pairs: int, n_featur
                 center = k_mi - 0.12 * grad
             safe = []
             for sign in (-1.0, 1.0):
-                for tau in np.linspace(0.15, 2.5, 80):
+                chosen = None
+                for tau in np.linspace(0.35, 2.6, 90):
                     cand = np.clip(center + sign * tau * direction, -1.95, 1.95)
                     m, v = gp.mean_var(cand)
                     prob_safe = ndtr((-m[0]) / np.sqrt(v[0]))
-                    if sample_fn(cand)[0] <= -delta and prob_safe >= 0.50:
-                        safe.append(cand)
-                        break
+                    if sample_fn(cand)[0] <= -delta and prob_safe >= 0.30:
+                        chosen = cand
+                if chosen is None:
+                    chosen = np.clip(center + sign * 2.1 * direction, -1.95, 1.95)
+                safe.append(chosen)
             if len(safe) == 2:
                 segment = np.linspace(safe[0], safe[1], 25)
-                if np.max(sample_fn(segment)) > delta:
+                if np.max(sample_fn(segment)) > -delta:
                     pairs.append((safe[0], safe[1]))
             if len(pairs) >= n_pairs:
                 return pairs
@@ -260,17 +265,22 @@ def run_experiment(args: argparse.Namespace) -> dict:
         grid = make_eval_grid(args.eval_grid)
         pred = predict_grid(gp, grid)
         true = (g_func(grid) <= 0.0).astype(int)
-        history.append({"iteration": iteration, "accuracy": float(np.mean(pred == true)), "n_demos": len(demos), "n_tight": int(len(tp))})
+        entry = {"iteration": iteration, "accuracy": float(np.mean(pred == true)), "n_demos": len(demos), "n_tight": int(len(tp))}
         if iteration == args.iterations - 1:
+            history.append(entry)
             break
         if args.mode == "active":
             pairs = active_queries(gp, rng, args.pairs_per_iter, args.n_features, args.alpha, args.delta)
         else:
             pairs = random_safe_pairs(rng, g_func, args.pairs_per_iter)
+        accepted = 0
         for start, goal in pairs:
             path = generate_demo(start, goal, g_func, args.horizon, rng)
             if path is not None:
                 demos.append(path)
+                accepted += 1
+        entry.update({"n_pairs_proposed": len(pairs), "n_pairs_accepted": accepted})
+        history.append(entry)
 
     mean, var = gp.mean_var(grid)
     pred = (mean <= 0.0).astype(int)
