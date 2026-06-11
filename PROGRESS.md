@@ -7,7 +7,7 @@
 - `scripts/reproduce.sh` runs the baseline, GP-ACL method, and evaluator end to end inside the container.
 - `python validate.py --reference-only` passes after staging source files.
 - `python validate.py --compare` passes with reproduced scores in `scoring/scores.json`.
-- Current milestone: `core_claim`.
+- Current milestone: `method_runs` for the revised implementation; the previous `core_claim` score must be revalidated after strengthening posterior sampling and GP fitting.
 
 ## Results
 
@@ -20,6 +20,7 @@
 - Job `1f14600a-6d2` completed on the narrowed +/-0.12 boundary-band benchmark and supports the core claim: GP-ACL scored 0.9492 accuracy versus 0.9371 for the random-query baseline with the same 12 demonstrations. The random baseline is below 95%, so the task is non-trivial.
 - Continuation audit found that `eval/` was trusting the method-written `truth` field in output artifacts. Fixed `eval/evaluate_outputs.py` to recompute the evaluation grid and labels from `data/constraints.py` while reading only predictions and metadata from method outputs. A CPU container job is required to revalidate `core_claim` after this scoring-path change.
 - Job `fc134803-4b7` completed after the evaluator fix and revalidated the core claim: GP-ACL scored 0.9492 accuracy versus 0.9371 for the random-query baseline, with both methods using 12 demonstrations.
+- Iteration 3 strengthened the GP implementation to use the conditioned random Fourier feature posterior-sample formula from Eq. (16), marginal-likelihood hyperparameter fitting, a constrained solve for the maximally-informative sampled-boundary state, and a 2D hyperplane-direction search. A CPU validation job is being submitted to refresh `scoring/scores.json`.
 
 ## Remaining
 
@@ -45,4 +46,4 @@
 - The core benchmark now uses a scaled nonlinear 2D wavy obstacle as a CPU-feasible analogue of the paper's complex unicycle constraint setting.
 - Evaluation uses a boundary-band grid rather than uniformly covering the full square. This is a scale/protocol adjustment to avoid a trivial synthetic benchmark dominated by easy far-from-boundary safe points. Active query search still uses a separate broad unlabeled grid so the method does not receive the true boundary as a query prior.
 - The paper solves several query subproblems with IPOPT/CasADi. This reproduction uses grid and line searches for the same subproblem objectives and constraints, preserving the GP posterior sampling, maximally informative boundary selection, and parallel/perpendicular start-goal construction.
-- The paper optimizes GP hyperparameters by marginal likelihood. This initial reproduction uses fixed RBF hyperparameters to reduce setup risk; the GP still conditions jointly on boundary values and derivative observations.
+- The GP now optimizes RBF lengthscale, signal scale, and observation noise by marginal likelihood with bounded L-BFGS-B and falls back to the previous defaults only if optimization fails.

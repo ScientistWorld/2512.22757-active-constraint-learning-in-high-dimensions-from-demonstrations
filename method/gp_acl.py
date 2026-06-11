@@ -34,9 +34,9 @@ class GPModel:
     noise: float = 2e-4
 
     def __post_init__(self) -> None:
-        k = self._obs_cov(self.x_train, self.x_train)
-        k.flat[:: k.shape[0] + 1] += self.noise
-        self.alpha = np.linalg.solve(k, self.y_train)
+        self.k_noise = self._obs_cov(self.x_train, self.x_train)
+        self.k_noise.flat[:: self.k_noise.shape[0] + 1] += self.noise
+        self.alpha = np.linalg.solve(self.k_noise, self.y_train)
 
     def _rbf(self, xa: np.ndarray, xb: np.ndarray) -> np.ndarray:
         diff = xa[:, None, :] - xb[None, :, :]
@@ -75,7 +75,7 @@ class GPModel:
         xq = np.atleast_2d(x_query)
         k_star = np.vstack([self._cov_obs_func(self.x_train[i : i + 1], xq, typ) for i, typ in enumerate(self.obs_types)])
         mean = k_star.T @ self.alpha
-        v = np.linalg.solve(self._obs_cov(self.x_train, self.x_train) + np.eye(len(self.obs_types)) * self.noise, k_star)
+        v = np.linalg.solve(self.k_noise, k_star)
         var = np.maximum(self.signal**2 - np.sum(k_star * v, axis=0), 1e-8)
         return mean, var
 
@@ -96,14 +96,41 @@ class GPModel:
         omega = rng.normal(0.0, 1.0 / self.lengthscale, size=(n_features, 2))
         phase = rng.uniform(0.0, 2 * np.pi, size=n_features)
         weights = rng.normal(0.0, 1.0, size=n_features)
+        phi_obs = self._rff_observations(self.x_train, self.obs_types, omega, phase) @ weights
+        posterior_correction = np.linalg.solve(self.k_noise, phi_obs)
 
         def evaluate(x_query: np.ndarray) -> np.ndarray:
             xq = np.atleast_2d(x_query)
             mean, _ = self.mean_var(xq)
-            features = np.sqrt(2.0 / n_features) * np.cos(xq @ omega.T + phase)
-            return mean + alpha * (features @ weights)
+            features = self._rff_values(xq, omega, phase)
+            k_star = np.vstack([self._cov_obs_func(self.x_train[i : i + 1], xq, typ) for i, typ in enumerate(self.obs_types)])
+            conditioned_sample = features @ weights - k_star.T @ posterior_correction
+            return mean + alpha * conditioned_sample
 
         return evaluate
+
+    def _rff_values(self, x: np.ndarray, omega: np.ndarray, phase: np.ndarray) -> np.ndarray:
+        scale = self.signal * np.sqrt(2.0 / omega.shape[0])
+        return scale * np.cos(np.atleast_2d(x) @ omega.T + phase)
+
+    def _rff_observations(
+        self,
+        x: np.ndarray,
+        obs_types: list[tuple[str, int]],
+        omega: np.ndarray,
+        phase: np.ndarray,
+    ) -> np.ndarray:
+        x2 = np.atleast_2d(x)
+        values = self._rff_values(x2, omega, phase)
+        angles = x2 @ omega.T + phase
+        deriv_scale = -self.signal * np.sqrt(2.0 / omega.shape[0]) * np.sin(angles)
+        out = np.empty((len(obs_types), omega.shape[0]), dtype=float)
+        for i, typ in enumerate(obs_types):
+            if typ[0] == "value":
+                out[i] = values[i]
+            else:
+                out[i] = deriv_scale[i] * omega[:, typ[1]]
+        return out
 
 
 def smoothness_objective(flat: np.ndarray, start: np.ndarray, goal: np.ndarray, horizon: int) -> float:
@@ -158,7 +185,7 @@ def kkt_tight_points(path: np.ndarray, residual_quantile: float = 0.70) -> tuple
     return points, grads
 
 
-def train_gp(tight_points: np.ndarray, tight_grads: np.ndarray) -> GPModel:
+def train_gp(tight_points: np.ndarray, tight_grads: np.ndarray, optimize_hyperparams: bool = True) -> GPModel:
     xs: list[np.ndarray] = []
     ys: list[float] = []
     obs: list[tuple[str, int]] = []
@@ -170,7 +197,46 @@ def train_gp(tight_points: np.ndarray, tight_grads: np.ndarray) -> GPModel:
             xs.append(p)
             ys.append(float(g[d]))
             obs.append(("deriv", d))
-    return GPModel(np.asarray(xs), np.asarray(ys), obs)
+    x_arr = np.asarray(xs)
+    y_arr = np.asarray(ys)
+    lengthscale, signal, noise = 0.55, 1.0, 2e-4
+    if optimize_hyperparams and len(y_arr) >= 9:
+        lengthscale, signal, noise = fit_gp_hyperparameters(x_arr, y_arr, obs, lengthscale, signal, noise)
+    return GPModel(x_arr, y_arr, obs, lengthscale=lengthscale, signal=signal, noise=noise)
+
+
+def fit_gp_hyperparameters(
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    obs_types: list[tuple[str, int]],
+    lengthscale: float,
+    signal: float,
+    noise: float,
+) -> tuple[float, float, float]:
+    """Optimize the GP marginal log likelihood used in the paper's GP fitting step."""
+
+    def objective(log_params: np.ndarray) -> float:
+        ls, sig, sig_noise = np.exp(log_params)
+        try:
+            gp = GPModel(x_train, y_train, obs_types, lengthscale=ls, signal=sig, noise=sig_noise + 1e-8)
+            sign, logdet = np.linalg.slogdet(gp.k_noise)
+            if sign <= 0:
+                return 1e12
+            return float(0.5 * y_train @ gp.alpha + 0.5 * logdet + 0.5 * len(y_train) * np.log(2 * np.pi))
+        except np.linalg.LinAlgError:
+            return 1e12
+
+    res = minimize(
+        objective,
+        np.log([lengthscale, signal, noise]),
+        method="L-BFGS-B",
+        bounds=[(np.log(0.18), np.log(1.5)), (np.log(0.3), np.log(3.0)), (np.log(1e-5), np.log(2e-2))],
+        options={"maxiter": 45, "ftol": 1e-6},
+    )
+    if not res.success or not np.isfinite(res.fun):
+        return lengthscale, signal, noise
+    ls, sig, sig_noise = np.exp(res.x)
+    return float(ls), float(sig), float(sig_noise + 1e-8)
 
 
 def predict_grid(gp: GPModel, grid: np.ndarray) -> np.ndarray:
@@ -187,7 +253,7 @@ def active_queries(gp: GPModel, rng: np.random.Generator, n_pairs: int, n_featur
         sample = sample_fn(grid)
         boundary = np.where(np.abs(sample) <= np.quantile(np.abs(sample), 0.12))[0]
         boundary = boundary[mean[boundary] <= np.quantile(mean, 0.8)] if len(boundary) else np.arange(len(grid))
-        k_mi = grid[boundary[np.argmax(var[boundary])]]
+        k_mi = solve_maximally_informative_state(gp, sample_fn, grid, boundary, var)
         grad = finite_difference_grad(sample_fn, k_mi)
         norm = np.linalg.norm(grad)
         if norm < 1e-6:
@@ -196,11 +262,12 @@ def active_queries(gp: GPModel, rng: np.random.Generator, n_pairs: int, n_featur
         if norm < 1e-6:
             continue
         grad = grad / norm
-        perp = np.array([-grad[1], grad[0]])
-        for direction in (perp, grad):
-            center = k_mi + 0.12 * grad
-            if sample_fn(center)[0] <= 0.0:
-                center = k_mi - 0.12 * grad
+        eta = 0.12
+        center = k_mi + eta * grad
+        if sample_fn(center)[0] <= 0.0:
+            center = k_mi - eta * grad
+        perp = solve_hyperplane_direction(sample_fn, center, np.array([-grad[1], grad[0]]))
+        for direction, beta_by_sign in ((perp, {-1.0: 0.55, 1.0: 0.55}), (grad, {-1.0: 0.30, 1.0: 0.55})):
             safe = []
             for sign in (-1.0, 1.0):
                 chosen = None
@@ -208,8 +275,9 @@ def active_queries(gp: GPModel, rng: np.random.Generator, n_pairs: int, n_featur
                     cand = np.clip(center + sign * tau * direction, -1.95, 1.95)
                     m, v = gp.mean_var(cand)
                     prob_safe = ndtr((-m[0]) / np.sqrt(v[0]))
-                    if sample_fn(cand)[0] <= -delta and prob_safe >= 0.30:
+                    if sample_fn(cand)[0] <= -delta and prob_safe >= beta_by_sign[sign]:
                         chosen = cand
+                        break
                 if chosen is None:
                     chosen = np.clip(center + sign * 2.1 * direction, -1.95, 1.95)
                 safe.append(chosen)
@@ -220,6 +288,49 @@ def active_queries(gp: GPModel, rng: np.random.Generator, n_pairs: int, n_featur
             if len(pairs) >= n_pairs:
                 return pairs
     return pairs
+
+
+def solve_maximally_informative_state(
+    gp: GPModel,
+    sample_fn,
+    grid: np.ndarray,
+    boundary: np.ndarray,
+    grid_var: np.ndarray,
+) -> np.ndarray:
+    """Problem 3: maximize posterior covariance subject to sampled constraint tightness."""
+    starts = grid[boundary[np.argsort(grid_var[boundary])[-5:]]] if len(boundary) else grid[np.argsort(grid_var)[-5:]]
+    best_x = np.asarray(starts[-1], dtype=float)
+    best_var = -np.inf
+    for start in starts:
+        res = minimize(
+            lambda z: -float(gp.mean_var(np.asarray(z))[1][0]),
+            start,
+            method="SLSQP",
+            bounds=[(-1.95, 1.95), (-1.95, 1.95)],
+            constraints=[{"type": "eq", "fun": lambda z: float(sample_fn(np.asarray(z))[0])}],
+            options={"maxiter": 80, "ftol": 1e-7, "disp": False},
+        )
+        cand = res.x if res.success and abs(sample_fn(res.x)[0]) < 5e-3 else start
+        cand_var = float(gp.mean_var(cand)[1][0])
+        if cand_var > best_var:
+            best_x = np.asarray(cand, dtype=float)
+            best_var = cand_var
+    return np.clip(best_x, -1.95, 1.95)
+
+
+def solve_hyperplane_direction(sample_fn, center: np.ndarray, perp: np.ndarray) -> np.ndarray:
+    """Problem 4 in 2D: choose the hyperplane side with the longest unsafe segment."""
+    perp = perp / max(np.linalg.norm(perp), 1e-8)
+    best_sign, best_tau = 1.0, -np.inf
+    for sign in (-1.0, 1.0):
+        last_unsafe = 0.0
+        for tau in np.linspace(0.05, 2.6, 80):
+            cand = np.clip(center + sign * tau * perp, -1.95, 1.95)
+            if sample_fn(cand)[0] > 0.0:
+                last_unsafe = tau
+        if last_unsafe > best_tau:
+            best_sign, best_tau = sign, last_unsafe
+    return best_sign * perp
 
 
 def finite_difference_grad(func, x: np.ndarray, eps: float = 1e-4) -> np.ndarray:
