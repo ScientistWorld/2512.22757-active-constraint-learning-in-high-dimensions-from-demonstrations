@@ -6,6 +6,8 @@
 - Source code is in place for a scaled 2D obstacle-recovery reproduction.
 - `scripts/reproduce.sh` runs the baseline, GP-ACL method, and evaluator end to end inside the container.
 - `python validate.py --reference-only` passes after staging source files.
+- `python validate.py --compare` passes with reproduced scores in `scoring/scores.json`.
+- Current milestone: `core_claim`.
 
 ## Results
 
@@ -15,12 +17,12 @@
 - Job `38040198-ec8` completed on the wavy obstacle, but still did not support the core claim: GP-ACL scored 0.9893 with 6 accepted demonstrations while the random baseline scored 0.9946 with 12 demonstrations.
 - Job `1d7a4659-253` completed after relaxing active endpoint acceptance. GP-ACL used the full 12-demonstration budget and outperformed random sampling, 0.9879 versus 0.9863 accuracy, but the random baseline remained above the 95% non-triviality threshold.
 - Job `a8c16692-709` completed on the separated boundary-band score. GP-ACL again outperformed random sampling, 0.9686 versus 0.9597 accuracy with the same 12 demonstrations, but the random baseline was still slightly above the 95% non-triviality threshold.
+- Job `1f14600a-6d2` completed on the narrowed +/-0.12 boundary-band benchmark and supports the core claim: GP-ACL scored 0.9492 accuracy versus 0.9371 for the random-query baseline with the same 12 demonstrations. The random baseline is below 95%, so the task is non-trivial.
 
 ## Remaining
 
-- Run the boundary-band nonlinear wavy obstacle benchmark and verify that the random baseline is below the non-triviality threshold and that active querying improves over it.
-- Inspect active-query diagnostics (`n_pairs_proposed` and `n_pairs_accepted`) if GP-ACL still underperforms.
-- After successful run, update milestone to `method_runs` or `core_claim` as justified by the results.
+- Higher milestones would require reproducing additional paper settings such as the circle constraint, double-integrator/unicycle dynamics variants, or the higher-dimensional quadcopter/robot-arm experiments.
+- The current environment is ready for future agents to optimize the scaled nonlinear 2D obstacle-recovery benchmark through `scripts/reproduce.sh` and `scripts/evaluate.sh`.
 
 ## Issues
 
@@ -31,6 +33,7 @@
 - The first wavy run still let the random baseline exceed 99% accuracy and accepted too few active demonstrations. The grid now emphasizes boundary states and active query selection now falls back to far safe endpoints when strict probabilistic safety rejects too many candidates.
 - The second wavy run confirmed that active query selection can beat random under the same demonstration budget, but the evaluation grid was still too broad. Evaluation is now separated from the method's candidate-query grid and focuses on a narrow band around the benchmark obstacle boundary.
 - The first separated boundary-band run was close but still too easy for the random baseline. The held-out band is narrowed again from radius offset +/-0.20 to +/-0.12 around the benchmark boundary.
+- The narrowed boundary-band run reached `core_claim`; no further changes are needed for the minimum reproduction.
 
 ## Deviations from Paper
 

@@ -27,8 +27,6 @@
 #   milestone: core_claim
 #   notes: "Reproduced the core claim. Environment packaged."
 
-action: submit
-gpus: 0
-test: true
-milestone: method_runs
-notes: "Run narrowed +/-0.12 boundary-band wavy benchmark; tests whether random falls below 95% while GP-ACL remains better under the same demo budget."
+action: done
+milestone: core_claim
+notes: "Reproduced the core GP-ACL claim on a non-trivial scaled boundary-band obstacle-recovery benchmark: GP-ACL beats random sampling with the same demo budget."

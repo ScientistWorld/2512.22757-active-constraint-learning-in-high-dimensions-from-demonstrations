@@ -1,6 +1,6 @@
 # Reproduction Milestones
 
-**Current: method_runs**
+**Current: core_claim**
 
 <!-- Milestone levels (update "Current" above as you progress):
   none             — just started, no meaningful progress yet
@@ -24,6 +24,11 @@
 ### [2026-06-11 00:00] - method_runs
 - Job `1181296e-3cc` ran the proposed method, random baseline, and evaluator end to end.
 - The first completed benchmark was too easy and did not support the core claim, so the next run uses a harder nonlinear obstacle.
+
+### [2026-06-11 16:28] - core_claim
+- Job `1f14600a-6d2` ran the narrowed boundary-band wavy obstacle benchmark end to end.
+- GP-ACL outperformed the random-query baseline with the same 12-demonstration budget: 0.9492 versus 0.9371 accuracy.
+- The random baseline stayed below the 95% non-triviality threshold, so the scaled benchmark can distinguish active constraint learning from random sampling.
 
 ## Stop Justification
 - Not stopped.
