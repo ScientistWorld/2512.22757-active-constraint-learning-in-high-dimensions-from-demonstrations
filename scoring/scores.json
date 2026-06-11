@@ -3,11 +3,11 @@
     "scaled_2d_obstacle_recovery": {
       "results": {
         "gp_acl": {
-          "accuracy": 0.9927438860521365,
-          "n_demos": 12.0
+          "accuracy": 0.9892502015587208,
+          "n_demos": 6.0
         },
         "random_baseline": {
-          "accuracy": 0.9943563558183284,
+          "accuracy": 0.9946251007793604,
           "n_demos": 12.0
         }
       }
