@@ -21,6 +21,7 @@
 - Continuation audit found that `eval/` was trusting the method-written `truth` field in output artifacts. Fixed `eval/evaluate_outputs.py` to recompute the evaluation grid and labels from `data/constraints.py` while reading only predictions and metadata from method outputs. A CPU container job is required to revalidate `core_claim` after this scoring-path change.
 - Job `fc134803-4b7` completed after the evaluator fix and revalidated the core claim: GP-ACL scored 0.9492 accuracy versus 0.9371 for the random-query baseline, with both methods using 12 demonstrations.
 - Iteration 3 strengthened the GP implementation to use the conditioned random Fourier feature posterior-sample formula from Eq. (16), marginal-likelihood hyperparameter fitting, a constrained solve for the maximally-informative sampled-boundary state, and a 2D hyperplane-direction search. A CPU validation job is being submitted to refresh `scoring/scores.json`.
+- Continuation audit found no new method/eval separation issue, but `scripts/reproduce.sh` could mix stale output artifacts with a partially rerun baseline because `baseline.sh` evaluates before `method.sh` refreshes the active artifact. The end-to-end script now removes the two managed output JSON files and `scoring/scores.json` before rerunning.
 
 ## Remaining
 
@@ -39,6 +40,7 @@
 - The first separated boundary-band run was close but still too easy for the random baseline. The held-out band is narrowed again from radius offset +/-0.20 to +/-0.12 around the benchmark boundary.
 - The narrowed boundary-band run reached `core_claim`; no further changes are needed for the minimum reproduction.
 - The login-node Python environment still lacks `numpy`, so the strengthened evaluator could not be rerun locally through `scripts/evaluate.sh`; this is expected to work inside the container where `environment/setup.sh` installs `numpy` and `scipy`.
+- The latest strengthened method has not yet produced fresh container scores in this continuation; a CPU test job is required before restoring `core_claim`.
 
 ## Deviations from Paper
 

@@ -14,5 +14,9 @@
 - Replaced the active query boundary pick with a constrained solve for the maximally-informative tight state, and added the 2D version of the hyperplane-direction search.
 - The previous core-claim scores are now stale until the revised method is rerun in the compute container.
 
+### [2026-06-11 17:00] - method_runs
+- Audited method and evaluation separation after milestone reset.
+- Fixed `scripts/reproduce.sh` to clear managed output artifacts before an end-to-end rerun, preventing stale scores if a later stage fails.
+
 ## Stop Justification
 - Not stopped. A CPU validation job is being submitted to rerun the revised reproduction.

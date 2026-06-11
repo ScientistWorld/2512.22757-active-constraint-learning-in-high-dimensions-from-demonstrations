@@ -19,6 +19,8 @@ set -e
 cd /home/user
 export PYTHONPATH=/home/user:${PYTHONPATH:-}
 
+rm -f outputs/gp_acl_wavy.json outputs/random_baseline_wavy.json scoring/scores.json
+
 bash scripts/baseline.sh
 bash scripts/method.sh
 bash scripts/evaluate.sh

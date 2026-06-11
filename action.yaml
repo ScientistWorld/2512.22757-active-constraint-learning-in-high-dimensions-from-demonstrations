@@ -5,4 +5,4 @@ action: submit
 gpus: 0
 test: true
 milestone: method_runs
-notes: "CPU test job reruns scripts/reproduce.sh after strengthening GP-ACL posterior sampling, GP hyperparameter fitting, and constrained active-query solves. Expected outcome is refreshed scores.json and revalidation of core_claim."
+notes: "CPU test job reruns scripts/reproduce.sh after strengthening GP-ACL posterior sampling, GP hyperparameter fitting, constrained active-query solves, and stale-output cleanup. Expected outcome is refreshed scores.json and revalidation of core_claim."
