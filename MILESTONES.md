@@ -23,7 +23,7 @@
 - Diagnosed the weak result as active query under-acceptance: GP-ACL ended with 10 demonstrations while the baseline used 12.
 - Updated the method driver to keep issuing active acquisition rounds until the requested accepted-demonstration budget is filled, bounded by `--max-query-rounds`.
 
-### [2026-06-11 17:25] - core_claim
+### [2026-06-11 17:35] - core_claim
 - Job `13644732-d99` reran successfully after the equal-budget active-query fix.
 - GP-ACL scored 0.9497 accuracy versus 0.9258 for random sampling on the scaled nonlinear 2D boundary-band obstacle recovery task.
 - Both methods used 12 demonstrations, so the result supports the paper's central claim that active constraint-learning queries improve recovery without increasing the demonstration budget.
@@ -31,6 +31,11 @@
 ### [2026-06-11 17:30] - core_claim
 - Expanded evaluator reporting to include the constraint-balance metrics declared in `scoring/reference.json`.
 - Submitting a CPU validation job to regenerate `scoring/scores.json` and rerun `python validate.py --compare` through the standard reproduction path.
+
+### [2026-06-11 17:25] - core_claim
+- Added a second scaled nonlinear 2D obstacle setting (`scaled_2d_pinched_recovery`) to test transfer beyond the original wavy boundary benchmark.
+- Updated the standard run scripts and evaluator to score both settings from method-written prediction artifacts.
+- Submitting a CPU validation job; the current verified milestone remains `core_claim` until those results are available.
 
 ## Stop Justification
 - Completed at milestone `core_claim`.

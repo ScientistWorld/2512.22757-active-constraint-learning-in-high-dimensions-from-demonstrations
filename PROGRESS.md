@@ -8,6 +8,7 @@
 - `python validate.py --reference-only` passes after staging source files.
 - `python validate.py --compare` passes with reproduced scores in `scoring/scores.json`.
 - Current milestone: `core_claim`. Job `13644732-d99` reproduced the central claim on the scaled nonlinear 2D boundary-band obstacle task with equal demonstration budgets.
+- Added a second scaled nonlinear 2D obstacle family (`pinched`) and expanded the standard scripts/evaluator to run both settings. This is pending a CPU container validation job before any milestone higher than `core_claim` can be claimed.
 
 ## Results
 
@@ -28,10 +29,12 @@
 - Updated the evaluator to emit all metrics declared in `scoring/reference.json`: balanced accuracy, near-boundary balanced accuracy, safe recall, unsafe recall, and demonstration count. A CPU validation job is being submitted to regenerate `scoring/scores.json` through `scripts/reproduce.sh`.
 - Final verification regenerated `scoring/scores.json` from saved prediction artifacts with the expanded metric set. Current scored results are GP-ACL accuracy 0.9495 and balanced accuracy 0.9498 versus random baseline accuracy 0.9245 and balanced accuracy 0.9247, both with 12 demonstrations.
 - Removed tracked scheduler job logs and raw trajectory transcript files from git; those generated artifacts are already covered by `.gitignore`.
+- Prepared a `core_claim_plus` candidate by adding `scaled_2d_pinched_recovery`, a second boundary-band obstacle-recovery setting with the same GP-ACL and random-query procedures. A CPU validation job will rerun `scripts/reproduce.sh` and `python validate.py --compare` to determine whether the active-query advantage holds on both settings.
 
 ## Remaining
 
-- Higher milestones would require reproducing additional paper settings such as the double-integrator/unicycle dynamics variants, the higher-dimensional quadcopter/robot-arm experiments, or a second non-trivial constraint family with paper-aligned reference targets.
+- If the pending `pinched` run shows GP-ACL beating the random baseline on a non-trivial task, update `MILESTONES.md` to `core_claim_plus`; otherwise keep `core_claim` and either tune the second setting or remove it from the scored target set.
+- Higher milestones beyond `core_claim_plus` would require reproducing additional paper settings such as the double-integrator/unicycle dynamics variants or the higher-dimensional quadcopter/robot-arm experiments.
 - The current environment is ready for future agents to optimize the scaled nonlinear 2D obstacle-recovery benchmark through `scripts/reproduce.sh` and `scripts/evaluate.sh`.
 - Higher milestones would require broadening beyond the current radial 2D benchmark family. The current code is intentionally packaged at `core_claim` rather than claiming unsupported generality.
 - No required work remains for `core_claim`. Higher milestones would require adding more paper settings.
@@ -53,6 +56,7 @@
 
 - The paper evaluates double integrator, unicycle, quadcopter, and robot-arm systems with horizons up to 30. This reproduction starts with a scaled 2D point-trajectory setting and horizon 24 to keep the first job CPU-feasible.
 - The core benchmark now uses a scaled nonlinear 2D wavy obstacle as a CPU-feasible analogue of the paper's complex unicycle constraint setting.
+- The pending second benchmark uses another scaled radial nonlinear obstacle to test whether the active-query advantage persists beyond the first boundary shape.
 - Evaluation uses a boundary-band grid rather than uniformly covering the full square. This is a scale/protocol adjustment to avoid a trivial synthetic benchmark dominated by easy far-from-boundary safe points. Active query search still uses a separate broad unlabeled grid so the method does not receive the true boundary as a query prior.
 - The paper solves several query subproblems with IPOPT/CasADi. This reproduction uses grid and line searches for the same subproblem objectives and constraints, preserving the GP posterior sampling, maximally informative boundary selection, and parallel/perpendicular start-goal construction.
 - The GP now optimizes RBF lengthscale, signal scale, and observation noise by marginal likelihood with bounded L-BFGS-B and falls back to the previous defaults only if optimization fails.

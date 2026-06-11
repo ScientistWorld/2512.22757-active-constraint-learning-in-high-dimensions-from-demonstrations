@@ -37,7 +37,13 @@ def confusion(pred: np.ndarray, truth: np.ndarray) -> dict[str, float]:
     }
 
 
-def load_result(path: Path) -> dict:
+EXPERIMENT_BY_CONSTRAINT = {
+    "wavy": "scaled_2d_obstacle_recovery",
+    "pinched": "scaled_2d_pinched_recovery",
+}
+
+
+def load_result(path: Path) -> tuple[str, str, dict[str, float]]:
     data = json.loads(path.read_text())
     for key in ("method", "predictions"):
         if key not in data:
@@ -63,26 +69,42 @@ def load_result(path: Path) -> dict:
         "unsafe_recall": all_metrics["unsafe_recall"],
         "n_demos": float(data.get("n_demos", 0)),
     }
-    return data["method"], metrics
+    experiment = EXPERIMENT_BY_CONSTRAINT.get(constraint_name, f"scaled_2d_{constraint_name}_recovery")
+    return experiment, data["method"], metrics
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--experiment", default="scaled_2d_obstacle_recovery")
-    parser.add_argument("--active", type=Path, default=Path("outputs/gp_acl_wavy.json"))
-    parser.add_argument("--baseline", type=Path, default=Path("outputs/random_baseline_wavy.json"))
+    parser.add_argument("--experiment", default=None)
+    parser.add_argument("--active", type=Path, default=None)
+    parser.add_argument("--baseline", type=Path, default=None)
+    parser.add_argument("--artifacts", type=Path, nargs="*", default=None)
     parser.add_argument("--output", type=Path, default=Path("scoring/scores.json"))
     args = parser.parse_args()
 
-    results = {}
-    for path in (args.active, args.baseline):
+    if args.artifacts is not None:
+        artifact_paths = args.artifacts
+    elif args.active is not None or args.baseline is not None:
+        artifact_paths = [p for p in (args.active, args.baseline) if p is not None]
+    else:
+        artifact_paths = [
+            Path("outputs/gp_acl_wavy.json"),
+            Path("outputs/random_baseline_wavy.json"),
+            Path("outputs/gp_acl_pinched.json"),
+            Path("outputs/random_baseline_pinched.json"),
+        ]
+
+    experiments: dict[str, dict[str, dict[str, float]]] = {}
+    for path in artifact_paths:
         if path.exists():
-            name, metrics = load_result(path)
-            results[name] = metrics
-    if not results:
+            experiment, name, metrics = load_result(path)
+            if args.experiment is not None:
+                experiment = args.experiment
+            experiments.setdefault(experiment, {})[name] = metrics
+    if not experiments:
         raise SystemExit("No result artifacts found to evaluate.")
 
-    scores = {"experiments": {args.experiment: {"results": results}}}
+    scores = {"experiments": {name: {"results": results} for name, results in experiments.items()}}
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(scores, indent=2))
     print(json.dumps(scores, indent=2))

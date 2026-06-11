@@ -11,15 +11,17 @@ set -e
 cd /home/user
 export PYTHONPATH=/home/user:${PYTHONPATH:-}
 
-python method/gp_acl.py \
-  --mode active \
-  --constraint wavy \
-  --iterations 3 \
-  --pairs-per-iter 4 \
-  --horizon 24 \
-  --eval-grid 61 \
-  --n-features 300 \
-  --alpha 0.3 \
-  --output outputs/gp_acl_wavy.json
+for constraint in wavy pinched; do
+  python method/gp_acl.py \
+    --mode active \
+    --constraint "${constraint}" \
+    --iterations 3 \
+    --pairs-per-iter 4 \
+    --horizon 24 \
+    --eval-grid 61 \
+    --n-features 300 \
+    --alpha 0.3 \
+    --output "outputs/gp_acl_${constraint}.json"
+done
 
 bash scripts/evaluate.sh

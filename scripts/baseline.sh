@@ -18,14 +18,16 @@ set -e
 cd /home/user
 export PYTHONPATH=/home/user:${PYTHONPATH:-}
 
-python baseline/random_sampling.py \
-  --constraint wavy \
-  --iterations 3 \
-  --pairs-per-iter 4 \
-  --horizon 24 \
-  --eval-grid 61 \
-  --n-features 300 \
-  --alpha 0.3 \
-  --output outputs/random_baseline_wavy.json
+for constraint in wavy pinched; do
+  python baseline/random_sampling.py \
+    --constraint "${constraint}" \
+    --iterations 3 \
+    --pairs-per-iter 4 \
+    --horizon 24 \
+    --eval-grid 61 \
+    --n-features 300 \
+    --alpha 0.3 \
+    --output "outputs/random_baseline_${constraint}.json"
+done
 
 bash scripts/evaluate.sh
