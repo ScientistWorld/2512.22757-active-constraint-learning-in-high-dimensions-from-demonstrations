@@ -6,6 +6,21 @@
       "primary_metric": "accuracy",
       "metrics": {
         "accuracy": {"higher_is_better": true, "coefficient": 1.0},
+        "balanced_accuracy": {
+          "higher_is_better": true,
+          "coefficient": 0.5,
+          "description": "Mean of safe-state and unsafe-state recall on the boundary-band split, which catches class-balance shortcuts."
+        },
+        "safe_recall": {
+          "higher_is_better": true,
+          "coefficient": 0.25,
+          "description": "Fraction of truly safe boundary-band states classified as safe, preserving the feasible-region recovery objective."
+        },
+        "unsafe_recall": {
+          "higher_is_better": true,
+          "coefficient": 0.25,
+          "description": "Fraction of truly unsafe boundary-band states classified as unsafe, preserving obstacle-detection quality."
+        },
         "n_demos": {"higher_is_better": false, "coefficient": -0.05}
       },
       "results": {
