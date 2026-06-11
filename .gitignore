@@ -66,6 +66,7 @@ docker_*.tar.xz
 **/*.tar.xz
 
 # Swarm/worker artifacts
+jobs/
 trajectory/
 .empty_*/
 .git-shims/
