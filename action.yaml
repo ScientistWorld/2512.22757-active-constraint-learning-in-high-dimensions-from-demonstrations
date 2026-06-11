@@ -1,8 +1,6 @@
 # IMPORTANT: Once you set action to 'submit' or 'done', STOP immediately.
 # Do NOT sleep, poll, or wait for jobs. The system reads this file
 # only after your turn ends. Sleeping blocks the entire pipeline.
-action: submit
-gpus: 0
-test: true
-milestone: method_runs
-notes: "CPU test job reruns scripts/reproduce.sh after fixing active query under-acceptance so GP-ACL keeps sampling active queries until the requested accepted-demonstration budget is filled. Expected outcome is equal-budget fresh scores and possible restoration of core_claim."
+action: done
+milestone: core_claim
+notes: "Reproduced the core claim on the packaged scaled 2D obstacle-recovery benchmark. Final scores: GP-ACL accuracy 0.9497 vs random baseline 0.9258, both with 12 demonstrations; validation passes."

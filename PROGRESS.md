@@ -7,7 +7,7 @@
 - `scripts/reproduce.sh` runs the baseline, GP-ACL method, and evaluator end to end inside the container.
 - `python validate.py --reference-only` passes after staging source files.
 - `python validate.py --compare` passes with reproduced scores in `scoring/scores.json`.
-- Current milestone: `method_runs` for the revised implementation. Job `a86544e3-6dd` produced fresh valid scores, but the margin was too small to restore `core_claim`; the next job tests an equal-demonstration-budget active acquisition fix.
+- Current milestone: `core_claim`. Job `13644732-d99` reproduced the central claim on the scaled nonlinear 2D boundary-band obstacle task with equal demonstration budgets.
 
 ## Results
 
@@ -24,10 +24,11 @@
 - Continuation audit found no new method/eval separation issue, but `scripts/reproduce.sh` could mix stale output artifacts with a partially rerun baseline because `baseline.sh` evaluates before `method.sh` refreshes the active artifact. The end-to-end script now removes the two managed output JSON files and `scoring/scores.json` before rerunning.
 - Job `a86544e3-6dd` completed successfully with fresh artifacts after the stale-output cleanup. The result remains only `method_runs`: GP-ACL scored 0.9315 accuracy with 10 accepted demonstrations versus random sampling at 0.9258 with 12 demonstrations. This is a valid run, but the accuracy gap is too weak and the demonstration budgets are unequal.
 - The active method driver now keeps issuing paper-style active query rounds until it fills the requested accepted-demonstration budget, bounded by `--max-query-rounds`, and records whether the query budget was exhausted.
+- Job `13644732-d99` completed after the equal-budget active-query fix and restores `core_claim`: GP-ACL scored 0.9497 accuracy versus random sampling at 0.9258, with both methods using 12 demonstrations. The random baseline remains below 95%, so the scaled benchmark is non-trivial.
 
 ## Remaining
 
-- Higher milestones would require reproducing additional paper settings such as the circle constraint, double-integrator/unicycle dynamics variants, or the higher-dimensional quadcopter/robot-arm experiments.
+- Higher milestones would require reproducing additional paper settings such as the double-integrator/unicycle dynamics variants, the higher-dimensional quadcopter/robot-arm experiments, or a second non-trivial constraint family with paper-aligned reference targets.
 - The current environment is ready for future agents to optimize the scaled nonlinear 2D obstacle-recovery benchmark through `scripts/reproduce.sh` and `scripts/evaluate.sh`.
 - Higher milestones would require broadening beyond the current radial 2D benchmark family. The current code is intentionally packaged at `core_claim` rather than claiming unsupported generality.
 
@@ -42,7 +43,7 @@
 - The first separated boundary-band run was close but still too easy for the random baseline. The held-out band is narrowed again from radius offset +/-0.20 to +/-0.12 around the benchmark boundary.
 - The narrowed boundary-band run reached `core_claim`; no further changes are needed for the minimum reproduction.
 - The login-node Python environment still lacks `numpy`, so the strengthened evaluator could not be rerun locally through `scripts/evaluate.sh`; this is expected to work inside the container where `environment/setup.sh` installs `numpy` and `scipy`.
-- The latest strengthened method produced fresh scores in job `a86544e3-6dd`, but active query under-acceptance left GP-ACL with fewer demonstrations than the baseline and a thin accuracy margin. The acquisition loop now retries active query rounds to fill the same accepted-demonstration budget before the next evaluation.
+- Fixed active query under-acceptance by retrying active query rounds until the same accepted-demonstration budget is filled. Job `13644732-d99` confirms the fix restores the core claim.
 
 ## Deviations from Paper
 
