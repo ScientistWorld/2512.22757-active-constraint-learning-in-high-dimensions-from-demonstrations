@@ -128,7 +128,7 @@ The evaluator reads method predictions and metadata from the artifacts, but it r
 
 # Reproduction Milestones
 
-**Current: core_claim**
+**Current: method_runs**
 
 ## Stop Justification
-- Completed at milestone `core_claim`.
+- Completed at milestone `method_runs`.
