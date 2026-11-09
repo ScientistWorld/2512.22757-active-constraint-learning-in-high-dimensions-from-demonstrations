@@ -1,455 +1,283 @@
-"""Small-scale reproduction of Gaussian-process Active Constraint Learning.
+"""Algorithm 1 of Qiu et al.: GP-ACL, specialized to free double integrators.
 
-This implements the paper's computation at a reduced scale:
-1. generate locally optimal demonstrations for a smoothness objective with an
-   unknown obstacle constraint;
-2. extract tight points and constraint gradients from KKT stationarity residuals;
-3. train an RBF GP on zero-valued tight points and derivative observations;
-4. sample posterior-like constraint functions with random Fourier features;
-5. query new start/goal states using maximally uncertain sample boundaries and
-   perpendicular/parallel search directions.
+Position elimination is exact: v[t]=p[t+1]-p[t], u[t]=v[t+1]-v[t].
+With no control/velocity bounds or endpoint velocity constraints (the paper's
+position start/goal setting), every position sequence lifts to a feasible
+state/control trajectory. Problems 7/8 below are their reduced KKT programs,
+not quantile contact detection. No simulator or truth module is imported.
 """
-
 from __future__ import annotations
-
 import argparse
 import json
-from dataclasses import dataclass
-from pathlib import Path
-
+import sys
 import numpy as np
-from scipy.optimize import minimize
+from scipy.linalg import cho_factor, cho_solve
+from scipy.optimize import minimize, linprog
 from scipy.special import ndtr
 
-from data.constraints import CONSTRAINTS, default_initial_pairs, make_eval_grid, make_query_grid
 
-
-@dataclass
 class GPModel:
-    x_train: np.ndarray
-    y_train: np.ndarray
-    obs_types: list[tuple[str, int]]
-    lengthscale: float = 0.55
-    signal: float = 1.0
-    noise: float = 2e-4
+    def __init__(self, points, gradients, params=(.6, .1, 1e-5), values_only=False):
+        self.points = np.asarray(points).reshape(-1, 2)
+        self.gradients = np.asarray(gradients).reshape(-1, 2)
+        self.ls, self.signal, self.noise = params
+        self.types = np.tile(np.arange(3), len(self.points)) if not values_only else np.zeros(len(self.points), int)
+        self.x = np.repeat(self.points, 3, axis=0) if not values_only else self.points
+        self.y = np.column_stack([np.zeros(len(self.points)), self.gradients]).ravel() if not values_only else np.zeros(len(self.points))
+        diff = self.x[:, None] - self.x[None, :]
+        k = self.signal**2 * np.exp(-np.sum(diff**2, axis=2)/(2*self.ls**2))
+        ti, tj = self.types[:, None], self.types[None, :]
+        for i in (1, 2):
+            k = np.where((ti==i)&(tj==0), k * (-diff[:,:,i-1]/self.ls**2), k)
+            k = np.where((ti==0)&(tj==i), k * (diff[:,:,i-1]/self.ls**2), k)
+        for i in (1, 2):
+            for j in (1, 2):
+                k = np.where((ti==i)&(tj==j), k * ((i==j)/self.ls**2-diff[:,:,i-1]*diff[:,:,j-1]/self.ls**4), k)
+        k.flat[::len(k)+1] += self.noise
+        self.chol = cho_factor(k, lower=True, check_finite=False)
+        self.alpha = cho_solve(self.chol, self.y, check_finite=False)
 
-    def __post_init__(self) -> None:
-        self.k_noise = self._obs_cov(self.x_train, self.x_train)
-        self.k_noise.flat[:: self.k_noise.shape[0] + 1] += self.noise
-        self.alpha = np.linalg.solve(self.k_noise, self.y_train)
+    def cross(self, query):
+        q = np.atleast_2d(query)
+        diff = self.x[:, None] - q[None, :]
+        k = self.signal**2*np.exp(-np.sum(diff**2, axis=2)/(2*self.ls**2))
+        for d in (1, 2):
+            k = np.where(self.types[:,None]==d, k*(-diff[:,:,d-1]/self.ls**2), k)
+        return k
 
-    def _rbf(self, xa: np.ndarray, xb: np.ndarray) -> np.ndarray:
-        diff = xa[:, None, :] - xb[None, :, :]
-        sq = np.sum(diff**2, axis=2)
-        return self.signal**2 * np.exp(-0.5 * sq / self.lengthscale**2)
+    def mean_var(self, query):
+        k = self.cross(query)
+        m = k.T @ self.alpha
+        v = np.maximum(self.signal**2-np.sum(k*cho_solve(self.chol,k,check_finite=False), axis=0), 1e-12)
+        return m, v
 
-    def _cov_obs_func(self, x_obs: np.ndarray, x_query: np.ndarray, typ: tuple[str, int]) -> np.ndarray:
-        base = self._rbf(x_obs, x_query)
-        if typ[0] == "value":
-            return base
-        dim = typ[1]
-        return base * (x_query[None, :, dim] - x_obs[:, None, dim]) / self.lengthscale**2
-
-    def _obs_cov(self, xa: np.ndarray, xb: np.ndarray) -> np.ndarray:
-        out = np.empty((len(self.obs_types), len(self.obs_types)), dtype=float)
-        base = self._rbf(xa, xb)
-        for i, ti in enumerate(self.obs_types):
-            for j, tj in enumerate(self.obs_types):
-                if ti[0] == "value" and tj[0] == "value":
-                    out[i, j] = base[i, j]
-                elif ti[0] == "deriv" and tj[0] == "value":
-                    d = ti[1]
-                    out[i, j] = base[i, j] * (xb[j, d] - xa[i, d]) / self.lengthscale**2
-                elif ti[0] == "value" and tj[0] == "deriv":
-                    d = tj[1]
-                    out[i, j] = base[i, j] * (xa[i, d] - xb[j, d]) / self.lengthscale**2
-                else:
-                    di, dj = ti[1], tj[1]
-                    delta = 1.0 if di == dj else 0.0
-                    diff_i = xa[i, di] - xb[j, di]
-                    diff_j = xa[i, dj] - xb[j, dj]
-                    out[i, j] = base[i, j] * (delta / self.lengthscale**2 - diff_i * diff_j / self.lengthscale**4)
-        return out
-
-    def mean_var(self, x_query: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        xq = np.atleast_2d(x_query)
-        k_star = np.vstack([self._cov_obs_func(self.x_train[i : i + 1], xq, typ) for i, typ in enumerate(self.obs_types)])
-        mean = k_star.T @ self.alpha
-        v = np.linalg.solve(self.k_noise, k_star)
-        var = np.maximum(self.signal**2 - np.sum(k_star * v, axis=0), 1e-8)
-        return mean, var
-
-    def grad_mean(self, x: np.ndarray, eps: float = 1e-4) -> np.ndarray:
-        x = np.asarray(x, dtype=float)
-        grad = np.zeros(2)
-        for d in range(2):
-            step = np.zeros(2)
-            step[d] = eps
-            grad[d] = (self.mean_var(x + step)[0][0] - self.mean_var(x - step)[0][0]) / (2 * eps)
-        return grad
-
-    def sample_values(self, x_query: np.ndarray, rng: np.random.Generator, n_features: int, alpha: float) -> np.ndarray:
-        sample = self.sample_function(rng, n_features=n_features, alpha=alpha)
-        return sample(x_query)
-
-    def sample_function(self, rng: np.random.Generator, n_features: int, alpha: float):
-        omega = rng.normal(0.0, 1.0 / self.lengthscale, size=(n_features, 2))
-        phase = rng.uniform(0.0, 2 * np.pi, size=n_features)
-        weights = rng.normal(0.0, 1.0, size=n_features)
-        phi_obs = self._rff_observations(self.x_train, self.obs_types, omega, phase) @ weights
-        posterior_correction = np.linalg.solve(self.k_noise, phi_obs)
-
-        def evaluate(x_query: np.ndarray) -> np.ndarray:
-            xq = np.atleast_2d(x_query)
-            mean, _ = self.mean_var(xq)
-            features = self._rff_values(xq, omega, phase)
-            k_star = np.vstack([self._cov_obs_func(self.x_train[i : i + 1], xq, typ) for i, typ in enumerate(self.obs_types)])
-            conditioned_sample = features @ weights - k_star.T @ posterior_correction
-            return mean + alpha * conditioned_sample
-
-        return evaluate
-
-    def _rff_values(self, x: np.ndarray, omega: np.ndarray, phase: np.ndarray) -> np.ndarray:
-        scale = self.signal * np.sqrt(2.0 / omega.shape[0])
-        return scale * np.cos(np.atleast_2d(x) @ omega.T + phase)
-
-    def _rff_observations(
-        self,
-        x: np.ndarray,
-        obs_types: list[tuple[str, int]],
-        omega: np.ndarray,
-        phase: np.ndarray,
-    ) -> np.ndarray:
-        x2 = np.atleast_2d(x)
-        values = self._rff_values(x2, omega, phase)
-        angles = x2 @ omega.T + phase
-        deriv_scale = -self.signal * np.sqrt(2.0 / omega.shape[0]) * np.sin(angles)
-        out = np.empty((len(obs_types), omega.shape[0]), dtype=float)
-        for i, typ in enumerate(obs_types):
-            if typ[0] == "value":
-                out[i] = values[i]
-            else:
-                out[i] = deriv_scale[i] * omega[:, typ[1]]
-        return out
+    def sample_function(self, rng, n_features=1000, alpha=.3):
+        omega = rng.normal(0, 1/self.ls, (n_features, 2))
+        phase = rng.uniform(0, 2*np.pi, n_features)
+        weights = rng.normal(size=n_features)
+        scale = self.signal*np.sqrt(2/n_features)
+        angles = self.x @ omega.T + phase
+        features = scale*np.cos(angles)
+        for d in (1, 2):
+            rows = self.types==d
+            features[rows] = -scale*np.sin(angles[rows])*omega[:,d-1]
+        correction = cho_solve(self.chol, features@weights, check_finite=False)
+        def sample(q):
+            q = np.atleast_2d(q)
+            k = self.cross(q)
+            return k.T@self.alpha + alpha*(scale*np.cos(q@omega.T+phase)@weights-k.T@correction)
+        return sample
 
 
-def smoothness_objective(flat: np.ndarray, start: np.ndarray, goal: np.ndarray, horizon: int) -> float:
-    pts = unpack_path(flat, start, goal, horizon)
-    diffs = np.diff(pts, axis=0)
-    return float(np.sum(diffs**2))
+def kkt_tight_points(demo, tolerance=2e-5):
+    """Appendix A.1, Problems 7 and 8 in exactly eliminated coordinates.
+
+    All free control stationarity equations force the dynamics multipliers to
+    zero on interior positions; endpoint multipliers have no interior column.
+    Thus P7 is min ||grad_p c||_1, implemented with its LP epigraph. P8 fixes
+    lambda_unknown=1 at tight times and finds w satisfying grad_p c+w=0.
+    The other positions must have residual below the numerical tolerance.
+    """
+    p = np.asarray(demo['positions'], float)
+    grad = 2*(2*p[1:-1]-p[:-2]-p[2:])
+    points, gradients = [], []
+    for point, gc in zip(p[1:-1], grad):
+        p7 = linprog(np.ones(2), A_ub=-np.eye(2).repeat(2, axis=0),
+                     b_ub=np.array([-gc[0],gc[0],-gc[1],gc[1]]),
+                     bounds=[(0,None)]*2, method='highs')
+        if not p7.success:
+            raise RuntimeError('P7 failed')
+        if p7.fun > tolerance:
+            p8 = linprog(np.zeros(2), A_eq=np.eye(2), b_eq=-gc,
+                         bounds=[(None,None)]*2, method='highs')
+            if not p8.success:
+                raise RuntimeError('P8 failed')
+            points.append(point)
+            gradients.append(p8.x)
+    return np.asarray(points).reshape(-1,2), np.asarray(gradients).reshape(-1,2)
 
 
-def unpack_path(flat: np.ndarray, start: np.ndarray, goal: np.ndarray, horizon: int) -> np.ndarray:
-    if horizon <= 2:
-        return np.vstack([start, goal])
-    return np.vstack([start, flat.reshape(horizon - 2, 2), goal])
-
-
-def generate_demo(start: np.ndarray, goal: np.ndarray, g_func, horizon: int, rng: np.random.Generator) -> np.ndarray | None:
-    if np.any(g_func(np.vstack([start, goal])) > 0.0):
+def train_gp(points, gradients, values_only=False):
+    if not len(points):
         return None
-    line = np.linspace(start, goal, horizon)
-    angle = rng.uniform(0, 2 * np.pi)
-    bow = np.column_stack([np.sin(np.linspace(0, np.pi, horizon)) * np.cos(angle), np.sin(np.linspace(0, np.pi, horizon)) * np.sin(angle)])
-    best = None
-    for scale in [0.0, 0.35, -0.35, 0.70, -0.70, 1.05, -1.05]:
-        init = (line + scale * bow)[1:-1].ravel()
-        cons = [{"type": "ineq", "fun": lambda z, t=t: -g_func(unpack_path(z, start, goal, horizon)[t : t + 1])[0]} for t in range(horizon)]
-        res = minimize(
-            smoothness_objective,
-            init,
-            args=(start, goal, horizon),
-            method="SLSQP",
-            constraints=cons,
-            options={"maxiter": 300, "ftol": 1e-9, "disp": False},
-        )
-        if res.success:
-            path = unpack_path(res.x, start, goal, horizon)
-            if np.max(g_func(path)) <= 2e-4 and (best is None or res.fun < best[0]):
-                best = (res.fun, path)
-    return None if best is None else best[1]
-
-
-def kkt_tight_points(path: np.ndarray, residual_quantile: float = 0.70) -> tuple[np.ndarray, np.ndarray]:
-    grad_cost = 2.0 * (2.0 * path[1:-1] - path[:-2] - path[2:])
-    norms = np.linalg.norm(grad_cost, axis=1)
-    if norms.max() < 1e-5:
-        return np.empty((0, 2)), np.empty((0, 2))
-    threshold = max(np.quantile(norms, residual_quantile), 1e-3)
-    idx = np.where(norms >= threshold)[0]
-    if len(idx) > 4:
-        idx = idx[np.argsort(norms[idx])[-4:]]
-    points = path[1:-1][idx]
-    grads = -grad_cost[idx]
-    grads /= np.maximum(np.linalg.norm(grads, axis=1, keepdims=True), 1e-8)
-    return points, grads
-
-
-def train_gp(tight_points: np.ndarray, tight_grads: np.ndarray, optimize_hyperparams: bool = True) -> GPModel:
-    xs: list[np.ndarray] = []
-    ys: list[float] = []
-    obs: list[tuple[str, int]] = []
-    for p, g in zip(tight_points, tight_grads):
-        xs.append(p)
-        ys.append(0.0)
-        obs.append(("value", -1))
-        for d in range(2):
-            xs.append(p)
-            ys.append(float(g[d]))
-            obs.append(("deriv", d))
-    x_arr = np.asarray(xs)
-    y_arr = np.asarray(ys)
-    lengthscale, signal, noise = 0.55, 1.0, 2e-4
-    if optimize_hyperparams and len(y_arr) >= 9:
-        lengthscale, signal, noise = fit_gp_hyperparameters(x_arr, y_arr, obs, lengthscale, signal, noise)
-    return GPModel(x_arr, y_arr, obs, lengthscale=lengthscale, signal=signal, noise=noise)
-
-
-def fit_gp_hyperparameters(
-    x_train: np.ndarray,
-    y_train: np.ndarray,
-    obs_types: list[tuple[str, int]],
-    lengthscale: float,
-    signal: float,
-    noise: float,
-) -> tuple[float, float, float]:
-    """Optimize the GP marginal log likelihood used in the paper's GP fitting step."""
-
-    def objective(log_params: np.ndarray) -> float:
-        ls, sig, sig_noise = np.exp(log_params)
+    def objective(logp):
         try:
-            gp = GPModel(x_train, y_train, obs_types, lengthscale=ls, signal=sig, noise=sig_noise + 1e-8)
-            sign, logdet = np.linalg.slogdet(gp.k_noise)
-            if sign <= 0:
-                return 1e12
-            return float(0.5 * y_train @ gp.alpha + 0.5 * logdet + 0.5 * len(y_train) * np.log(2 * np.pi))
+            gp = GPModel(points, gradients, np.exp(logp), values_only)
+            return .5*gp.y@gp.alpha + np.log(np.diag(gp.chol[0])).sum() + .5*len(gp.y)*np.log(2*np.pi)
         except np.linalg.LinAlgError:
-            return 1e12
-
-    res = minimize(
-        objective,
-        np.log([lengthscale, signal, noise]),
-        method="L-BFGS-B",
-        bounds=[(np.log(0.18), np.log(1.5)), (np.log(0.3), np.log(3.0)), (np.log(1e-5), np.log(2e-2))],
-        options={"maxiter": 45, "ftol": 1e-6},
-    )
-    if not res.success or not np.isfinite(res.fun):
-        return lengthscale, signal, noise
-    ls, sig, sig_noise = np.exp(res.x)
-    return float(ls), float(sig), float(sig_noise + 1e-8)
+            return 1e30
+    init = np.log([.65,.06,2e-6])
+    fit = minimize(objective, init, method='L-BFGS-B',
+                   bounds=np.log([[.12,2.5],[.0001,3],[1e-9,.02]]),
+                   options={'maxiter':60,'ftol':1e-8})
+    params = np.exp(fit.x) if np.isfinite(fit.fun) else np.exp(init)
+    return GPModel(points, gradients, params, values_only)
 
 
-def predict_grid(gp: GPModel, grid: np.ndarray) -> np.ndarray:
-    mean, _ = gp.mean_var(grid)
-    return (mean <= 0.0).astype(int)
+def finite_gradient(f, x):
+    e = np.eye(2)*1e-5
+    return np.array([(f(x+v)[0]-f(x-v)[0])/(2e-5) for v in e])
 
 
-def active_queries(gp: GPModel, rng: np.random.Generator, n_pairs: int, n_features: int, alpha: float, delta: float) -> list[tuple[np.ndarray, np.ndarray]]:
-    grid = make_query_grid(75)
-    mean, var = gp.mean_var(grid)
-    pairs = []
-    for _ in range(max(2, n_pairs)):
-        sample_fn = gp.sample_function(rng, n_features=n_features, alpha=alpha)
-        sample = sample_fn(grid)
-        boundary = np.where(np.abs(sample) <= np.quantile(np.abs(sample), 0.12))[0]
-        boundary = boundary[mean[boundary] <= np.quantile(mean, 0.8)] if len(boundary) else np.arange(len(grid))
-        k_mi = solve_maximally_informative_state(gp, sample_fn, grid, boundary, var)
-        grad = finite_difference_grad(sample_fn, k_mi)
-        norm = np.linalg.norm(grad)
-        if norm < 1e-6:
-            grad = gp.grad_mean(k_mi)
-            norm = np.linalg.norm(grad)
-        if norm < 1e-6:
+def solve_queries(gp, rng, bounds, n_samples=2):
+    """Problems 3--6; continuous constrained solves, no clipped fallbacks.
+
+    Only numerical initializations use a candidate grid. A failed constrained
+    solve generates no pair. Eq. 7 uses the raw sample gradient. The safety
+    CDF is P(g<=0)=Phi(-mean/sd); Eq.10's printed positive sign conflicts with
+    the paper's g<=0 convention and its stated safety interpretation.
+    """
+    lo, hi = np.asarray(bounds).T
+    init = rng.uniform(lo,hi,(384,2))
+    _, variance = gp.mean_var(init)
+    pairs=[]
+    for _ in range(n_samples):
+        f=gp.sample_function(rng,1000,.3)
+        vals=f(init)
+        candidates=np.argsort(np.abs(vals))[:64]
+        starts=init[candidates[np.argsort(variance[candidates])[-6:]]]
+        solutions=[]
+        for s in starts:
+            res=minimize(lambda q:-gp.mean_var(q)[1][0], s, method='SLSQP', bounds=bounds,
+                         constraints=[{'type':'eq','fun':lambda q:f(q)[0]}],
+                         options={'maxiter':100,'ftol':1e-10})
+            if res.success and abs(f(res.x)[0])<1e-6:
+                solutions.append(res)
+        if not solutions:
             continue
-        grad = grad / norm
-        eta = 0.12
-        center = k_mi + eta * grad
-        if sample_fn(center)[0] <= 0.0:
-            center = k_mi - eta * grad
-        perp = solve_hyperplane_direction(sample_fn, center, np.array([-grad[1], grad[0]]))
-        for direction, beta_by_sign in ((perp, {-1.0: 0.55, 1.0: 0.55}), (grad, {-1.0: 0.30, 1.0: 0.55})):
-            safe = []
-            for sign in (-1.0, 1.0):
-                chosen = None
-                for tau in np.linspace(0.35, 2.6, 90):
-                    cand = np.clip(center + sign * tau * direction, -1.95, 1.95)
-                    m, v = gp.mean_var(cand)
-                    prob_safe = ndtr((-m[0]) / np.sqrt(v[0]))
-                    if sample_fn(cand)[0] <= -delta and prob_safe >= beta_by_sign[sign]:
-                        chosen = cand
-                        break
-                if chosen is None:
-                    chosen = np.clip(center + sign * 2.1 * direction, -1.95, 1.95)
-                safe.append(chosen)
-            if len(safe) == 2:
-                segment = np.linspace(safe[0], safe[1], 25)
-                if np.max(sample_fn(segment)) > -delta:
-                    pairs.append((safe[0], safe[1]))
-            if len(pairs) >= n_pairs:
-                return pairs
-    return pairs
-
-
-def solve_maximally_informative_state(
-    gp: GPModel,
-    sample_fn,
-    grid: np.ndarray,
-    boundary: np.ndarray,
-    grid_var: np.ndarray,
-) -> np.ndarray:
-    """Problem 3: maximize posterior covariance subject to sampled constraint tightness."""
-    starts = grid[boundary[np.argsort(grid_var[boundary])[-5:]]] if len(boundary) else grid[np.argsort(grid_var)[-5:]]
-    best_x = np.asarray(starts[-1], dtype=float)
-    best_var = -np.inf
-    for start in starts:
-        res = minimize(
-            lambda z: -float(gp.mean_var(np.asarray(z))[1][0]),
-            start,
-            method="SLSQP",
-            bounds=[(-1.95, 1.95), (-1.95, 1.95)],
-            constraints=[{"type": "eq", "fun": lambda z: float(sample_fn(np.asarray(z))[0])}],
-            options={"maxiter": 80, "ftol": 1e-7, "disp": False},
-        )
-        cand = res.x if res.success and abs(sample_fn(res.x)[0]) < 5e-3 else start
-        cand_var = float(gp.mean_var(cand)[1][0])
-        if cand_var > best_var:
-            best_x = np.asarray(cand, dtype=float)
-            best_var = cand_var
-    return np.clip(best_x, -1.95, 1.95)
-
-
-def solve_hyperplane_direction(sample_fn, center: np.ndarray, perp: np.ndarray) -> np.ndarray:
-    """Problem 4 in 2D: choose the hyperplane side with the longest unsafe segment."""
-    perp = perp / max(np.linalg.norm(perp), 1e-8)
-    best_sign, best_tau = 1.0, -np.inf
-    for sign in (-1.0, 1.0):
-        last_unsafe = 0.0
-        for tau in np.linspace(0.05, 2.6, 80):
-            cand = np.clip(center + sign * tau * perp, -1.95, 1.95)
-            if sample_fn(cand)[0] > 0.0:
-                last_unsafe = tau
-        if last_unsafe > best_tau:
-            best_sign, best_tau = sign, last_unsafe
-    return best_sign * perp
-
-
-def finite_difference_grad(func, x: np.ndarray, eps: float = 1e-4) -> np.ndarray:
-    grad = np.zeros(2)
-    for d in range(2):
-        step = np.zeros(2)
-        step[d] = eps
-        grad[d] = (func(x + step)[0] - func(x - step)[0]) / (2 * eps)
-    return grad
-
-
-def random_safe_pairs(rng: np.random.Generator, g_func, n_pairs: int) -> list[tuple[np.ndarray, np.ndarray]]:
-    pairs = []
-    while len(pairs) < n_pairs:
-        pts = rng.uniform(-1.8, 1.8, size=(2, 2))
-        if np.all(g_func(pts) <= 0.0) and np.linalg.norm(pts[0] - pts[1]) > 1.5:
-            pairs.append((pts[0], pts[1]))
-    return pairs
-
-
-def run_experiment(args: argparse.Namespace) -> dict:
-    rng = np.random.default_rng(args.seed)
-    spec = CONSTRAINTS[args.constraint]
-    g_func = spec["function"]
-    demos = []
-    for s, g in default_initial_pairs():
-        path = generate_demo(np.array(s), np.array(g), g_func, args.horizon, rng)
-        if path is not None:
-            demos.append(path)
-
-    method_name = "gp_acl" if args.mode == "active" else "random_baseline"
-    history = []
-    for iteration in range(args.iterations):
-        tight_points, tight_grads = [], []
-        for path in demos:
-            pts, grads = kkt_tight_points(path)
-            if len(pts):
-                tight_points.append(pts)
-                tight_grads.append(grads)
-        tp = np.vstack(tight_points)
-        tg = np.vstack(tight_grads)
-        gp = train_gp(tp, tg)
-        grid = make_eval_grid(args.eval_grid, args.constraint)
-        pred = predict_grid(gp, grid)
-        true = (g_func(grid) <= 0.0).astype(int)
-        entry = {"iteration": iteration, "accuracy": float(np.mean(pred == true)), "n_demos": len(demos), "n_tight": int(len(tp))}
-        if iteration == args.iterations - 1:
-            history.append(entry)
-            break
-        accepted = 0
-        proposed = 0
-        query_rounds = 0
-        while accepted < args.pairs_per_iter and query_rounds < args.max_query_rounds:
-            remaining = args.pairs_per_iter - accepted
-            if args.mode == "active":
-                pairs = active_queries(gp, rng, remaining, args.n_features, args.alpha, args.delta)
-            else:
-                pairs = random_safe_pairs(rng, g_func, remaining)
-            query_rounds += 1
-            proposed += len(pairs)
-            for start, goal in pairs:
-                if accepted >= args.pairs_per_iter:
+        mi=min(solutions,key=lambda r:r.fun).x
+        raw=finite_gradient(f,mi)
+        if np.linalg.norm(raw)<1e-8:
+            continue
+        center=mi+.1*raw  # Equation 7, eta=.1 (not specified by the paper).
+        if np.any(center<lo) or np.any(center>hi) or f(center)[0]<=0:
+            continue
+        # Problem 4 in 2D is a scalar constrained solve along the hyperplane.
+        tangent=np.array([-raw[1],raw[0]])/np.linalg.norm(raw)
+        p4=[]
+        for sign in (-1,1):
+            direction=sign*tangent
+            upper=min([(hi[d]-center[d])/direction[d] if direction[d]>0 else
+                       (lo[d]-center[d])/direction[d] for d in range(2) if abs(direction[d])>1e-10])
+            for frac in (.02,.25,.75):
+                r=minimize(lambda t:-t[0]**2,[upper*frac],method='SLSQP',bounds=[(0,upper)],
+                           constraints=[{'type':'ineq','fun':lambda t:f(center+t[0]*direction)[0]-1e-9}],
+                           options={'maxiter':80,'ftol':1e-10})
+                if r.success and f(center+r.x[0]*direction)[0]>=-1e-7 and r.x[0]>1e-6:
+                    p4.append((r.x[0],r.x[0]*direction))
+        directions=[]
+        if p4:
+            directions.append((max(p4,key=lambda v:v[0])[1],(.55,.55)))
+        directions.append((raw,(.30,.55)))
+        # Problems 5 / 6: minimize tau^2 with exact sample and chance constraints.
+        for direction,betas in directions:
+            pair=[]
+            for sign,beta in zip((-1,1),betas):
+                vector=sign*direction
+                upper=min([(hi[d]-center[d])/vector[d] if vector[d]>0 else
+                           (lo[d]-center[d])/vector[d] for d in range(2) if abs(vector[d])>1e-12])
+                def constraints(t):
+                    q=center+t[0]*vector
+                    mean,var=gp.mean_var(q)
+                    return np.array([-f(q)[0]-.001,ndtr(-mean[0]/np.sqrt(var[0]))-beta])
+                endpoints=[]
+                for frac in (.2,.65,.99):
+                    r=minimize(lambda t:t[0]**2,[upper*frac], method='SLSQP', bounds=[(1e-7,upper)],
+                               constraints=[{'type':'ineq','fun':constraints}],
+                               options={'maxiter':120,'ftol':1e-10})
+                    if r.success and np.min(constraints(r.x))>=-1e-7:
+                        endpoints.append(r)
+                if not endpoints:
                     break
-                path = generate_demo(start, goal, g_func, args.horizon, rng)
-                if path is not None:
-                    demos.append(path)
-                    accepted += 1
-        entry.update(
-            {
-                "n_pairs_proposed": proposed,
-                "n_pairs_accepted": accepted,
-                "n_query_rounds": query_rounds,
-                "query_budget_exhausted": accepted < args.pairs_per_iter,
-            }
-        )
-        history.append(entry)
-
-    mean, var = gp.mean_var(grid)
-    pred = (mean <= 0.0).astype(int)
-    true = (g_func(grid) <= 0.0).astype(int)
-    settings = {k: str(v) if isinstance(v, Path) else v for k, v in vars(args).items()}
-    return {
-        "method": method_name,
-        "constraint": args.constraint,
-        "predictions": pred.tolist(),
-        "truth": true.tolist(),
-        "posterior_mean": mean.tolist(),
-        "posterior_var": var.tolist(),
-        "history": history,
-        "n_demos": len(demos),
-        "n_tight": int(len(tp)),
-        "settings": settings,
-    }
+                pair.append(center+min(endpoints,key=lambda r:r.fun).x[0]*vector)
+            if len(pair)==2:
+                pairs.append(pair)
+    return pairs
 
 
-def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser()
-    p.add_argument("--mode", choices=["active", "random"], default="active")
-    p.add_argument("--constraint", choices=sorted(CONSTRAINTS), default="wavy")
-    p.add_argument("--iterations", type=int, default=3)
-    p.add_argument("--pairs-per-iter", type=int, default=4)
-    p.add_argument("--horizon", type=int, default=24)
-    p.add_argument("--eval-grid", type=int, default=61)
-    p.add_argument("--n-features", type=int, default=300)
-    p.add_argument("--alpha", type=float, default=0.3)
-    p.add_argument("--delta", type=float, default=0.001)
-    p.add_argument("--max-query-rounds", type=int, default=5)
-    p.add_argument("--seed", type=int, default=7)
-    p.add_argument("--output", type=Path, default=Path("outputs/gp_acl_wavy.json"))
-    return p
+def fit_periodic(points, gradients, query, order=12):
+    """Honest headroom variant: periodic contact/normal regression.
+
+    No oracle labels, task parameters or test feedback are used. A smooth
+    periodic representation is appropriate for approximately radial obstacles;
+    the private stress instances include unresolved high frequency structure.
+    """
+    theta=np.arctan2(points[:,1],points[:,0]); radii=np.linalg.norm(points,axis=1)
+    radial=points/radii[:,None]; tangent=np.column_stack([-radial[:,1],radial[:,0]])
+    nr=np.sum(gradients*radial,axis=1)
+    norms=np.linalg.norm(gradients,axis=1)
+    good=nr/np.maximum(norms,1e-12)<-.08
+    harmonics=np.arange(1,order+1)
+    def design(t):
+        z=np.asarray(t)[:,None]*harmonics
+        return np.column_stack([np.ones(len(t)),np.sin(z),np.cos(z)])
+    z=theta[good,None]*harmonics
+    deriv=np.column_stack([np.zeros(good.sum()),np.cos(z)*harmonics,-np.sin(z)*harmonics])
+    dr=-radii[good]*np.sum(gradients[good]*tangent[good],axis=1)/nr[good]
+    a=np.vstack([design(theta),.25*deriv]); b=np.r_[radii,.25*dr]
+    ridge=2e-5*np.r_[.001,harmonics**4,harmonics**4]
+    coef=np.linalg.solve(a.T@a+np.diag(ridge),a.T@b)
+    radius=design(np.arctan2(query[:,1],query[:,0]))@coef
+    return (np.linalg.norm(query,axis=1)>=radius).astype(int)
 
 
-def main() -> None:
-    args = build_parser().parse_args()
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    result = run_experiment(args)
-    args.output.write_text(json.dumps(result, indent=2))
-    print(json.dumps({"output": str(args.output), "method": result["method"], "accuracy": result["history"][-1]["accuracy"]}))
+def send(value):
+    print(json.dumps(value,allow_nan=False),flush=True)
+    return json.loads(sys.stdin.readline())
 
 
-if __name__ == "__main__":
+def main():
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--variant',default='reference', choices=['reference','random','periodic','periodic6','normalized','no_gradients','no_acquisition'])
+    args=parser.parse_args()
+    task=json.loads(sys.stdin.readline())
+    rng=np.random.default_rng(task['seed'])
+    demos=list(task['initial_demos'])
+    bounds=task['bounds']
+    available_requests=task['query_limit']
+    for iteration in range(3):
+        contacts=[kkt_tight_points(d) for d in demos]
+        points=np.vstack([p for p,g in contacts]); gradients=np.vstack([g for p,g in contacts])
+        gp=train_gp(points,gradients)
+        if iteration==2 or args.variant=='no_acquisition':
+            break
+        if available_requests<=0:
+            continue
+        accepted=0
+        for query_round in range(6):
+            if accepted>=4:
+                break
+            if args.variant=='random' or gp is None:
+                lo,hi=np.asarray(bounds).T
+                pairs=[rng.uniform(lo,hi,(2,2)) for _ in range(4-accepted)]
+            else:
+                pairs=solve_queries(gp,rng,bounds)
+            for pair in pairs:
+                if accepted>=4:
+                    break
+                response=send({'op':'query','start':pair[0].tolist(),'goal':pair[1].tolist()})
+                available_requests=response.get('requests_remaining',0)
+                if response.get('demo'):
+                    demos.append(response['demo']); accepted+=1
+                if response.get('requests_remaining',1)<=0:
+                    break
+            if 'response' in locals() and response.get('requests_remaining',1)<=0:
+                break
+    response=send({'op':'finish'})
+    query=np.asarray(response['points'],float)
+    if args.variant in ('periodic','periodic6') and len(points)>4:
+        pred=fit_periodic(points,gradients,query,6 if args.variant=='periodic6' else 12)
+    elif args.variant=='normalized' and len(points):
+        normals=.1*gradients/np.maximum(np.linalg.norm(gradients,axis=1,keepdims=True),1e-12)
+        alternative=train_gp(points,normals)
+        pred=(alternative.mean_var(query)[0]<=0).astype(int)
+    elif args.variant=='no_gradients':
+        ablation=train_gp(points,gradients,True)
+        pred=(ablation.mean_var(query)[0]<=0).astype(int) if ablation else np.ones(len(query),int)
+    else:
+        pred=(gp.mean_var(query)[0]<=0).astype(int) if gp else np.ones(len(query),int)
+    print(json.dumps({'predictions':pred.tolist()},allow_nan=False),flush=True)
+
+
+if __name__=='__main__':
     main()

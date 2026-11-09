@@ -1,52 +1,149 @@
 {
+  "_paper_reported_unicycle_g3": {
+    "gp_acl_accuracy": 0.9956,
+    "random_baseline_accuracy": 0.9492
+  },
+  "_paper_reported_double_integrator_g3": {
+    "gp_acl_accuracy": 0.9956,
+    "random_baseline_accuracy": 0.9652
+  },
+  "_previous_reference": {
+    "experiments": {
+      "scaled_2d_obstacle_recovery": {
+        "description": "Scaled nonlinear 2D obstacle recovery benchmark mirroring the paper's unicycle complex-constraint recovery protocol.",
+        "notes": "Paper values are the reported unicycle g3 recovery accuracies from Sec. 4.2. The gym uses a CPU-feasible scaled 2D boundary-band analogue with the same safe/unsafe recovery objective and equal demonstration-budget constraint.",
+        "weight": 1.0,
+        "primary_metric": "accuracy",
+        "metrics": {
+          "accuracy": {
+            "higher_is_better": true,
+            "coefficient": 1.0,
+            "description": "Fraction of uniformly sampled configuration states classified correctly."
+          },
+          "balanced_accuracy": {
+            "higher_is_better": true,
+            "coefficient": 0.5,
+            "description": "Mean safe and unsafe recall in a shuffled boundary band."
+          },
+          "near_boundary_balanced_accuracy": {
+            "higher_is_better": true,
+            "coefficient": 0.6,
+            "description": "Mean safe and unsafe recall within 0.035 coordinate units of the boundary."
+          },
+          "safe_recall": {
+            "higher_is_better": true,
+            "coefficient": 0.25,
+            "description": "Fraction of safe boundary-band states identified as safe."
+          },
+          "unsafe_recall": {
+            "higher_is_better": true,
+            "coefficient": 0.25,
+            "description": "Fraction of unsafe boundary-band states identified as unsafe."
+          },
+          "n_demos": {
+            "higher_is_better": false,
+            "coefficient": -0.05,
+            "description": "Number of requested demonstrations, penalizing methods that improve classification only by using a larger query budget."
+          }
+        },
+        "results": {
+          "random_baseline": {
+            "type": "baseline",
+            "accuracy": 0.9492,
+            "n_demos": 12.0
+          },
+          "gp_acl": {
+            "type": "proposed",
+            "accuracy": 0.9956,
+            "n_demos": 12.0
+          }
+        }
+      }
+    }
+  },
+  "_scale_note": "Double-integrator dynamics are eliminated exactly and reconstructed at dt=1, T=30. Position coordinates are expressed in units of 5 paper units. Twelve private instances per experiment; fixed 12-demonstration cap, 40 proposal cap, 3 fits, 1000 RFF. Added boundary-focused metrics and a more complex boundary stress experiment. These measured results are not on the paper sampling scale.",
   "experiments": {
-    "scaled_2d_obstacle_recovery": {
-      "description": "Scaled nonlinear 2D obstacle recovery benchmark mirroring the paper's unicycle complex-constraint recovery protocol.",
-      "notes": "Paper values are the reported unicycle g3 recovery accuracies from Sec. 4.2. The gym uses a CPU-feasible scaled 2D boundary-band analogue with the same safe/unsafe recovery objective and equal demonstration-budget constraint.",
-      "weight": 1.0,
+    "double_integrator_g3": {
+      "description": "Private rotated/rescaled instances of the paper Appendix B g3 constraint, with double-integrator demonstrations.",
+      "notes": "Results are populated from end-to-end reference runs, not paper agreement targets. Baselines and anchors are recomputed from evaluator-owned raw records.",
+      "weight": 0.6,
       "primary_metric": "accuracy",
       "metrics": {
         "accuracy": {
           "higher_is_better": true,
           "coefficient": 1.0,
-          "description": "Overall safe/unsafe classification accuracy on the scored boundary-band slice."
+          "description": "Fraction of uniformly sampled configuration states classified correctly."
         },
         "balanced_accuracy": {
           "higher_is_better": true,
           "coefficient": 0.5,
-          "description": "Mean of safe-state and unsafe-state recall on the boundary-band split, which catches class-balance shortcuts."
+          "description": "Mean safe and unsafe recall in a shuffled boundary band."
         },
         "near_boundary_balanced_accuracy": {
           "higher_is_better": true,
           "coefficient": 0.6,
-          "description": "Balanced accuracy restricted to states closest to the inferred obstacle boundary, where recovery quality is hardest to fake with coarse rules."
+          "description": "Mean safe and unsafe recall within 0.035 coordinate units of the boundary."
         },
         "safe_recall": {
           "higher_is_better": true,
           "coefficient": 0.25,
-          "description": "Fraction of truly safe boundary-band states classified as safe, preserving the feasible-region recovery objective."
+          "description": "Fraction of safe boundary-band states identified as safe."
         },
         "unsafe_recall": {
           "higher_is_better": true,
           "coefficient": 0.25,
-          "description": "Fraction of truly unsafe boundary-band states classified as unsafe, preserving obstacle-detection quality."
-        },
-        "n_demos": {
-          "higher_is_better": false,
-          "coefficient": -0.05,
-          "description": "Number of requested demonstrations, penalizing methods that improve classification only by using a larger query budget."
+          "description": "Fraction of unsafe boundary-band states identified as unsafe."
         }
       },
       "results": {
-        "random_baseline": {
-          "type": "baseline",
-          "accuracy": 0.9492,
-          "n_demos": 12.0
-        },
         "gp_acl": {
           "type": "proposed",
-          "accuracy": 0.9956,
-          "n_demos": 12.0
+          "accuracy": 0
+        },
+        "random_baseline": {
+          "type": "baseline"
+        }
+      }
+    },
+    "complex_boundary_stress": {
+      "description": "Private complex boundaries with varied curvature and limited informative demonstrations, probing recovery where sparse data leave errors.",
+      "notes": "Results are populated from end-to-end reference runs, not paper agreement targets. Baselines and anchors are recomputed from evaluator-owned raw records.",
+      "weight": 0.4,
+      "primary_metric": "accuracy",
+      "metrics": {
+        "accuracy": {
+          "higher_is_better": true,
+          "coefficient": 1.0,
+          "description": "Fraction of uniformly sampled configuration states classified correctly."
+        },
+        "balanced_accuracy": {
+          "higher_is_better": true,
+          "coefficient": 0.5,
+          "description": "Mean safe and unsafe recall in a shuffled boundary band."
+        },
+        "near_boundary_balanced_accuracy": {
+          "higher_is_better": true,
+          "coefficient": 0.6,
+          "description": "Mean safe and unsafe recall within 0.035 coordinate units of the boundary."
+        },
+        "safe_recall": {
+          "higher_is_better": true,
+          "coefficient": 0.25,
+          "description": "Fraction of safe boundary-band states identified as safe."
+        },
+        "unsafe_recall": {
+          "higher_is_better": true,
+          "coefficient": 0.25,
+          "description": "Fraction of unsafe boundary-band states identified as unsafe."
+        }
+      },
+      "results": {
+        "gp_acl": {
+          "type": "proposed",
+          "accuracy": 0
+        },
+        "random_baseline": {
+          "type": "baseline"
         }
       }
     }

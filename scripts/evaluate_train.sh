@@ -1,14 +1,6 @@
 #!/bin/bash
-# Evaluate the visible train slice of saved method outputs.
-#
-# Contract mirrors scripts/evaluate.sh: score method-agnostic JSON artifacts
-# and write a scoring JSON file, without importing from method/.
-
-set -e
-
+set -euo pipefail
 cd /home/user
-export PYTHONPATH=/home/user:${PYTHONPATH:-}
-
-mkdir -p scoring
-
+export PYTHONPATH=/home/user
+export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
 python eval/train/evaluate.py "$@"

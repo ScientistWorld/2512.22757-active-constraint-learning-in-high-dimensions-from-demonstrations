@@ -1,7 +1,4 @@
 #!/bin/bash
-set -e
-
+set -euo pipefail
 cd /home/user
-
-bash scripts/reproduce.sh
-python validate.py --compare
+bash scripts/harden.sh

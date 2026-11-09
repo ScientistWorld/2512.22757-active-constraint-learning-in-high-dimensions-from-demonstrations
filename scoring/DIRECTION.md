@@ -1,13 +1,5 @@
-# Research Direction
+# Research direction
 
-## Research Problem
-The task is active constraint learning from demonstrations: recover an unknown safety boundary in continuous state space while minimizing the number of demonstrations needed.
+Improve recovery of previously unseen continuous safety boundaries from a limited number of expert trajectories. Investigate demonstration efficiency, recovery of fine geometry, robustness to uninformative trajectories and uncertainty about poorly observed regions. Improvements should benefit both feasible-space recovery and obstacle detection.
 
-## Core Contribution
-The paper's contribution is uncertainty-guided demonstration selection for constraint inference. Improvements should focus on how a learner extracts constraint information from demonstrations, represents uncertainty over the constraint, and chooses future start/goal queries.
-
-## Approach Scope
-Methods should remain in the learning-from-demonstrations and active-query family. A scientist may change the uncertainty model, the boundary representation, the tight-point extraction procedure, or the query optimization strategy, as long as the method still learns constraints from generated demonstrations.
-
-## Out of Bounds
-Direct supervised fitting from hidden constraint labels, dense oracle sampling of the obstacle, changing the task into generic binary classification, or increasing the demonstration budget are out of scope. These would bypass the paper's central question rather than improve on it.
+The complex-boundary setting exposes errors that remain after coarse obstacle recovery. Methods should generalize from development instances to different test obstacles at comparable difficulty. Compare paired instances under the same observation allowance. Increasing the allowance, reading test answers, substituting the evaluator's controls or exploiting coordinate ordering is outside the task.

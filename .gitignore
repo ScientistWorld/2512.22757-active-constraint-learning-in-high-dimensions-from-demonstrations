@@ -232,3 +232,11 @@ tmp/
 protocol.md
 *.egg-info
 core.[0-9]*
+
+# Private per-attempt outputs and repeatable oracle acceleration caches.
+eval/train/runs/
+eval/test/runs/
+eval/train/oracle_cache/
+eval/test/oracle_cache/
+eval/train/hardening_scores.json
+eval/test/hardening_scores.json

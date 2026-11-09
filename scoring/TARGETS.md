@@ -1,13 +1,12 @@
-# Evaluation Targets
+# Targets
 
-## Primary: scaled_2d_obstacle_recovery
-Tests whether a learner can recover the safe/unsafe split of unknown 2D obstacles from sparse demonstrations on held-out boundary-band states.
-- **Metrics**: accuracy, balanced_accuracy, and near_boundary_balanced_accuracy (higher is better)
+Both `double_integrator_g3` (weight 0.60) and `complex_boundary_stress` (weight 0.40) score the following scientific quantities:
 
-## Constraint-Recovery Balance: scaled_2d_obstacle_recovery
-Tests whether the learner recovers both sides of the boundary instead of overpredicting only safe or unsafe states.
-- **Metrics**: safe_recall and unsafe_recall (higher is better)
+- Uniform-space `accuracy` (coefficient 1.0).
+- Boundary-band `balanced_accuracy` (0.5).
+- `near_boundary_balanced_accuracy` (0.6), emphasizing local recovery errors.
+- `safe_recall` (0.25) and `unsafe_recall` (0.25), preserving both feasible-space recovery and obstacle detection.
 
-## Constraint: scaled_2d_obstacle_recovery
-Tests whether the learner preserves the sparse-demonstration premise instead of improving only by collecting more trajectories.
-- **Metric**: n_demos (lower is better for comparable accuracy)
+All are higher-is-better. Demonstration use is authenticated and capped, rather than rewarded through a submitted count. Each experiment must achieve safe and unsafe recall of at least 0.60; violations or impossible outputs fail the entire attempt. Paired comparisons use the same obstacles and initial demonstrations.
+
+The paper's original numbers are preserved under `_paper_reported_*` in `reference.json`, outside the results to be matched at this scale. The scored reference and control are end-to-end measurements on the final setup, with raw comparison records fixed by the evaluator.

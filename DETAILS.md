@@ -1,3 +1,7 @@
+# Historical iteration records
+
+These records describe earlier public-grid iterations. Current behavior, results and limitations are in HARDENING.md, PROGRESS.md and the briefing/scoring documents. Earlier core-claim statements are not certification of the final restored implementation.
+
 # Overview
 
 This paper studies learning hidden robot safety constraints from demonstrations. Its core result is GP-ACL, which repeatedly learns a GP boundary model from KKT-derived tight points and gradients, samples plausible constraints, and asks for demonstrations that should reduce posterior uncertainty near likely obstacle boundaries.

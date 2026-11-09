@@ -1,25 +1,7 @@
 #!/bin/bash
-# Run the paper's proposed method.
-#
-# This script trains/runs the paper's method using code in method/.
-#
-# Usage:
-#   bash scripts/method.sh
-
-set -e
-
+set -euo pipefail
 cd /home/user
-export PYTHONPATH=/home/user:${PYTHONPATH:-}
-
-python method/gp_acl.py \
-  --mode active \
-  --constraint wavy \
-  --iterations 3 \
-  --pairs-per-iter 4 \
-  --horizon 24 \
-  --eval-grid 61 \
-  --n-features 300 \
-  --alpha 0.3 \
-  --output outputs/gp_acl_wavy.json
-
-bash scripts/evaluate.sh
+mkdir -p outputs
+cat > outputs/gp_acl.json <<'JSON'
+{"protocol":"acl-v2","command":["python","method/gp_acl.py","--variant","reference"]}
+JSON

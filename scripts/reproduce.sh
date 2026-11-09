@@ -1,29 +1,16 @@
 #!/bin/bash
-# Reproduce the paper's results end-to-end.
-#
-# This script runs inside the compute container and should call
-# scripts/baseline.sh and scripts/method.sh to run baselines and
-# the paper's method, each of which calls scripts/evaluate.sh.
-#
-# Assumes:
-#   - Container is built (environment/container.sif)
-#   - Data and models are downloaded (via scripts/download.sh)
-#   - Working directory is /home/user
-#
-# This is the "gold standard" reproduction — 
-# You do not need to run this, but keep this in good shape
-# so other agents can easily run a full loop of reproduction and get the paper's numbers.
-
-set -e
-
+# Rebuild raw reference/baseline runs from the final method, then rescore them.
+set -euo pipefail
 cd /home/user
-export PYTHONPATH=/home/user:${PYTHONPATH:-}
-
-rm -f \
-  outputs/gp_acl_wavy.json \
-  outputs/random_baseline_wavy.json \
-  scoring/scores.json
-
+export PYTHONPATH=/home/user
+export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
+mkdir -p outputs/previous
+find outputs -maxdepth 1 -type f -name '*.json' -exec mv -t outputs/previous {} +
 bash scripts/baseline.sh
 bash scripts/method.sh
-bash scripts/evaluate.sh
+rm -f eval/train/runs/gp_acl.json eval/train/runs/random_baseline.json
+rm -f eval/test/runs/gp_acl.json eval/test/runs/random_baseline.json
+bash scripts/evaluate_train.sh --bootstrap
+bash scripts/evaluate_test.sh --bootstrap
+python scripts/publish_reference.py
+python validate.py

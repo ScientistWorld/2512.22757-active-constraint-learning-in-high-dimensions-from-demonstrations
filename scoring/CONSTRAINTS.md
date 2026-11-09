@@ -1,16 +1,9 @@
-# Scientist Constraints
+# Constraints
 
-## Data and Demonstration Budget
-Use the procedural 2D constraint tasks in `data/constraints.py` and the same fixed evaluation grids. Do not add external demonstrations, change the hidden constraints during evaluation, or increase the number of demonstrations beyond the budget reported in `scores.json`.
+Use the newline-delimited JSON interface documented in `briefing/evaluation.md`. Learn only from the initial demonstrations and those returned by the evaluator. Direct access to private task parameters, labels, evaluator files or raw test caches is forbidden. External observations, dense constraint queries and hardcoded instance answers bypass the task.
 
-## Problem Formulation
-Predictions must be safe/unsafe labels over the same continuous constraint-state space. Methods must learn from demonstration trajectories or their derived optimality information, not from direct queries of the hidden constraint function except through the simulator that generates demonstrations.
+The total demonstration cap is twelve, including four fixed initial trajectories. At most forty additional requests are allowed, including rejected requests. The evaluator records acquisition and generates trajectories; a candidate's counts or trajectories cannot replace that record. Test coordinates are revealed only after acquisition ends.
 
-## Evaluation
-Use `scripts/evaluate.sh` without editing `eval/` or `scoring/reference.json`. Improvements must be reflected in the JSON artifacts under `outputs/` and scored by the shared evaluator.
+Keep the simulator dynamics, demonstration objective, task distributions, measurement size, thresholds and evaluator-owned controls fixed. Do not edit `eval/`, its frozen comparisons or `scoring/reference.json`. `random_baseline` is a reserved result identifier; candidate commands cannot replace that comparison. No metric depends on runtime.
 
-## Compliance Checklist
-- [ ] Uses the provided `wavy` task and boundary-band evaluation grid.
-- [ ] Does not exceed the recorded demonstration budget.
-- [ ] Does not train on evaluation labels or directly sample the hidden constraint for fitting.
-- [ ] Scores are produced by `scripts/evaluate.sh`.
+Outputs must be finite binary predictions, exactly one per evaluator-provided point. A budget/protocol violation or boundary safe/unsafe recall below 0.60 on either experiment fails the whole run. Future methods may use a different representation and acquisition procedure, provided they solve the same information-limited task. The public `data/constraints.py` examples do not provide private-instance truth.
