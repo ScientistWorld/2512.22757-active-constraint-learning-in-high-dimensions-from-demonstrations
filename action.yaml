@@ -1,4 +1,4 @@
 action: submit
 gpus: 0
 test: false
-notes: "Gym audit: three reference seeds, genuine stronger/weaker variants, larger training and 16 shortcut checks; all tests use unchanged no-argument hidden evaluator."
+notes: "Audit follow-up: matched random baselines for seeds 17/27, derivative ablation, and demonstration-only boundary simplification at three seeds; reuses completed reference trajectories."
