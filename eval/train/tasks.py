@@ -15,6 +15,9 @@ N_BOUNDARY = 8192
 HORIZON = 30
 BUDGET = 12
 REQUEST_LIMIT = 40
+BOUND = 10.0
+BAND_WIDTH = .5
+NEAR_WIDTH = .175
 EXPERIMENTS = ('double_integrator_g3', 'complex_boundary_stress')
 
 
@@ -36,22 +39,22 @@ class Task:
             a=.25*co**2+si**2
             b=-50*a+50*co**2
             r2=(-b+np.sqrt(b*b+250*a*a))/(2*a*a)
-            return self.scale*np.sqrt(r2)/5
+            return self.scale*np.sqrt(r2)
         t=theta-self.rotation
         r=1.03+.16*np.sin(3*t+self.phase[3])+.10*np.cos(5*t+self.phase[5])
         for j,h in enumerate(range(6,21)):
             r=r+self.coefficients[j]*np.sin(h*t+self.phase[h])
-        return self.scale*r
+        return 5*self.scale*r
 
     def value_gradient(self, points):
         p=np.atleast_2d(points)
         if self.experiment==EXPERIMENTS[0]:
             co,si=np.cos(self.rotation),np.sin(self.rotation)
             rotation=np.array([[co,si],[-si,co]])
-            z=p@rotation.T*5/self.scale
+            z=p@rotation.T/self.scale
             x,y=z.T; a=.25*x*x+y*y-25
             value=(-a*a-50*x*x+687.5)/687.5
-            grad=np.column_stack([-a*x-100*x,-4*a*y])@rotation*(5/self.scale)/687.5
+            grad=np.column_stack([-a*x-100*x,-4*a*y])@rotation/self.scale/687.5
             return value,grad
         theta=np.arctan2(p[:,1],p[:,0]); rr=np.maximum(np.linalg.norm(p,axis=1),1e-8)
         t=theta-self.rotation
@@ -59,7 +62,7 @@ class Task:
         deriv=.48*np.cos(3*t+self.phase[3])-.5*np.sin(5*t+self.phase[5])
         for j,h in enumerate(range(6,21)):
             deriv+=h*self.coefficients[j]*np.cos(h*t+self.phase[h])
-        deriv*=self.scale
+        deriv*=5*self.scale
         angular=np.column_stack([-p[:,1],p[:,0]])/rr[:,None]**2
         value=radius**2-rr**2
         grad=2*radius[:,None]*deriv[:,None]*angular-2*p
@@ -68,9 +71,9 @@ class Task:
     def evaluation(self):
         # The uniform part preserves the paper's quantity; an independent,
         # shuffled narrow boundary band gives statistically useful resolution.
-        uniform=self.rng.uniform(-2,2,(N_UNIFORM,2))
+        uniform=self.rng.uniform(-BOUND,BOUND,(N_UNIFORM,2))
         angle=self.rng.uniform(-np.pi,np.pi,N_BOUNDARY)
-        offset=self.rng.uniform(-.10,.10,N_BOUNDARY)
+        offset=self.rng.uniform(-BAND_WIDTH,BAND_WIDTH,N_BOUNDARY)
         radius=self.radius(angle)+offset
         band=np.column_stack([radius*np.cos(angle),radius*np.sin(angle)])
         points=np.vstack([uniform,band]); is_uniform=np.arange(len(points))<N_UNIFORM
@@ -84,13 +87,13 @@ class Task:
         # instances. They carry no obstacle parameters or selected contacts.
         pairs=[([ -1.9,-1.6],[1.9,1.6]),([-1.9,1.6],[1.9,-1.6]),
                ([-1.95,.2],[1.95,.2]),([.2,-1.95],[.2,1.95])]
-        result=[self.demonstrate(np.asarray(s),np.asarray(g)) for s,g in pairs]
+        result=[self.demonstrate(5*np.asarray(s),5*np.asarray(g)) for s,g in pairs]
         if any(d is None for d in result):
             raise RuntimeError('Fixed initial demonstration failed')
         return result
 
     def demonstrate(self,start,goal):
-        if np.any(self.value_gradient(np.vstack([start,goal]))[0]>1e-8) or np.linalg.norm(start-goal)<.03:
+        if np.any(self.value_gradient(np.vstack([start,goal]))[0]>1e-8) or np.linalg.norm(start-goal)<.15:
             return None
         line=np.linspace(start,goal,HORIZON)
         direction=goal-start; tangent=np.array([-direction[1],direction[0]])/np.linalg.norm(direction)
@@ -106,7 +109,7 @@ class Task:
             k=np.arange(HORIZON-2); mat[k,2*k]=grad[:,0]; mat[k,2*k+1]=grad[:,1]
             return mat
         best=None
-        for amplitude in (0,.65,-.65,1.3,-1.3):
+        for amplitude in (0,3.25,-3.25,6.5,-6.5):
             result=minimize(cost,(line+amplitude*bow)[1:-1].ravel(),jac=jac,method='SLSQP',
                             constraints=[{'type':'ineq','fun':constraint,'jac':constraint_jac}],
                             options={'maxiter':400,'ftol':2e-12})

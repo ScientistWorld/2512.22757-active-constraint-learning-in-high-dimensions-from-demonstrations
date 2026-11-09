@@ -1,7 +1,5 @@
-# Reproduction milestones
+# Milestone
 
-Current: `none` (final hardening rerun pending).
+Current: `method_runs`.
 
-Earlier iterations claimed `core_claim` for the public wavy-obstacle surrogate setup. REDTEAM.md showed that the active/random direction was not robust across seeds and that several computational programs had been simplified. Those historical claims do not certify the restored implementation.
-
-The final implementation restores the paper's computational programs in an exactly eliminated double-integrator setting. All changes are staged for one combined reference/baseline/variant/shortcut job. The current milestone will be advanced only from its actual results. See HARDENING.md for the audit and limitations; DETAILS.md retains historical iteration records.
+The restored GP-ACL pipeline, its KKT/GP numerical checks and online protocol ran end to end on both independent splits. The first combined hardening verification failed the recall gate and did not reproduce the active-over-random claim. Physical-unit and constrained-solver corrections are awaiting a combined rerun. No core-claim, high-dimensional or hardware milestone is claimed. Historical claims from the earlier simplified implementation are withdrawn.

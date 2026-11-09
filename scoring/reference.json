@@ -61,7 +61,7 @@
       }
     }
   },
-  "_scale_note": "Double-integrator dynamics are eliminated exactly and reconstructed at dt=1, T=30. Position coordinates are expressed in units of 5 paper units. Twelve private instances per experiment; fixed 12-demonstration cap, 40 proposal cap, 3 fits, 1000 RFF. Added boundary-focused metrics and a more complex boundary stress experiment. These measured results are not on the paper sampling scale.",
+  "_scale_note": "Double-integrator dynamics are eliminated exactly and reconstructed at dt=1, T=30. Position coordinates use physical paper units, with bounds [-10, 10]. Twelve private instances per experiment; fixed 12-demonstration cap, 40 proposal cap, 3 fits, 1000 RFF. Added boundary-focused metrics and a more complex boundary stress experiment. These measured results are not on the paper sampling scale.",
   "experiments": {
     "double_integrator_g3": {
       "description": "Private rotated/rescaled instances of the paper Appendix B g3 constraint, with double-integrator demonstrations.",
@@ -82,7 +82,7 @@
         "near_boundary_balanced_accuracy": {
           "higher_is_better": true,
           "coefficient": 0.6,
-          "description": "Mean safe and unsafe recall within 0.035 coordinate units of the boundary."
+          "description": "Mean safe and unsafe recall within 0.175 position units of the boundary."
         },
         "safe_recall": {
           "higher_is_better": true,
@@ -133,7 +133,7 @@
         "near_boundary_balanced_accuracy": {
           "higher_is_better": true,
           "coefficient": 0.6,
-          "description": "Mean safe and unsafe recall within 0.035 coordinate units of the boundary."
+          "description": "Mean safe and unsafe recall within 0.175 position units of the boundary."
         },
         "safe_recall": {
           "higher_is_better": true,

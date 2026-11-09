@@ -1,7 +1,5 @@
 # Progress
 
-The paper and REDTEAM.md have been read. All hardening fixes and the restored method are implemented together; the combined CPU verification job is pending. No new experimental result is claimed yet.
+Read the paper and REDTEAM.md; restored the paper's KKT, derivative GP, posterior sampling and continuous acquisition programs. Applied the evaluator, privacy, ranking and shortcut fixes together and ran all comparisons in job 5f293a40-e15. Interface and mathematical checks passed; the reference failed the recall gate and active sampling underfilled its demonstration budget. No successful reproduction is claimed.
 
-The final gym uses private unseen double-integrator constraints, independent train/test implementations, an online demonstration ledger, fixed test coordinates and comparisons, standardized direction-aware ranking, whole-run failure gates, and a complex-boundary stress experiment. The earlier public wavy task and its cached scores are historical and will be replaced by fresh final-code runs.
-
-The combined job will regenerate both splits from reference runs, quantify paired better/weaker alternatives, replay major shortcuts, freeze evaluator-owned raw reference/baseline records, publish scores and run validate.py. After it completes, update HARDENING.md, the milestone, verification and reference-only score documents; restore scripts/run.sh to normal reproduction and commit the package.
+The next combined job restores physical cost/position units, improves numerical solutions of the same constrained programs, uses multiple starts for marginal likelihood, and reruns the final reference, random control, better/weaker variants and affected shortcuts on both splits. It resumes versioned per-instance checkpoints after preemption. Final scores and paired evidence will be regenerated from that job; HARDENING.md records the failed first verification separately.

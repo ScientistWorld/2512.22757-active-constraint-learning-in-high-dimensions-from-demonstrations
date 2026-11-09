@@ -15,7 +15,7 @@ from pathlib import Path
 import subprocess
 import sys
 import numpy as np
-from tasks import Task,EXPERIMENTS,TASKS_PER_EXPERIMENT,BUDGET,REQUEST_LIMIT
+from tasks import Task,EXPERIMENTS,TASKS_PER_EXPERIMENT,BUDGET,REQUEST_LIMIT,BOUND,NEAR_WIDTH
 
 SLICE='train'
 HERE=Path(__file__).resolve().parent
@@ -87,7 +87,7 @@ def run_instance(manifest,task):
         return json.loads(line,parse_constant=lambda v:(_ for _ in ()).throw(ValueError('nonfinite response')))
     failure=None
     try:
-        tell({'dimension':2,'bounds':[[-2,2],[-2,2]],'horizon':30,'dt':1,
+        tell({'dimension':2,'bounds':[[-BOUND,BOUND],[-BOUND,BOUND]],'horizon':30,'dt':1,
               'initial_demos':initial,'budget':BUDGET,'query_limit':REQUEST_LIMIT,'seed':7})
         while True:
             message=receive()
@@ -100,7 +100,7 @@ def run_instance(manifest,task):
             if len(initial)+sum(d['demo'] is not None for d in ledger)>=BUDGET:
                 raise ValueError('demonstration budget exceeded')
             endpoints=np.asarray([message['start'],message['goal']],float)
-            if endpoints.shape!=(2,2) or not np.all(np.isfinite(endpoints)) or np.max(np.abs(endpoints))>2:
+            if endpoints.shape!=(2,2) or not np.all(np.isfinite(endpoints)) or np.max(np.abs(endpoints))>BOUND:
                 raise ValueError('invalid endpoint coordinates')
             key=hashlib.sha256(endpoints.tobytes()).hexdigest()
             if key not in oracle_cache:
@@ -149,7 +149,7 @@ def metrics(records,exp):
              'safe_recall':float(safe),'unsafe_recall':float(unsafe)}
         # The narrow inner band resolves the boundary closest to the surface.
         distance=np.abs(np.linalg.norm(points,axis=1)-task.radius(np.arctan2(points[:,1],points[:,0])))
-        near=band&(distance<=.035)
+        near=band&(distance<=NEAR_WIDTH)
         one['near_boundary_balanced_accuracy']=float(.5*(np.mean(p[near&(truth==1)]==1)+np.mean(p[near&(truth==0)]==0)))
         per_instance.append(one);values.append(one)
     if errors: return None,errors,per_instance
@@ -210,7 +210,7 @@ def main():
             for index in range(len(records),TASKS_PER_EXPERIMENT):
                 record=run_instance(manifest,Task(exp,index));records.append(record)
                 raw[name]['records'][exp]=records;write(path,raw[name])
-                print(f'{SLICE} {name} {exp} {index+1}/{TASKS_PER_EXPERIMENT}: '+str(record['failure'] or 'raw output saved'),flush=True)
+                print(f'{SLICE} {name} {exp} {index+1}/{TASKS_PER_EXPERIMENT}: '+str(record['failure'] or ('raw output saved; demos='+str(len(record['initial_demos'])+sum(x['demo'] is not None for x in record['ledger']))+', requests='+str(len(record['ledger'])))),flush=True)
                 if record['failure']:
                     # Deterministic protocol violations need no more expensive
                     # solves; this attempt has already failed the whole task.

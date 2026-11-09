@@ -44,7 +44,9 @@ else:
     q=np.asarray(json.loads(sys.stdin.readline())['points']);n=len(q)
     if attack=='oracle':
         from data.constraints import g_wavy
-        pred=(g_wavy(q)<=0).astype(int)
+        # Restore the old public example's coordinate convention. The hidden
+        # rotations, geometry and instances remain unavailable to this oracle.
+        pred=(g_wavy(q/5)<=0).astype(int)
     elif attack=='grid_order': pred=(np.arange(n)>=n//2).astype(int)
     elif attack=='grid_resize': pred=np.ones(32,int)
     elif attack=='replace_ground_truth': pred=(q[:,0]<=0).astype(int)

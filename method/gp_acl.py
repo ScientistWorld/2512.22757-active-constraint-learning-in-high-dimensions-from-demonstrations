@@ -12,7 +12,7 @@ import json
 import sys
 import numpy as np
 from scipy.linalg import cho_factor, cho_solve
-from scipy.optimize import minimize, linprog
+from scipy.optimize import minimize, linprog, brentq
 from scipy.special import ndtr
 
 
@@ -51,6 +51,20 @@ class GPModel:
         v = np.maximum(self.signal**2-np.sum(k*cho_solve(self.chol,k,check_finite=False), axis=0), 1e-12)
         return m, v
 
+    def derivatives(self, query):
+        """Analytic mean/variance gradients for the continuous P3 solve."""
+        q = np.atleast_2d(query)
+        diff = self.x[:, None] - q[None, :]
+        base = self.signal**2*np.exp(-np.sum(diff**2,axis=2)/(2*self.ls**2))
+        dk = base[:,:,None]*diff/self.ls**2
+        for d in (1,2):
+            rows = self.types==d
+            dk[rows] = base[rows,:,None]*(np.eye(2)[d-1]/self.ls**2
+                       -diff[rows,:,d-1,None]*diff[rows]/self.ls**4)
+        k = self.cross(q)
+        return np.einsum('iqd,i->qd',dk,self.alpha), -2*np.einsum(
+            'iqd,iq->qd',dk,cho_solve(self.chol,k,check_finite=False))
+
     def sample_function(self, rng, n_features=1000, alpha=.3):
         omega = rng.normal(0, 1/self.ls, (n_features, 2))
         phase = rng.uniform(0, 2*np.pi, n_features)
@@ -66,10 +80,22 @@ class GPModel:
             q = np.atleast_2d(q)
             k = self.cross(q)
             return k.T@self.alpha + alpha*(scale*np.cos(q@omega.T+phase)@weights-k.T@correction)
+        def derivative(q):
+            q=np.atleast_2d(q)
+            diff=self.x[:,None]-q[None,:]
+            base=self.signal**2*np.exp(-np.sum(diff**2,axis=2)/(2*self.ls**2))
+            dk=base[:,:,None]*diff/self.ls**2
+            for d in (1,2):
+                rows=self.types==d
+                dk[rows]=base[rows,:,None]*(np.eye(2)[d-1]/self.ls**2
+                         -diff[rows,:,d-1,None]*diff[rows]/self.ls**4)
+            prior=-scale*(np.sin(q@omega.T+phase)*weights)@omega
+            return np.einsum('iqd,i->qd',dk,self.alpha-alpha*correction)+alpha*prior
+        sample.derivative=derivative
         return sample
 
 
-def kkt_tight_points(demo, tolerance=2e-5):
+def kkt_tight_points(demo, tolerance=1e-4):
     """Appendix A.1, Problems 7 and 8 in exactly eliminated coordinates.
 
     All free control stationarity equations force the dynamics multipliers to
@@ -106,11 +132,19 @@ def train_gp(points, gradients, values_only=False):
             return .5*gp.y@gp.alpha + np.log(np.diag(gp.chol[0])).sum() + .5*len(gp.y)*np.log(2*np.pi)
         except np.linalg.LinAlgError:
             return 1e30
-    init = np.log([.65,.06,2e-6])
-    fit = minimize(objective, init, method='L-BFGS-B',
-                   bounds=np.log([[.12,2.5],[.0001,3],[1e-9,.02]]),
-                   options={'maxiter':60,'ftol':1e-8})
-    params = np.exp(fit.x) if np.isfinite(fit.fun) else np.exp(init)
+    # Optimize the same marginal likelihood from deterministic starts. Raw P8
+    # gradients retain their magnitudes. These initializations/bounds use the
+    # paper's physical position units, not the earlier position/5 convention.
+    rms=max(float(np.sqrt(np.mean(np.asarray(gradients)**2))),1e-4)
+    fits=[]
+    for length in (1.,3.25,6.):
+        init=np.log([length,max(rms*length,.001),max((.03*rms)**2,1e-8)])
+        fit=minimize(objective,init,method='L-BFGS-B',
+                     bounds=np.log([[.35,12.5],[1e-5,100],[1e-10,1.]]),
+                     options={'maxiter':100,'ftol':1e-9})
+        if np.isfinite(fit.fun): fits.append(fit)
+    if not fits: raise RuntimeError('GP marginal likelihood optimization failed')
+    params=np.exp(min(fits,key=lambda fit:fit.fun).x)
     return GPModel(points, gradients, params, values_only)
 
 
@@ -119,79 +153,101 @@ def finite_gradient(f, x):
     return np.array([(f(x+v)[0]-f(x-v)[0])/(2e-5) for v in e])
 
 
-def solve_queries(gp, rng, bounds, n_samples=2):
-    """Problems 3--6; continuous constrained solves, no clipped fallbacks.
+def scalar_feasible_extreme(constraints, upper, length, nearest=True):
+    """Solve the scalar P4/P5/P6 restriction by continuous root refinement.
 
-    Only numerical initializations use a candidate grid. A failed constrained
-    solve generates no pair. Eq. 7 uses the raw sample gradient. The safety
-    CDF is P(g<=0)=Phi(-mean/sd); Eq.10's printed positive sign conflicts with
-    the paper's g<=0 convention and its stated safety interpretation.
+    Squared distance is monotone on each signed ray. Its optimum is a domain
+    endpoint or a constraint root. A mesh brackets roots; brentq refines them,
+    and feasible intervals (not mesh predictions) select the extremum. This
+    avoids the badly scaled tau variables in the previous SLSQP subproblems.
     """
-    lo, hi = np.asarray(bounds).T
-    init = rng.uniform(lo,hi,(384,2))
-    _, variance = gp.mean_var(init)
+    if upper<=1e-7: return None
+    count=min(2048,max(129,int(np.ceil(upper/(length/20)))+1))
+    mesh=np.linspace(0,upper,count)
+    values=np.asarray(constraints(mesh))
+    if values.ndim==1: values=values[:,None]
+    edges=[0.,float(upper)]
+    for j in range(values.shape[1]):
+        changes=np.flatnonzero(np.signbit(values[:-1,j])!=np.signbit(values[1:,j]))
+        for k in changes:
+            root=brentq(lambda t:np.atleast_2d(constraints(np.array([t])))[0,j],
+                        mesh[k],mesh[k+1],xtol=1e-10)
+            edges.append(float(root))
+        edges.extend(mesh[values[:,j]==0].tolist())
+    edges=np.unique(edges)
+    feasible=[]
+    for a,b in zip(edges[:-1],edges[1:]):
+        if np.all(constraints(np.array([(a+b)/2]))>=0):
+            value=a if nearest else b
+            # Move an infinitesimal distance into this feasible interval to
+            # avoid a rounded root being rejected by the final constraints.
+            value=value+(1 if nearest else -1)*min(1e-8,(b-a)/4)
+            if value>1e-7 and np.all(constraints(np.array([value]))>=-1e-8):
+                feasible.append(value)
+    if not feasible: return None
+    return min(feasible) if nearest else max(feasible)
+
+
+def solve_queries(gp, rng, bounds, n_samples=2):
+    """The continuous Programs 3--6, in physical position/cost units.
+
+    P3 uses analytic derivatives and dimensionless residuals. P4--6 reduce
+    exactly to signed scalar rays in 2D and use continuous root solves. A unit
+    ray is only a reparameterization of tau: it preserves the minimizing
+    endpoints and does not normalize the raw gradient in Equation 7.
+    """
+    lo,hi=np.asarray(bounds).T
+    init=rng.uniform(lo,hi,(384,2))
+    _,variance=gp.mean_var(init)
+    signal=max(gp.signal,1e-10)
     pairs=[]
+    def ray_bound(center,vector):
+        return min([(hi[d]-center[d])/vector[d] if vector[d]>0 else
+                    (lo[d]-center[d])/vector[d] for d in range(2) if abs(vector[d])>1e-12])
     for _ in range(n_samples):
         f=gp.sample_function(rng,1000,.3)
         vals=f(init)
         candidates=np.argsort(np.abs(vals))[:64]
         starts=init[candidates[np.argsort(variance[candidates])[-6:]]]
         solutions=[]
-        for s in starts:
-            res=minimize(lambda q:-gp.mean_var(q)[1][0], s, method='SLSQP', bounds=bounds,
-                         constraints=[{'type':'eq','fun':lambda q:f(q)[0]}],
-                         options={'maxiter':100,'ftol':1e-10})
-            if res.success and abs(f(res.x)[0])<1e-6:
-                solutions.append(res)
-        if not solutions:
-            continue
+        for start in starts:
+            res=minimize(lambda q:-gp.mean_var(q)[1][0]/signal**2,start,
+                         jac=lambda q:-gp.derivatives(q)[1][0]/signal**2,
+                         method='SLSQP',bounds=bounds,
+                         constraints=[{'type':'eq','fun':lambda q:f(q)[0]/signal,
+                                       'jac':lambda q:f.derivative(q)[0]/signal}],
+                         options={'maxiter':150,'ftol':1e-9})
+            if res.success and abs(f(res.x)[0])/signal<1e-6: solutions.append(res)
+        if not solutions: continue
         mi=min(solutions,key=lambda r:r.fun).x
-        raw=finite_gradient(f,mi)
-        if np.linalg.norm(raw)<1e-8:
-            continue
-        center=mi+.1*raw  # Equation 7, eta=.1 (not specified by the paper).
-        if np.any(center<lo) or np.any(center>hi) or f(center)[0]<=0:
-            continue
-        # Problem 4 in 2D is a scalar constrained solve along the hyperplane.
-        tangent=np.array([-raw[1],raw[0]])/np.linalg.norm(raw)
+        raw=f.derivative(mi)[0]
+        norm=np.linalg.norm(raw)
+        if norm<1e-10: continue
+        center=mi+.1*raw  # Eq.7: the paper does not specify eta; eta=.1 here.
+        if np.any(center<lo) or np.any(center>hi) or f(center)[0]<=0: continue
+        tangent=np.array([-raw[1],raw[0]])/norm
         p4=[]
         for sign in (-1,1):
-            direction=sign*tangent
-            upper=min([(hi[d]-center[d])/direction[d] if direction[d]>0 else
-                       (lo[d]-center[d])/direction[d] for d in range(2) if abs(direction[d])>1e-10])
-            for frac in (.02,.25,.75):
-                r=minimize(lambda t:-t[0]**2,[upper*frac],method='SLSQP',bounds=[(0,upper)],
-                           constraints=[{'type':'ineq','fun':lambda t:f(center+t[0]*direction)[0]-1e-9}],
-                           options={'maxiter':80,'ftol':1e-10})
-                if r.success and f(center+r.x[0]*direction)[0]>=-1e-7 and r.x[0]>1e-6:
-                    p4.append((r.x[0],r.x[0]*direction))
+            vector=sign*tangent
+            def unsafe(t): return f(center+np.asarray(t)[:,None]*vector)[:,None]/signal
+            far=scalar_feasible_extreme(unsafe,ray_bound(center,vector),gp.ls,nearest=False)
+            if far is not None: p4.append((far,far*vector))
         directions=[]
-        if p4:
-            directions.append((max(p4,key=lambda v:v[0])[1],(.55,.55)))
+        if p4: directions.append((max(p4,key=lambda v:v[0])[1],(.55,.55)))
         directions.append((raw,(.30,.55)))
-        # Problems 5 / 6: minimize tau^2 with exact sample and chance constraints.
         for direction,betas in directions:
             pair=[]
             for sign,beta in zip((-1,1),betas):
-                vector=sign*direction
-                upper=min([(hi[d]-center[d])/vector[d] if vector[d]>0 else
-                           (lo[d]-center[d])/vector[d] for d in range(2) if abs(vector[d])>1e-12])
-                def constraints(t):
-                    q=center+t[0]*vector
+                vector=sign*direction/np.linalg.norm(direction)
+                def safe(t):
+                    q=center+np.asarray(t)[:,None]*vector
                     mean,var=gp.mean_var(q)
-                    return np.array([-f(q)[0]-.001,ndtr(-mean[0]/np.sqrt(var[0]))-beta])
-                endpoints=[]
-                for frac in (.2,.65,.99):
-                    r=minimize(lambda t:t[0]**2,[upper*frac], method='SLSQP', bounds=[(1e-7,upper)],
-                               constraints=[{'type':'ineq','fun':constraints}],
-                               options={'maxiter':120,'ftol':1e-10})
-                    if r.success and np.min(constraints(r.x))>=-1e-7:
-                        endpoints.append(r)
-                if not endpoints:
-                    break
-                pair.append(center+min(endpoints,key=lambda r:r.fun).x[0]*vector)
-            if len(pair)==2:
-                pairs.append(pair)
+                    return np.column_stack([(-f(q)-.001)/signal,
+                                            ndtr(-mean/np.sqrt(var))-beta])
+                near=scalar_feasible_extreme(safe,ray_bound(center,vector),gp.ls)
+                if near is None: break
+                pair.append(center+near*vector)
+            if len(pair)==2: pairs.append(pair)
     return pairs
 
 
@@ -244,7 +300,7 @@ def main():
         if available_requests<=0:
             continue
         accepted=0
-        for query_round in range(6):
+        for query_round in range(8):
             if accepted>=4:
                 break
             if args.variant=='random' or gp is None:
@@ -268,7 +324,7 @@ def main():
     if args.variant in ('periodic','periodic6') and len(points)>4:
         pred=fit_periodic(points,gradients,query,6 if args.variant=='periodic6' else 12)
     elif args.variant=='normalized' and len(points):
-        normals=.1*gradients/np.maximum(np.linalg.norm(gradients,axis=1,keepdims=True),1e-12)
+        normals=.5*gradients/np.maximum(np.linalg.norm(gradients,axis=1,keepdims=True),1e-12)
         alternative=train_gp(points,normals)
         pred=(alternative.mean_var(query)[0]<=0).astype(int)
     elif args.variant=='no_gradients':

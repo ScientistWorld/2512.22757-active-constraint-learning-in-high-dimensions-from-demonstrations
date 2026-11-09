@@ -5,6 +5,11 @@ cd /home/user
 export PYTHONPATH=/home/user
 export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
 mkdir -p outputs/previous outputs/audit
+# Recover an interrupted persistent-file probe before taking a new snapshot.
+if [ -e tmp/hardening_public_edit_active ]; then
+  cp tmp/constraints.before_hardening.py data/constraints.py
+  rm tmp/hardening_public_edit_active
+fi
 python scripts/check_numerics.py
 python eval/test/check_contract.py
 find outputs -maxdepth 1 -type f -name '*.json' -exec mv -t outputs/previous {} +
@@ -16,8 +21,8 @@ from pathlib import Path
 for name,variant in [('better_boundary_fit','periodic6'),('better_boundary_fit_12','periodic'),('better_normalized','normalized'),('weaker_no_gradients','no_gradients'),('weaker_no_acquisition','no_acquisition')]:
     Path(f'outputs/{name}.json').write_text(json.dumps({'protocol':'acl-v2','command':['python','method/gp_acl.py','--variant',variant]}))
 PY
-# Method/simulator changed, so both comparisons are genuinely rerun.
-rm -f eval/train/runs/*.json eval/test/runs/*.json
+# Source digests invalidate changed methods/simulators. Keep completed records
+# across preemptions; this still reruns every changed reference/control.
 bash scripts/evaluate_train.sh --bootstrap --output eval/train/hardening_scores.json
 bash scripts/evaluate_test.sh --bootstrap --output eval/test/hardening_scores.json
 # The rest change only interface/evaluation behavior. Existing prediction
@@ -34,8 +39,10 @@ PY
 # A producer's persistent replacement of data/ used to replace the answer key.
 # The private simulator has no import or dependency on this file.
 cp data/constraints.py tmp/constraints.before_hardening.py
+touch tmp/hardening_public_edit_active
 restore_audit_files() {
   cp tmp/constraints.before_hardening.py data/constraints.py
+  rm -f tmp/hardening_public_edit_active
   if [ -s tmp/baseline.before_hardening.json ]; then
     cp tmp/baseline.before_hardening.json outputs/random_baseline.json
   fi
@@ -53,6 +60,7 @@ cat > outputs/random_baseline.json <<'JSON'
 JSON
 bash scripts/evaluate_test.sh --output eval/test/hardening_scores.json
 cp tmp/constraints.before_hardening.py data/constraints.py
+rm tmp/hardening_public_edit_active
 cp tmp/baseline.before_hardening.json outputs/random_baseline.json
 trap - EXIT
 python scripts/summarize_hardening.py
