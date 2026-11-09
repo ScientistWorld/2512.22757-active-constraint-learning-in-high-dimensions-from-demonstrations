@@ -1,0 +1,12 @@
+{
+  "case": "better_boundary_fit_seed_7",
+  "train_command": "bash scripts/evaluate_train.sh",
+  "test_command": "bash scripts/evaluate_test.sh",
+  "test_arguments": [],
+  "evaluator_modified": false,
+  "training_n_demos": 12,
+  "train_exit": 0,
+  "test_exit": 0,
+  "status": "evaluated",
+  "elapsed_seconds": 10.255639147013426
+}

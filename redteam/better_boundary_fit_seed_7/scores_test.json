@@ -1,0 +1,27 @@
+{
+  "_slice": "test",
+  "experiments": {
+    "scaled_2d_obstacle_recovery": {
+      "slice": "test",
+      "split": "held-out alternating angular sectors of the fixed boundary-band evaluation grid",
+      "results": {
+        "gp_acl": {
+          "accuracy": 0.9896174863387979,
+          "balanced_accuracy": 0.989648343484124,
+          "safe_recall": 0.9825897714907508,
+          "unsafe_recall": 0.9967069154774972,
+          "near_boundary_balanced_accuracy": 0.970098478968642,
+          "n_demos": 12.0
+        },
+        "random_baseline": {
+          "accuracy": 0.9311475409836065,
+          "balanced_accuracy": 0.9314376696858251,
+          "safe_recall": 0.8650707290533188,
+          "unsafe_recall": 0.9978046103183315,
+          "near_boundary_balanced_accuracy": 0.8807971051013517,
+          "n_demos": 12.0
+        }
+      }
+    }
+  }
+}

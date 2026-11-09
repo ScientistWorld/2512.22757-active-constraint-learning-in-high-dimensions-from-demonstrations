@@ -1,0 +1,12 @@
+{
+  "case": "shortcut_false_demo_count",
+  "train_command": "bash scripts/evaluate_train.sh",
+  "test_command": "bash scripts/evaluate_test.sh",
+  "test_arguments": [],
+  "evaluator_modified": false,
+  "training_n_demos": 0,
+  "train_exit": 0,
+  "test_exit": 0,
+  "status": "evaluated",
+  "elapsed_seconds": 1.4144412078894675
+}

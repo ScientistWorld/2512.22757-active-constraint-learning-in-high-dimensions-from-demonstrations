@@ -1,0 +1,14 @@
+{
+  "case": "shortcut_null_predictions",
+  "train_command": "bash scripts/evaluate_train.sh",
+  "test_command": "bash scripts/evaluate_test.sh",
+  "test_arguments": [],
+  "evaluator_modified": false,
+  "training_n_demos": 12,
+  "train_exit": 1,
+  "train_error": "bash returned 1; see /home/user/redteam/shortcut_null_predictions/run.log",
+  "test_exit": 1,
+  "test_error": "bash returned 1; see /home/user/redteam/shortcut_null_predictions/run.log",
+  "status": "evaluated",
+  "elapsed_seconds": 1.2326476410962641
+}
