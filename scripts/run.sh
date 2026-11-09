@@ -1,4 +1,7 @@
 #!/bin/bash
-set -eu
+set -e
+
 cd /home/user
-bash redteam/run_followup.sh > redteam/followup_job.log 2>&1
+
+bash scripts/reproduce.sh
+python validate.py --compare

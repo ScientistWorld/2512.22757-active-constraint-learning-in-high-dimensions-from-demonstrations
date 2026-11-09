@@ -1,0 +1,34 @@
+{
+  "start_commit": "3802f9478bacebf7d056bcd0a2932f08cfdb842b",
+  "research_directories_compared": [
+    "baseline",
+    "briefing",
+    "data",
+    "environment",
+    "eval",
+    "method",
+    "scoring",
+    "scripts"
+  ],
+  "research_files_differing_from_start": [],
+  "original_test_scores_restored_byte_for_byte": true,
+  "seed_7_matches_original_test_scores": true,
+  "finite_evaluated_cases": 28,
+  "nonfinite_evaluated_cases": 2,
+  "rejected_cases": 2,
+  "preexisting_dirty_paths_preserved": [
+    "README.md",
+    "manifest.json",
+    "trajectory/turn_0001_raw.jsonl",
+    "trajectory/turn_0002_raw.jsonl",
+    "trajectory/turn_0003_raw.jsonl",
+    "trajectory/turn_0004_raw.jsonl",
+    "trajectory/turn_0005_raw.jsonl",
+    "trajectory/turn_0006_raw.jsonl",
+    "trajectory/turn_0007_raw.jsonl",
+    "trajectory/turn_0008_raw.jsonl"
+  ],
+  "additional_non_audit_tracked_differences": [],
+  "protocol_exception": "action.yaml is restored now and will be written as action: done after the final audit commit.",
+  "system_note": "Scheduler-created job files and trajectory/session.json removed from the git index to match the starting tree; the session path is managed by a read-only system mount."
+}

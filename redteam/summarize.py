@@ -4,8 +4,7 @@ from __future__ import annotations
 import json
 import math
 from pathlib import Path
-
-import numpy as np
+from statistics import pstdev
 
 
 def main():
@@ -30,7 +29,7 @@ def main():
         cases[name] = metrics
     # Illustrative audit-cohort normalization. Not an invented claim about the
     # unseen future attempt population. Componentwise dominance is scale-free.
-    scales = {k: float(np.std([saved[k]] + [v[k] for v in cases.values()])) for k in spec['metrics']}
+    scales = {k: pstdev([saved[k]] + [v[k] for v in cases.values()]) for k in spec['metrics']}
 
     def delta(metrics, anchor=saved):
         return sum(abs(v['coefficient']) * (1 if v['higher_is_better'] else -1) *

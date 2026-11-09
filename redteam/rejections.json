@@ -1,0 +1,14 @@
+{
+  "shortcut_empty_predictions": {
+    "train_exit": 1,
+    "test_exit": 1,
+    "test_error": "ValueError: outputs/gp_acl_wavy.json predictions and truth shapes differ: (0,) vs (3721,)",
+    "scores_test_written": false
+  },
+  "shortcut_null_predictions": {
+    "train_exit": 1,
+    "test_exit": 1,
+    "test_error": "TypeError: int() argument must be a string, a bytes-like object or a real number, not 'NoneType'",
+    "scores_test_written": false
+  }
+}

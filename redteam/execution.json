@@ -1,0 +1,235 @@
+{
+  "jobs": [
+    {
+      "id": "c5b5049b-953",
+      "meta": {
+        "run_id": "c5b5049b-953",
+        "project_id": "swarm-2512.22757",
+        "command": "bash /home/user/scripts/run.sh",
+        "num_gpus": 0,
+        "num_cpus": 1,
+        "status": "completed",
+        "submitted_at": 1794247537.2514386,
+        "started_at": 1794247544.218682,
+        "completed_at": 1794248444.744649,
+        "returncode": 0,
+        "last_checkpoint_at": null,
+        "checkpoint_count": 0,
+        "timeout_sec": 21600,
+        "resource": "gpu-cpu,gpu-cpu-test",
+        "actual_resource": "gpu-cpu-test",
+        "hive_job_id": "51faac2a"
+      },
+      "result": {
+        "run_id": "c5b5049b-953",
+        "project_id": "swarm-2512.22757",
+        "command": "bash /home/user/scripts/run.sh",
+        "status": "completed",
+        "returncode": 0,
+        "duration": 900.5259668827057,
+        "submitted_at": 1794247537.2514386,
+        "started_at": 1794247544.218682,
+        "completed_at": 1794248444.744649,
+        "stdout": "[hive] This stdout log is managed by Hive.\n[hive] job_id: 51faac2a\n[hive] host: node\n[hive] node_id: db5aaeaf150b8e01128edc0ddeb9b868206c0639ca0f7d18dd3aa9b2\n[hive] user: nexus/user (remote)\n[hive] resource: gpu-cpu-test\n[hive] gpus: 0\n[hive] cpus: 1\n[hive] workdir: /home/user\n[hive] timeout_sec: 21600\n[hive] started_at: 2026-11-09 13:05:41 EST\n[hive] command: apptainer exec --containall --cleanenv --env HF_HOME=/home/user/shared/hf_cache --env TRANSFORMERS_CACHE=/home/user/shared/hf_cache --env HF_DATASETS_CACHE=/home/user/shared/hf_cache/datasets --env TORCH_HOME=/home/user/shared/hf_cache/torch --bind /home/user/scratch/AgentWorkspaces/workspaces/2512.22757:/home/user --overlay /home/user/scratch/AgentWorkspaces/workspaces/2512.22757/environment/overlay.img:ro --bind /home/user/scratch/AgentWorkspaces/shared/datasets:/home/user/shared/datasets:ro --bind /home/user/scratch/AgentWorkspaces/shared/models:/home/user/shared/models:ro --bind /home/user/scratch/AgentWorkspaces/shared/hf_cache:/home/user/shared/hf_cache /home/user/scratch/AgentWorkspaces/workspaces/2512.22757/environment/container.sif bash -c 'cd /home/user && bash /home/user/scripts/run.sh'\n[hive] This stdout log is managed by Hive.\n[hive] job_id: 51faac2a\n[hive] host: node\n[hive] node_id: 81563f355e11be8a0e52f1e0677c660a8363e9cb0b5558d1a68577dd\n[hive] user: nexus/user (remote)\n[hive] resource: gpu-cpu-test\n[hive] gpus: 0\n[hive] cpus: 1\n[hive] workdir: /home/user\n[hive] timeout_sec: 21600\n[hive] started_at: 2026-11-09 13:07:18 EST\n[hive] command: apptainer exec --containall --cleanenv --env HF_HOME=/home/user/shared/hf_cache --env TRANSFORMERS_CACHE=/home/user/shared/hf_cache --env HF_DATASETS_CACHE=/home/user/shared/hf_cache/datasets --env TORCH_HOME=/home/user/shared/hf_cache/torch --bind /home/user/scratch/AgentWorkspaces/workspaces/2512.22757:/home/user --overlay /home/user/scratch/AgentWorkspaces/workspaces/2512.22757/environment/overlay.img:ro --bind /home/user/scratch/AgentWorkspaces/shared/datasets:/home/user/shared/datasets:ro --bind /home/user/scratch/AgentWorkspaces/shared/models:/home/user/shared/models:ro --bind /home/user/scratch/AgentWorkspaces/shared/hf_cache:/home/user/shared/hf_cache /home/user/scratch/AgentWorkspaces/workspaces/2512.22757/environment/container.sif bash -c 'cd /home/user && bash /home/user/scripts/run.sh'\n",
+        "stderr": "[hive] This stderr log is managed by Hive.\n[hive] job_id: 51faac2a\n[hive] host: node\n[hive] node_id: db5aaeaf150b8e01128edc0ddeb9b868206c0639ca0f7d18dd3aa9b2\n[hive] user: nexus/user (remote)\n[hive] resource: gpu-cpu-test\n[hive] gpus: 0\n[hive] cpus: 1\n[hive] workdir: /home/user\n[hive] timeout_sec: 21600\n[hive] started_at: 2026-11-09 13:05:41 EST\n[hive] command: apptainer exec --containall --cleanenv --env HF_HOME=/home/user/shared/hf_cache --env TRANSFORMERS_CACHE=/home/user/shared/hf_cache --env HF_DATASETS_CACHE=/home/user/shared/hf_cache/datasets --env TORCH_HOME=/home/user/shared/hf_cache/torch --bind /home/user/scratch/AgentWorkspaces/workspaces/2512.22757:/home/user --overlay /home/user/scratch/AgentWorkspaces/workspaces/2512.22757/environment/overlay.img:ro --bind /home/user/scratch/AgentWorkspaces/shared/datasets:/home/user/shared/datasets:ro --bind /home/user/scratch/AgentWorkspaces/shared/models:/home/user/shared/models:ro --bind /home/user/scratch/AgentWorkspaces/shared/hf_cache:/home/user/shared/hf_cache /home/user/scratch/AgentWorkspaces/workspaces/2512.22757/environment/container.sif bash -c 'cd /home/user && bash /home/user/scripts/run.sh'\n[hive] Preempted for SLURM worker drain before walltime\n[hive] This stderr log is managed by Hive.\n[hive] job_id: 51faac2a\n[hive] host: node\n[hive] node_id: 81563f355e11be8a0e52f1e0677c660a8363e9cb0b5558d1a68577dd\n[hive] user: nexus/user (remote)\n[hive] resource: gpu-cpu-test\n[hive] gpus: 0\n[hive] cpus: 1\n[hive] workdir: /home/user\n[hive] timeout_sec: 21600\n[hive] started_at: 2026-11-09 13:07:18 EST\n[hive] command: apptainer exec --containall --cleanenv --env HF_HOME=/home/user/shared/hf_cache --env TRANSFORMERS_CACHE=/home/user/shared/hf_cache --env HF_DATASETS_CACHE=/home/user/shared/hf_cache/datasets --env TORCH_HOME=/home/user/shared/hf_cache/torch --bind /home/user/scratch/AgentWorkspaces/workspaces/2512.22757:/home/user --overlay /home/user/scratch/AgentWorkspaces/workspaces/2512.22757/environment/overlay.img:ro --bind /home/user/scratch/AgentWorkspaces/shared/datasets:/home/user/shared/datasets:ro --bind /home/user/scratch/AgentWorkspaces/shared/models:/home/user/shared/models:ro --bind /home/user/scratch/AgentWorkspaces/shared/hf_cache:/home/user/shared/hf_cache /home/user/scratch/AgentWorkspaces/workspaces/2512.22757/environment/container.sif bash -c 'cd /home/user && bash /home/user/scripts/run.sh'\n"
+      }
+    },
+    {
+      "id": "8d727f02-f12",
+      "meta": {
+        "run_id": "8d727f02-f12",
+        "project_id": "swarm-2512.22757",
+        "command": "bash /home/user/scripts/run.sh",
+        "num_gpus": 0,
+        "num_cpus": 1,
+        "status": "completed",
+        "submitted_at": 1794248607.9672968,
+        "started_at": 1794248624.867466,
+        "completed_at": 1794248804.9429698,
+        "returncode": 0,
+        "last_checkpoint_at": null,
+        "checkpoint_count": 0,
+        "timeout_sec": 21600,
+        "resource": "gpu-cpu,gpu-cpu-test",
+        "actual_resource": "gpu-cpu-test",
+        "hive_job_id": "bcb8b22d"
+      },
+      "result": {
+        "run_id": "8d727f02-f12",
+        "project_id": "swarm-2512.22757",
+        "command": "bash /home/user/scripts/run.sh",
+        "status": "completed",
+        "returncode": 0,
+        "duration": 180.07550382614136,
+        "submitted_at": 1794248607.9672968,
+        "started_at": 1794248624.867466,
+        "completed_at": 1794248804.9429698,
+        "stdout": "[hive] This stdout log is managed by Hive.\n[hive] job_id: bcb8b22d\n[hive] host: node\n[hive] node_id: fe280190ae2140880c2fe686a7b9e2be4ebd14426deb45e393737317\n[hive] user: nexus/user (remote)\n[hive] resource: gpu-cpu-test\n[hive] gpus: 0\n[hive] cpus: 1\n[hive] workdir: /home/user\n[hive] timeout_sec: 21600\n[hive] started_at: 2026-11-09 13:23:33 EST\n[hive] command: apptainer exec --containall --cleanenv --env HF_HOME=/home/user/shared/hf_cache --env TRANSFORMERS_CACHE=/home/user/shared/hf_cache --env HF_DATASETS_CACHE=/home/user/shared/hf_cache/datasets --env TORCH_HOME=/home/user/shared/hf_cache/torch --bind /home/user/scratch/AgentWorkspaces/workspaces/2512.22757:/home/user --overlay /home/user/scratch/AgentWorkspaces/workspaces/2512.22757/environment/overlay.img:ro --bind /home/user/scratch/AgentWorkspaces/shared/datasets:/home/user/shared/datasets:ro --bind /home/user/scratch/AgentWorkspaces/shared/models:/home/user/shared/models:ro --bind /home/user/scratch/AgentWorkspaces/shared/hf_cache:/home/user/shared/hf_cache /home/user/scratch/AgentWorkspaces/workspaces/2512.22757/environment/container.sif bash -c 'cd /home/user && bash /home/user/scripts/run.sh'\n",
+        "stderr": "[hive] This stderr log is managed by Hive.\n[hive] job_id: bcb8b22d\n[hive] host: node\n[hive] node_id: fe280190ae2140880c2fe686a7b9e2be4ebd14426deb45e393737317\n[hive] user: nexus/user (remote)\n[hive] resource: gpu-cpu-test\n[hive] gpus: 0\n[hive] cpus: 1\n[hive] workdir: /home/user\n[hive] timeout_sec: 21600\n[hive] started_at: 2026-11-09 13:23:33 EST\n[hive] command: apptainer exec --containall --cleanenv --env HF_HOME=/home/user/shared/hf_cache --env TRANSFORMERS_CACHE=/home/user/shared/hf_cache --env HF_DATASETS_CACHE=/home/user/shared/hf_cache/datasets --env TORCH_HOME=/home/user/shared/hf_cache/torch --bind /home/user/scratch/AgentWorkspaces/workspaces/2512.22757:/home/user --overlay /home/user/scratch/AgentWorkspaces/workspaces/2512.22757/environment/overlay.img:ro --bind /home/user/scratch/AgentWorkspaces/shared/datasets:/home/user/shared/datasets:ro --bind /home/user/scratch/AgentWorkspaces/shared/models:/home/user/shared/models:ro --bind /home/user/scratch/AgentWorkspaces/shared/hf_cache:/home/user/shared/hf_cache /home/user/scratch/AgentWorkspaces/workspaces/2512.22757/environment/container.sif bash -c 'cd /home/user && bash /home/user/scripts/run.sh'\n"
+      }
+    }
+  ],
+  "cases": [
+    {
+      "case": "reference_seed_7",
+      "test_exit": 0,
+      "elapsed_seconds": 165.71858225297183
+    },
+    {
+      "case": "reference_seed_17",
+      "test_exit": 0,
+      "elapsed_seconds": 127.97350237006322
+    },
+    {
+      "case": "reference_seed_27",
+      "test_exit": 0,
+      "elapsed_seconds": 146.24557050992735
+    },
+    {
+      "case": "better_boundary_fit_seed_7",
+      "test_exit": 0,
+      "elapsed_seconds": 10.255639147013426
+    },
+    {
+      "case": "better_boundary_fit_seed_17",
+      "test_exit": 0,
+      "elapsed_seconds": 10.802363803843036
+    },
+    {
+      "case": "better_boundary_fit_seed_27",
+      "test_exit": 0,
+      "elapsed_seconds": 15.004632387077436
+    },
+    {
+      "case": "weaker_no_acquisition",
+      "test_exit": 0,
+      "elapsed_seconds": 62.02218248206191
+    },
+    {
+      "case": "weaker_random",
+      "test_exit": 0,
+      "elapsed_seconds": 0.9567357168998569
+    },
+    {
+      "case": "more_training",
+      "test_exit": 0,
+      "elapsed_seconds": 78.96131769288331
+    },
+    {
+      "case": "shortcut_oracle",
+      "test_exit": 0,
+      "elapsed_seconds": 1.2532837691251189
+    },
+    {
+      "case": "shortcut_grid_order",
+      "test_exit": 0,
+      "elapsed_seconds": 1.386389342136681
+    },
+    {
+      "case": "shortcut_grid_resize",
+      "test_exit": 0,
+      "elapsed_seconds": 1.2624451629817486
+    },
+    {
+      "case": "shortcut_false_demo_count",
+      "test_exit": 0,
+      "elapsed_seconds": 1.4144412078894675
+    },
+    {
+      "case": "shortcut_negative_demo_count",
+      "test_exit": 0,
+      "elapsed_seconds": 1.126272909110412
+    },
+    {
+      "case": "shortcut_replace_ground_truth",
+      "test_exit": 0,
+      "elapsed_seconds": 1.408863397082314
+    },
+    {
+      "case": "shortcut_move_baseline",
+      "test_exit": 0,
+      "elapsed_seconds": 1.2710461260285228
+    },
+    {
+      "case": "shortcut_forge_scores",
+      "test_exit": 0,
+      "elapsed_seconds": 1.5204315381124616
+    },
+    {
+      "case": "shortcut_forge_truth_flags",
+      "test_exit": 0,
+      "elapsed_seconds": 1.6862991559319198
+    },
+    {
+      "case": "shortcut_constant_safe",
+      "test_exit": 0,
+      "elapsed_seconds": 1.2818000460974872
+    },
+    {
+      "case": "shortcut_constant_unsafe",
+      "test_exit": 0,
+      "elapsed_seconds": 1.534969164058566
+    },
+    {
+      "case": "shortcut_impossible_predictions",
+      "test_exit": 0,
+      "elapsed_seconds": 1.423929353011772
+    },
+    {
+      "case": "shortcut_empty_predictions",
+      "test_exit": 1,
+      "elapsed_seconds": 1.2044236441142857
+    },
+    {
+      "case": "shortcut_null_predictions",
+      "test_exit": 1,
+      "elapsed_seconds": 1.2326476410962641
+    },
+    {
+      "case": "shortcut_nan_count",
+      "test_exit": 0,
+      "elapsed_seconds": 1.4665860750246793
+    },
+    {
+      "case": "shortcut_neg_inf_count",
+      "test_exit": 0,
+      "elapsed_seconds": 1.3823353562038392
+    },
+    {
+      "case": "shortcut_over_budget",
+      "test_exit": 0,
+      "elapsed_seconds": 141.10752232302912
+    },
+    {
+      "case": "random_baseline_seed_17",
+      "test_exit": 0,
+      "elapsed_seconds": 87.87767882994376
+    },
+    {
+      "case": "random_baseline_seed_27",
+      "test_exit": 0,
+      "elapsed_seconds": 70.64809393300675
+    },
+    {
+      "case": "weaker_no_gradients",
+      "test_exit": 0,
+      "elapsed_seconds": 5.949716408038512
+    },
+    {
+      "case": "better_simplified_boundary_fit_seed_7",
+      "test_exit": 0,
+      "elapsed_seconds": 3.830138917081058
+    },
+    {
+      "case": "better_simplified_boundary_fit_seed_17",
+      "test_exit": 0,
+      "elapsed_seconds": 5.612097017932683
+    },
+    {
+      "case": "better_simplified_boundary_fit_seed_27",
+      "test_exit": 0,
+      "elapsed_seconds": 2.839539745124057
+    }
+  ],
+  "n_cases": 32
+}
