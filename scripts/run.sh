@@ -1,4 +1,4 @@
 #!/bin/bash
 set -eu
 cd /home/user
-bash redteam/run_all.sh > redteam/job.log 2>&1
+bash redteam/run_followup.sh > redteam/followup_job.log 2>&1

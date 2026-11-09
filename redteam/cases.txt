@@ -24,3 +24,9 @@ shortcut_null_predictions
 shortcut_nan_count
 shortcut_neg_inf_count
 shortcut_over_budget
+random_baseline_seed_17
+random_baseline_seed_27
+weaker_no_gradients
+better_simplified_boundary_fit_seed_7
+better_simplified_boundary_fit_seed_17
+better_simplified_boundary_fit_seed_27

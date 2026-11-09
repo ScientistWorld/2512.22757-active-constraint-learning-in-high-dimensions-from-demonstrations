@@ -87,12 +87,24 @@ def run_case(name: str):
                 seed = int(name.rsplit('_', 1)[1])
                 artifact, _ = trained('reference', seed, log)
                 result = json.loads(artifact.read_text())
-            elif name.startswith('better_boundary_fit_seed_'):
+            elif name.startswith('better_boundary_fit_seed_') or name.startswith('better_simplified_boundary_fit_seed_'):
                 seed = int(name.rsplit('_', 1)[1])
                 _, demos = trained('reference', seed, log)
                 artifact = folder/'artifact.json'
-                command([sys.executable, '-m', 'redteam.research_variant', '--variant', 'better_boundary_fit',
+                variant = name.rsplit('_seed_', 1)[0]
+                command([sys.executable, '-m', 'redteam.research_variant', '--variant', variant,
                          '--seed', str(seed), '--output', str(artifact), '--demos', str(demos)], log)
+                result = json.loads(artifact.read_text())
+            elif name.startswith('random_baseline_seed_'):
+                seed = int(name.rsplit('_', 1)[1])
+                artifact, _ = trained('weaker_random', seed, log)
+                result = json.loads(artifact.read_text())
+                result['method'] = 'gp_acl'
+            elif name == 'weaker_no_gradients':
+                _, demos = trained('reference', 7, log)
+                artifact = folder/'artifact.json'
+                command([sys.executable, '-m', 'redteam.research_variant', '--variant', name,
+                         '--output', str(artifact), '--demos', str(demos)], log)
                 result = json.loads(artifact.read_text())
             elif name in ('weaker_no_acquisition', 'weaker_random', 'more_training', 'shortcut_over_budget'):
                 artifact, _ = trained(name, 7, log)

@@ -17,7 +17,7 @@ from data.constraints import make_eval_grid
 from method import gp_acl as acl
 
 
-def fit_boundary(demos: list, output: Path, seed: int) -> None:
+def fit_boundary(demos: list, output: Path, seed: int, simplify: bool = False) -> None:
     points, normals = [], []
     for path in demos:
         p, n = acl.kkt_tight_points(np.asarray(path))
@@ -45,12 +45,37 @@ def fit_boundary(demos: list, output: Path, seed: int) -> None:
     b = np.r_[radii, 0.2 * dr]
     penalty = 1e-6 * np.r_[0., harmonics ** 4, harmonics ** 4]
     coef = np.linalg.solve(a.T @ a + np.diag(penalty), a.T @ b)
+    rounding = None
+    if simplify:
+        # Select the shortest decimal representation that preserves contact
+        # fit at the supplied simulator's 2e-4 feasibility tolerance. Selection
+        # uses ONLY demonstration contacts, never evaluation labels/scores.
+        tolerance = max(2e-4, 3 * float(np.sqrt(np.mean((design(theta) @ coef - radii)**2))))
+        for decimals in range(7):
+            candidate = np.round(coef, decimals)
+            if np.max(np.abs(design(theta) @ candidate - radii)) <= tolerance:
+                coef = candidate
+                rounding = decimals
+                break
     grid = make_eval_grid(61, 'wavy')
-    pred = (np.linalg.norm(grid, axis=1) >= design(np.arctan2(grid[:, 1], grid[:, 0])) @ coef).astype(int)
+    if simplify:
+        # Evaluate the learned implicit constraint. Skip zero coefficients;
+        # these are learned and compressed, not constants from task data.
+        angle = np.arctan2(grid[:, 1], grid[:, 0])
+        radius = np.full(len(grid), coef[0])
+        for j, h in enumerate(harmonics):
+            if coef[1+j] != 0:
+                radius += coef[1+j] * np.sin(h * angle)
+        for j, h in enumerate(harmonics):
+            if coef[1+len(harmonics)+j] != 0:
+                radius += coef[1+len(harmonics)+j] * np.cos(h * angle)
+        pred = (radius**2 - (grid[:, 0]**2 + grid[:, 1]**2) <= 0).astype(int)
+    else:
+        pred = (np.linalg.norm(grid, axis=1) >= design(np.arctan2(grid[:, 1], grid[:, 0])) @ coef).astype(int)
     result = dict(method='gp_acl', constraint='wavy', predictions=pred.tolist(),
                   n_demos=len(demos), settings=dict(eval_grid=61, seed=seed),
-                  audit_variant='better_boundary_fit', n_contacts=len(points),
-                  fitted_coefficients=coef.tolist())
+                  audit_variant='better_simplified_boundary_fit' if simplify else 'better_boundary_fit',
+                  n_contacts=len(points), fitted_coefficients=coef.tolist(), rounding_decimals=rounding)
     output.write_text(json.dumps(result))
 
 
@@ -62,8 +87,20 @@ def main():
     p.add_argument('--demos', type=Path)
     args = p.parse_args()
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    if args.variant == 'better_boundary_fit':
-        fit_boundary(json.loads(args.demos.read_text()), args.output, args.seed)
+    if args.variant in ('better_boundary_fit', 'better_simplified_boundary_fit'):
+        fit_boundary(json.loads(args.demos.read_text()), args.output, args.seed,
+                     simplify=args.variant == 'better_simplified_boundary_fit')
+        return
+    if args.variant == 'weaker_no_gradients':
+        # The derivative observations carry the sign information; remove this
+        # key ingredient while keeping all 12 demonstrations and contacts.
+        demos = json.loads(args.demos.read_text())
+        points = np.vstack([acl.kkt_tight_points(np.asarray(path))[0] for path in demos])
+        gp = acl.GPModel(points, np.zeros(len(points)), [('value', -1)] * len(points))
+        pred = acl.predict_grid(gp, make_eval_grid(61, 'wavy'))
+        args.output.write_text(json.dumps(dict(method='gp_acl', constraint='wavy',
+            predictions=pred.tolist(), n_demos=len(demos), settings=dict(eval_grid=61, seed=args.seed),
+            audit_variant='weaker_no_gradients')))
         return
     config = acl.build_parser().parse_args([])
     config.seed = args.seed
