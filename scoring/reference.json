@@ -106,11 +106,11 @@
         },
         "gp_acl": {
           "type": "proposed",
-          "accuracy": 0.0,
-          "balanced_accuracy": 0.0,
-          "near_boundary_balanced_accuracy": 0.0,
-          "safe_recall": 0.0,
-          "unsafe_recall": 0.0
+          "accuracy": 0.6139933268229166,
+          "balanced_accuracy": 0.7570021170365999,
+          "near_boundary_balanced_accuracy": 0.7257649864042423,
+          "safe_recall": 0.7887928693148383,
+          "unsafe_recall": 0.7252113647583617
         }
       }
     },
@@ -157,11 +157,11 @@
         },
         "gp_acl": {
           "type": "proposed",
-          "accuracy": 0.0,
-          "balanced_accuracy": 0.0,
-          "near_boundary_balanced_accuracy": 0.0,
-          "safe_recall": 0.0,
-          "unsafe_recall": 0.0
+          "accuracy": 0.8300577799479166,
+          "balanced_accuracy": 0.7531000448555781,
+          "near_boundary_balanced_accuracy": 0.6769293415322668,
+          "safe_recall": 0.6736176530734471,
+          "unsafe_recall": 0.832582436637709
         }
       }
     }
