@@ -11,10 +11,9 @@ report={'before':{'reference_accuracy':.9546448087431694,'random_accuracy':.9311
         'train_rank':train['_rank'],'train_metrics':{e:v['results'] for e,v in train['experiments'].items()},
         'paired':{},'test_failures':test['_failures']}
 rng=np.random.default_rng(872)
-for candidate in ['random_baseline','better_boundary_fit','better_boundary_fit_12','better_normalized','weaker_no_acquisition']:
+for candidate in ['random_baseline','better_boundary_fit','better_boundary_fit_12','better_normalized','weaker_no_acquisition','weaker_no_gradients']:
     differences={}
     for exp in test['experiments']:
-        if candidate in test['_failures']:continue
         reference=test['_paired_metrics']['gp_acl'][exp]
         values=test['_paired_metrics'][candidate][exp]
         differences[exp]={}
@@ -23,11 +22,25 @@ for candidate in ['random_baseline','better_boundary_fit','better_boundary_fit_1
             bootstrap=diff[rng.integers(0,len(diff),(10000,len(diff)))].mean(axis=1)
             differences[exp][metric]={'mean':float(diff.mean()),'paired_95_interval':np.quantile(bootstrap,[.025,.975]).tolist(),'wins':int((diff>0).sum()),'n':len(diff)}
     report['paired'][candidate]=differences
+# Development uses the same paired comparison, independently of test. Failed
+# runs retain raw metric diagnostics, but never acquire a successful rank.
+report['train_paired']={}
+for candidate in ['random_baseline','better_boundary_fit','better_boundary_fit_12','better_normalized','weaker_no_acquisition','weaker_no_gradients']:
+    differences={}
+    for exp in train['experiments']:
+        reference=train['_paired_metrics']['gp_acl'][exp]
+        values=train['_paired_metrics'][candidate][exp]
+        differences[exp]={}
+        for metric in reference[0]:
+            diff=np.array([a[metric]-b[metric] for a,b in zip(values,reference)])
+            bootstrap=diff[rng.integers(0,len(diff),(10000,len(diff)))].mean(axis=1)
+            differences[exp][metric]={'mean':float(diff.mean()),'paired_95_interval':np.quantile(bootstrap,[.025,.975]).tolist(),'wins':int((diff>0).sum()),'n':len(diff)}
+    report['train_paired'][candidate]=differences
 # Normalized ranking gain: paired resampling uses the same task indices for
 # candidate and reference, and fixed cohort scales reported by the ranker.
 config=json.loads(Path('eval/test/scoring_config.json').read_text())
 report['paired_rank']={}
-for candidate in ['random_baseline','better_boundary_fit','better_boundary_fit_12','better_normalized','weaker_no_acquisition']:
+for candidate in ['random_baseline','better_boundary_fit','better_boundary_fit_12','better_normalized','weaker_no_acquisition','weaker_no_gradients']:
     if candidate in test['_failures']:continue
     bootstrap_total=np.zeros(10000);mean_total=0.
     for exp,spec in config['experiments'].items():

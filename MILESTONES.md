@@ -2,4 +2,4 @@
 
 Current: `method_runs`.
 
-The restored GP-ACL pipeline, its KKT/GP numerical checks and online protocol ran end to end on both independent splits. The first combined hardening verification failed the recall gate and did not reproduce the active-over-random claim. Physical-unit and constrained-solver corrections are awaiting a combined rerun. No core-claim, high-dimensional or hardware milestone is claimed. Historical claims from the earlier simplified implementation are withdrawn.
+The actual GP-ACL computational pipeline and its mathematical checks run end to end on both independent splits. The second combined job passes reference quality and demonstrates clear paired headroom, but does not reproduce active-over-random accuracy. A larger paired, equal-budget setup with corrected acquisition initialization is awaiting verification. No core-claim, high-dimensional or hardware milestone is claimed. Historical claims from the simplified implementation are withdrawn.

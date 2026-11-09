@@ -8,8 +8,8 @@ mkdir -p outputs/previous
 find outputs -maxdepth 1 -type f -name '*.json' -exec mv -t outputs/previous {} +
 bash scripts/baseline.sh
 bash scripts/method.sh
-rm -f eval/train/runs/gp_acl.json eval/train/runs/random_baseline.json
-rm -f eval/test/runs/gp_acl.json eval/test/runs/random_baseline.json
+# Source-versioned records allow resumption after preemption. A fresh clone
+# has no per-attempt runs, so both controls are reproduced end to end.
 bash scripts/evaluate_train.sh --bootstrap
 bash scripts/evaluate_test.sh --bootstrap
 python scripts/publish_reference.py

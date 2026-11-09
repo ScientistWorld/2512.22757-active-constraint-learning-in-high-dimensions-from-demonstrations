@@ -13,4 +13,7 @@ second=rank(rescaled,{'x':{'a':500,'b':.01}}, {'failed':['constraint']},spec)
 assert abs(first['values']['better']-second['values']['better'])<1e-10
 zero=rank({'r':anchor},anchor,{},spec)
 assert zero['values']['r']==0
+empty=rank({'failed':anchor},anchor,{'failed':['constraint']},spec)
+assert empty['values']['failed'] is None
+assert all(value==0 for value in empty['population_std'].values())
 print('Ranking direction, coefficient magnitudes, unit invariance, zero variance and failure ordering: pass')

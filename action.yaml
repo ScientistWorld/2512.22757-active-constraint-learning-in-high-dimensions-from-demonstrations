@@ -2,4 +2,4 @@ action: submit
 gpus: 0
 test: false
 milestone: method_runs
-notes: "Combined follow-up after failed quality gate: restore physical units, analytic acquisition derivatives and continuous ray solves; rerun final reference/random, paired variants and fixed shortcuts, freeze raw controls, publish reference-only scores and validate. Resume versioned checkpoints after preemption."
+notes: "Combined verification: contact-initialized P3, equal 20-demo/80-proposal caps, 36 paired instances per experiment; rerun final reference/random and better/weaker variants, replay fixed shortcuts, quantify paired effects, publish reference-only scores and validate. Preserve versioned checkpoints."

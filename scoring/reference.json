@@ -61,7 +61,7 @@
       }
     }
   },
-  "_scale_note": "Double-integrator dynamics are eliminated exactly and reconstructed at dt=1, T=30. Position coordinates use physical paper units, with bounds [-10, 10]. Twelve private instances per experiment; fixed 12-demonstration cap, 40 proposal cap, 3 fits, 1000 RFF. Added boundary-focused metrics and a more complex boundary stress experiment. These measured results are not on the paper sampling scale.",
+  "_scale_note": "Double-integrator dynamics are eliminated exactly and reconstructed at dt=1, T=30 in physical position units, bounds [-10,10]. Thirty-six paired private instances per experiment; 20-demonstration cap including four initial trajectories, 80 proposal cap, 3 GP fits, 1000 RFF. P3 starts near inferred boundary contacts. Boundary metrics and a complex-boundary stress experiment extend the paper sampling protocol. Original reported numbers remain in _paper_reported_*; split-specific benchmark measurements are separate.",
   "experiments": {
     "double_integrator_g3": {
       "description": "Private rotated/rescaled instances of the paper Appendix B g3 constraint, with double-integrator demonstrations.",
@@ -97,12 +97,7 @@
       },
       "results": {
         "random_baseline": {
-          "type": "baseline",
-          "accuracy": 0.0,
-          "balanced_accuracy": 0.0,
-          "near_boundary_balanced_accuracy": 0.0,
-          "safe_recall": 0.0,
-          "unsafe_recall": 0.0
+          "type": "baseline"
         },
         "gp_acl": {
           "type": "proposed",
@@ -148,12 +143,7 @@
       },
       "results": {
         "random_baseline": {
-          "type": "baseline",
-          "accuracy": 0.0,
-          "balanced_accuracy": 0.0,
-          "near_boundary_balanced_accuracy": 0.0,
-          "safe_recall": 0.0,
-          "unsafe_recall": 0.0
+          "type": "baseline"
         },
         "gp_acl": {
           "type": "proposed",
@@ -162,6 +152,113 @@
           "near_boundary_balanced_accuracy": 0.6769293415322668,
           "safe_recall": 0.6736176530734471,
           "unsafe_recall": 0.832582436637709
+        }
+      }
+    }
+  },
+  "_measured_reference_runs": {
+    "train": {
+      "experiments": {
+        "double_integrator_g3": {
+          "results": {
+            "gp_acl": {
+              "accuracy": 0.677490234375,
+              "balanced_accuracy": 0.7563155001291605,
+              "near_boundary_balanced_accuracy": 0.717345491381025,
+              "safe_recall": 0.7756487108382252,
+              "unsafe_recall": 0.7369822894200956
+            },
+            "random_baseline": {
+              "accuracy": 0.6241251627604166,
+              "balanced_accuracy": 0.7470365149699286,
+              "near_boundary_balanced_accuracy": 0.7176616178728096,
+              "safe_recall": 0.7751698480864261,
+              "unsafe_recall": 0.7189031818534314
+            }
+          }
+        },
+        "complex_boundary_stress": {
+          "results": {
+            "gp_acl": {
+              "accuracy": 0.8143717447916666,
+              "balanced_accuracy": 0.767448813890648,
+              "near_boundary_balanced_accuracy": 0.6954117537034543,
+              "safe_recall": 0.6872469557973618,
+              "unsafe_recall": 0.8476506719839337
+            },
+            "random_baseline": {
+              "accuracy": 0.820068359375,
+              "balanced_accuracy": 0.7664271360601175,
+              "near_boundary_balanced_accuracy": 0.6957592302828449,
+              "safe_recall": 0.6923687934060162,
+              "unsafe_recall": 0.8404854787142185
+            }
+          }
+        }
+      },
+      "failures": {},
+      "raw_metrics_of_failed": {}
+    },
+    "test": {
+      "experiments": {
+        "double_integrator_g3": {
+          "results": {
+            "gp_acl": {
+              "accuracy": 0.6139933268229166,
+              "balanced_accuracy": 0.7570021170365999,
+              "near_boundary_balanced_accuracy": 0.7257649864042423,
+              "safe_recall": 0.7887928693148383,
+              "unsafe_recall": 0.7252113647583617
+            },
+            "random_baseline": {
+              "accuracy": 0.0,
+              "balanced_accuracy": 0.0,
+              "near_boundary_balanced_accuracy": 0.0,
+              "safe_recall": 0.0,
+              "unsafe_recall": 0.0
+            }
+          }
+        },
+        "complex_boundary_stress": {
+          "results": {
+            "gp_acl": {
+              "accuracy": 0.8300577799479166,
+              "balanced_accuracy": 0.7531000448555781,
+              "near_boundary_balanced_accuracy": 0.6769293415322668,
+              "safe_recall": 0.6736176530734471,
+              "unsafe_recall": 0.832582436637709
+            },
+            "random_baseline": {
+              "accuracy": 0.0,
+              "balanced_accuracy": 0.0,
+              "near_boundary_balanced_accuracy": 0.0,
+              "safe_recall": 0.0,
+              "unsafe_recall": 0.0
+            }
+          }
+        }
+      },
+      "failures": {
+        "random_baseline": [
+          "required safe/unsafe recall below .60"
+        ]
+      },
+      "raw_metrics_of_failed": {
+        "random_baseline": {
+          "double_integrator_g3": {
+            "accuracy": 0.6154581705729166,
+            "balanced_accuracy": 0.7704949829127351,
+            "near_boundary_balanced_accuracy": 0.7416662975105135,
+            "safe_recall": 0.7399780068383955,
+            "unsafe_recall": 0.8010119589870747
+          },
+          "complex_boundary_stress": {
+            "accuracy": 0.86468505859375,
+            "balanced_accuracy": 0.7438554264778939,
+            "near_boundary_balanced_accuracy": 0.6670438192482254,
+            "safe_recall": 0.5891881824685089,
+            "unsafe_recall": 0.8985226704872793
+          }
         }
       }
     }

@@ -188,7 +188,7 @@ def scalar_feasible_extreme(constraints, upper, length, nearest=True):
     return min(feasible) if nearest else max(feasible)
 
 
-def solve_queries(gp, rng, bounds, n_samples=2):
+def solve_queries(gp, rng, bounds, n_samples=4):
     """The continuous Programs 3--6, in physical position/cost units.
 
     P3 uses analytic derivatives and dimensionless residuals. P4--6 reduce
@@ -197,8 +197,6 @@ def solve_queries(gp, rng, bounds, n_samples=2):
     endpoints and does not normalize the raw gradient in Equation 7.
     """
     lo,hi=np.asarray(bounds).T
-    init=rng.uniform(lo,hi,(384,2))
-    _,variance=gp.mean_var(init)
     signal=max(gp.signal,1e-10)
     pairs=[]
     def ray_bound(center,vector):
@@ -206,9 +204,14 @@ def solve_queries(gp, rng, bounds, n_samples=2):
                     (lo[d]-center[d])/vector[d] for d in range(2) if abs(vector[d])>1e-12])
     for _ in range(n_samples):
         f=gp.sample_function(rng,1000,.3)
-        vals=f(init)
-        candidates=np.argsort(np.abs(vals))[:64]
-        starts=init[candidates[np.argsort(variance[candidates])[-6:]]]
+        # P3 is a local constrained nonlinear program, as in the paper's
+        # IPOPT implementation. Initialize it on the inferred boundary, rather
+        # than selecting distant zero contours of a prior Fourier draw. The
+        # latter can maximize variance without querying the actual obstacle.
+        candidates=gp.points[np.all((gp.points>=lo)&(gp.points<=hi),axis=1)]
+        if not len(candidates): continue
+        selected=rng.choice(len(candidates),min(6,len(candidates)),replace=False)
+        starts=np.clip(candidates[selected]+rng.normal(0,.02*gp.ls,(len(selected),2)),lo,hi)
         solutions=[]
         for start in starts:
             res=minimize(lambda q:-gp.mean_var(q)[1][0]/signal**2,start,
@@ -291,6 +294,7 @@ def main():
     demos=list(task['initial_demos'])
     bounds=task['bounds']
     available_requests=task['query_limit']
+    per_stage=max(1,(task['budget']-len(demos))//2)
     for iteration in range(3):
         contacts=[kkt_tight_points(d) for d in demos]
         points=np.vstack([p for p,g in contacts]); gradients=np.vstack([g for p,g in contacts])
@@ -300,16 +304,17 @@ def main():
         if available_requests<=0:
             continue
         accepted=0
+        target=min(per_stage,task['budget']-len(demos))
         for query_round in range(8):
-            if accepted>=4:
+            if accepted>=target:
                 break
             if args.variant=='random' or gp is None:
                 lo,hi=np.asarray(bounds).T
-                pairs=[rng.uniform(lo,hi,(2,2)) for _ in range(4-accepted)]
+                pairs=[rng.uniform(lo,hi,(2,2)) for _ in range(target-accepted)]
             else:
                 pairs=solve_queries(gp,rng,bounds)
             for pair in pairs:
-                if accepted>=4:
+                if accepted>=target:
                     break
                 response=send({'op':'query','start':pair[0].tolist(),'goal':pair[1].tolist()})
                 available_requests=response.get('requests_remaining',0)

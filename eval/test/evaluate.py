@@ -26,9 +26,9 @@ def load(path):
     return json.loads(Path(path).read_text(),parse_constant=lambda v:(_ for _ in ()).throw(ValueError('nonfinite JSON '+v)))
 
 
-def write(path,data):
+def write(path,data,compact=False):
     path=Path(path); path.parent.mkdir(parents=True,exist_ok=True)
-    temp=path.with_suffix('.tmp'); temp.write_text(json.dumps(data,indent=2,allow_nan=False)); temp.replace(path)
+    temp=path.with_suffix('.tmp'); temp.write_text(json.dumps(data,indent=None if compact else 2,allow_nan=False)); temp.replace(path)
 
 
 def command_digest(manifest):
@@ -58,7 +58,10 @@ def command_digest(manifest):
                         except ValueError: continue
                         if dependency.is_file(): pending.append(dependency.resolve())
     # Own task/evaluator versions invalidate caches when the setup changes.
-    digest.update((HERE/'tasks.py').read_bytes()); digest.update(Path(__file__).read_bytes())
+    digest.update((HERE/'tasks.py').read_bytes())
+    # Metric/rank changes rescore raw outputs. Bump this version only when
+    # acquisition messages or their interpretation change.
+    digest.update(b'acl-v2-online-protocol-2')
     return digest.hexdigest()
 
 
@@ -109,6 +112,8 @@ def run_instance(manifest,task):
             demo=oracle_cache[key]
             ledger.append({'start':endpoints[0].tolist(),'goal':endpoints[1].tolist(),'demo':demo})
             tell({'demo':demo,'requests_remaining':REQUEST_LIMIT-len(ledger)})
+        if not isinstance(final,dict) or set(final)-{'predictions','n_demos'}:
+            raise ValueError('final output may contain only predictions and optional authenticated n_demos')
         pred=np.asarray(final['predictions'])
         if pred.shape!=(len(points),) or pred.dtype.kind not in 'biuf' or not np.all(np.isfinite(pred)) or not np.all((pred==0)|(pred==1)):
             raise ValueError('predictions must be finite binary labels of evaluator-owned size')
@@ -164,8 +169,8 @@ def rank(all_metrics,anchors,failures,reference):
     ranks={name:0. for name in valid};scales={}
     for exp,spec in reference['experiments'].items():
         for metric,definition in spec['metrics'].items():
-            population=[anchors[exp][metric]]+[all_metrics[name][exp][metric] for name in valid]
-            scale=float(np.std(population));scales[f'{exp}.{metric}']=scale
+            population=[all_metrics[name][exp][metric] for name in valid]
+            scale=float(np.std(population)) if population else 0.;scales[f'{exp}.{metric}']=scale
             if scale==0: continue  # zero variation implies zero improvements.
             direction=1 if definition['higher_is_better'] else -1
             for name in valid:
@@ -225,7 +230,7 @@ def main():
     if args.bootstrap:
         for name in ('gp_acl','random_baseline'):
             if name not in raw: raise ValueError('Bootstrap requires reference and random baseline manifests')
-        write(fixed_path,{name:raw[name] for name in ('gp_acl','random_baseline')})
+        write(fixed_path,{name:raw[name] for name in ('gp_acl','random_baseline')},compact=True)
     fixed=load(fixed_path)
     anchors={}
     for name in ('gp_acl','random_baseline'):
