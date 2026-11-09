@@ -1,7 +1,4 @@
 #!/bin/bash
-set -e
-
+set -eu
 cd /home/user
-
-bash scripts/reproduce.sh
-python validate.py --compare
+bash redteam/run_all.sh > redteam/job.log 2>&1
