@@ -1,8 +1,5 @@
-# Once you set action to 'submit' or 'done', STOP immediately.
-# Do NOT sleep, poll, or wait for jobs. The system reads this file
-# only after your turn ends.
-action: pending
+action: submit
 gpus: 0
 test: false
-milestone: core_claim
-notes: ""
+milestone: none
+notes: "One combined CPU job: restored GP-ACL and random baseline end to end on paired train/test instances; stronger/weaker variants, major shortcut replays, frozen raw comparisons, reference-only scores and validation."

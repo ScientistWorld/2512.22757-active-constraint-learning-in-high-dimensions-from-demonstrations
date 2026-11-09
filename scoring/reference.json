@@ -96,12 +96,21 @@
         }
       },
       "results": {
+        "random_baseline": {
+          "type": "baseline",
+          "accuracy": 0.0,
+          "balanced_accuracy": 0.0,
+          "near_boundary_balanced_accuracy": 0.0,
+          "safe_recall": 0.0,
+          "unsafe_recall": 0.0
+        },
         "gp_acl": {
           "type": "proposed",
-          "accuracy": 0
-        },
-        "random_baseline": {
-          "type": "baseline"
+          "accuracy": 0.0,
+          "balanced_accuracy": 0.0,
+          "near_boundary_balanced_accuracy": 0.0,
+          "safe_recall": 0.0,
+          "unsafe_recall": 0.0
         }
       }
     },
@@ -138,12 +147,21 @@
         }
       },
       "results": {
+        "random_baseline": {
+          "type": "baseline",
+          "accuracy": 0.0,
+          "balanced_accuracy": 0.0,
+          "near_boundary_balanced_accuracy": 0.0,
+          "safe_recall": 0.0,
+          "unsafe_recall": 0.0
+        },
         "gp_acl": {
           "type": "proposed",
-          "accuracy": 0
-        },
-        "random_baseline": {
-          "type": "baseline"
+          "accuracy": 0.0,
+          "balanced_accuracy": 0.0,
+          "near_boundary_balanced_accuracy": 0.0,
+          "safe_recall": 0.0,
+          "unsafe_recall": 0.0
         }
       }
     }
