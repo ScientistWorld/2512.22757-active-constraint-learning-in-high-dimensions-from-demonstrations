@@ -128,9 +128,12 @@ def run_instance(manifest,task):
     except Exception as exc:
         failure=str(exc);pred=[]
     finally:
-        process.kill();process.communicate(timeout=10)
+        process.kill()
+        _,producer_stderr=process.communicate(timeout=10)
+    # Retain diagnostics as opaque text. No scored calculation reads this field.
     return {'instance':instance_id(task.experiment,task.index),'predictions':pred,
-            'initial_demos':initial,'ledger':ledger,'failure':failure}
+            'initial_demos':initial,'ledger':ledger,'failure':failure,
+            'producer_stderr':producer_stderr[-16384:]}
 
 
 def metrics(records,exp):

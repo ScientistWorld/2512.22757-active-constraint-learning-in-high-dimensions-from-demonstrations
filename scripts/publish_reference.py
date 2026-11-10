@@ -15,7 +15,7 @@ reference['_measured_reference_runs']={side:{
     'raw_metrics_of_failed':run.get('_raw_metrics_of_failed',{})}
     for side,run in runs.items()}
 reference['_scale_note']=reference['_scale_note'].replace(
-    ' Existing measured values are interim fourth-job measurements until the expert-initialization rerun replaces them.','')
+    ' Existing measured values are interim fourth-job measurements until the printed-equation rerun replaces them.','')
 for exp,spec in reference['experiments'].items():
     measured=runs['test']['experiments'][exp]['results']
     # A failed baseline's zero reward is a verdict, not a numeric reproduction

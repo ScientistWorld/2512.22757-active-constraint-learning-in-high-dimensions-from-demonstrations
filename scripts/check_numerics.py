@@ -1,6 +1,6 @@
 """Small meaningful checks of restored GP/KKT mathematical primitives."""
 import numpy as np
-from method.gp_acl import GPModel,kkt_tight_points,finite_gradient,scalar_feasible_extreme,marginal_likelihood
+from method.gp_acl import GPModel,kkt_tight_points,finite_gradient,scalar_feasible_extreme,marginal_likelihood,endpoint_constraints
 p=np.array([[.4,.1],[-.5,.3]])
 g=np.array([[.3,-.4],[-.2,.5]])
 gp=GPModel(p,g,(.6,.7,1e-9))
@@ -36,3 +36,15 @@ assert len(point)==1 and np.allclose(gradient,[[0,-.8]])
 point,gradient=kkt_tight_points({'positions':[[0,0],[1,0],[2,0]]})
 assert len(point)==0
 print('GP likelihood/posterior analytic derivatives, continuous ray programs, and KKT programs: pass')
+
+# Pin the computational step in the printed Equation 10, including its sign.
+# A negative sampled function is required separately from the CDF inequality.
+class ControlledPosterior:
+    signal=2.
+    def mean_var(self,query):
+        return np.array([-1.,1.]),np.ones(2)
+constraints=endpoint_constraints(ControlledPosterior(),lambda q:np.array([-.003,.003]),
+                                np.zeros((2,2)),.55)
+assert np.allclose(constraints[:,0],[.001,-.002])
+assert np.allclose(constraints[:,1],[-.3913447460685429,.2913447460685429])
+print('Printed Eq. 10 CDF sign and independent sampled-function constraint: pass')

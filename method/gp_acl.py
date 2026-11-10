@@ -218,6 +218,18 @@ def scalar_feasible_extreme(constraints, upper, length, nearest=True):
     return min(feasible) if nearest else max(feasible)
 
 
+def endpoint_constraints(gp, sample, query, beta):
+    """P5/P6 endpoint inequalities, including the literal printed Eq. 10.
+
+    The paper prints Phi(+mean/sd), although its prose calls this a safety
+    probability for g<=0. Preserve the printed computational step and record
+    that inconsistency instead of silently changing the algorithm.
+    """
+    mean, variance = gp.mean_var(query)
+    return np.column_stack([(-sample(query)-.001)/gp.signal,
+                            ndtr(mean/np.sqrt(variance))-beta])
+
+
 def solve_queries(gp, rng, bounds, n_samples=4):
     """The continuous Programs 3--6, in physical position/cost units.
 
@@ -274,9 +286,7 @@ def solve_queries(gp, rng, bounds, n_samples=4):
                 vector=sign*direction/np.linalg.norm(direction)
                 def safe(t):
                     q=center+np.asarray(t)[:,None]*vector
-                    mean,var=gp.mean_var(q)
-                    return np.column_stack([(-f(q)-.001)/signal,
-                                            ndtr(-mean/np.sqrt(var))-beta])
+                    return endpoint_constraints(gp,f,q,beta)
                 near=scalar_feasible_extreme(safe,ray_bound(center,vector),gp.ls)
                 if near is None: break
                 pair.append(center+near*vector)
@@ -328,6 +338,15 @@ def main():
         contacts=[kkt_tight_points(d) for d in demos]
         points=np.vstack([p for p,g in contacts]); gradients=np.vstack([g for p,g in contacts])
         gp=train_gp(points,gradients)
+        # Unscored diagnostics only: the parent never uses these for metrics.
+        diagnostic={'stage':iteration,'contacts':len(points)}
+        if gp is not None:
+            n=len(gp.y)
+            diagnostic.update(lengthscale=float(gp.ls),signal=float(gp.signal),
+                              noise=float(gp.noise),mean_negative_log_likelihood=float(
+                                  (.5*gp.y@gp.alpha+np.log(np.diag(gp.chol[0])).sum()
+                                   +.5*n*np.log(2*np.pi))/n))
+        print(json.dumps(diagnostic,allow_nan=False),file=sys.stderr,flush=True)
         if iteration==2 or args.variant=='no_acquisition':
             break
         if available_requests<=0:

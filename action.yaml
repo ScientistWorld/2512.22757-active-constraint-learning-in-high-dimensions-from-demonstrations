@@ -2,4 +2,4 @@ action: submit
 gpus: 0
 test: false
 milestone: method_runs
-notes: "Combined expert-oracle correction: restore four shared initial demonstrations; feasible warm starts and first successful local optimum for unchanged discrete P1. Verify oracle/GP/KKT/ranking, rerun reference/random and all better/weaker variants on both 36-instance paired splits, replay fixed shortcuts, report paired uncertainty and raw gradient diagnostics, publish reference-only scores and validate. Resume source-versioned progress."
+notes: "Restore literal positive-mean CDF in paper Eq. 10; retain sixth-run failed control evidence. One combined CPU verification checks GP/KKT/ray/endpoint equations, oracle and ranking, reruns affected reference/random/better/weaker methods on both paired splits, replays fixed shortcuts, measures paired headroom and publishes successful reference-only scores. Other scientific settings remain fixed; retain unscored fit diagnostics and resume source-versioned progress."
