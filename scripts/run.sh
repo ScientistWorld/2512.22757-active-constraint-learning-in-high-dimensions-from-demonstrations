@@ -1,5 +1,5 @@
 #!/bin/bash
-# Combined printed-equation verification; source-versioned records resume jobs.
+# Combined final hardening verification; source-versioned records resume jobs.
 set -euo pipefail
 cd /home/user
 # Report saved progress without changing source digests or recomputing science.

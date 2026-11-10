@@ -13,12 +13,19 @@ TASKS_PER_EXPERIMENT = 36
 N_UNIFORM = 4096
 N_BOUNDARY = 8192
 HORIZON = 30
-BUDGET = 20
-REQUEST_LIMIT = 80
-BOUND = 10.0
+# Sparse-demonstration regime: two shared initial demonstrations plus the
+# two Alg. 1 acquisition stages of four demonstrations each.
+BUDGET = 10
+REQUEST_LIMIT = 40
+# The paper's 2D double-integrator g3 figures use the workspace [-15, 15]^2.
+BOUND = 15.0
+# Obstacles are translated so a fixed origin-centred shape is not an answer.
+CENTER_RANGE = 2.0
 BAND_WIDTH = .5
 NEAR_WIDTH = .175
 EXPERIMENTS = ('double_integrator_g3', 'complex_boundary_stress')
+# Fixed world-coordinate endpoints, outside every instance, shared by methods.
+INITIAL_PAIRS = (([-13.5,-11.5],[13.5,11.5]),([-13.5,11.5],[13.5,-11.5]))
 
 
 class Task:
@@ -29,6 +36,7 @@ class Task:
         self.scale=rng.uniform(.88,1.08)
         self.phase=rng.uniform(-np.pi,np.pi,21)
         self.coefficients=rng.normal(0,.035,15)*(6/np.arange(6,21))**1.3
+        self.center=rng.uniform(-CENTER_RANGE,CENTER_RANGE,2)
         self.rng=rng
 
     def radius(self, theta):
@@ -46,8 +54,13 @@ class Task:
             r=r+self.coefficients[j]*np.sin(h*t+self.phase[h])
         return 5*self.scale*r
 
+    def boundary_distance(self, points):
+        """Radial distance to the boundary about the obstacle centre."""
+        q=np.atleast_2d(points)-self.center
+        return np.abs(np.linalg.norm(q,axis=1)-self.radius(np.arctan2(q[:,1],q[:,0])))
+
     def value_gradient(self, points):
-        p=np.atleast_2d(points)
+        p=np.atleast_2d(points)-self.center
         if self.experiment==EXPERIMENTS[0]:
             co,si=np.cos(self.rotation),np.sin(self.rotation)
             rotation=np.array([[co,si],[-si,co]])
@@ -75,7 +88,7 @@ class Task:
         angle=self.rng.uniform(-np.pi,np.pi,N_BOUNDARY)
         offset=self.rng.uniform(-BAND_WIDTH,BAND_WIDTH,N_BOUNDARY)
         radius=self.radius(angle)+offset
-        band=np.column_stack([radius*np.cos(angle),radius*np.sin(angle)])
+        band=self.center+np.column_stack([radius*np.cos(angle),radius*np.sin(angle)])
         points=np.vstack([uniform,band]); is_uniform=np.arange(len(points))<N_UNIFORM
         order=self.rng.permutation(len(points))
         points=points[order]
@@ -86,9 +99,7 @@ class Task:
         # Endpoints are fixed in world coordinates and guaranteed outside all
         # instances. They carry no obstacle parameters or selected contacts.
         # Shared initial observations count against every method's total cap.
-        pairs=[([-1.9,-1.6],[1.9,1.6]),([-1.9,1.6],[1.9,-1.6]),
-               ([-1.95,.2],[1.95,.2]),([.2,-1.95],[.2,1.95])]
-        result=[self.demonstrate(5*np.asarray(s),5*np.asarray(g)) for s,g in pairs]
+        result=[self.demonstrate(np.asarray(s,float),np.asarray(g,float)) for s,g in INITIAL_PAIRS]
         if any(d is None for d in result):
             raise RuntimeError('Fixed initial demonstration failed')
         return result
@@ -117,16 +128,16 @@ class Task:
             # whose cheapest solution can jump across a narrow waist at knots.
             # These are initial guesses only: the objective and discrete
             # constraints solved below are exactly the same P1 program.
-            endpoints=np.vstack([start,goal])
+            endpoints=np.vstack([start,goal])-self.center
             start_angle,goal_angle=np.arctan2(endpoints[:,1],endpoints[:,0])
             turn=(goal_angle-start_angle+np.pi)%(2*np.pi)-np.pi
             alternate=turn-2*np.pi if turn>=0 else turn+2*np.pi
             fraction=np.linspace(0,1,HORIZON)
-            endpoint_radius=np.linspace(np.linalg.norm(start),np.linalg.norm(goal),HORIZON)
+            endpoint_radius=np.linspace(*np.linalg.norm(endpoints,axis=1),HORIZON)
             for angular_turn in (turn,alternate):
                 angles=start_angle+angular_turn*fraction
                 radius=np.maximum(endpoint_radius,self.radius(angles)+.3)
-                warm=np.column_stack([radius*np.cos(angles),radius*np.sin(angles)])
+                warm=self.center+np.column_stack([radius*np.cos(angles),radius*np.sin(angles)])
                 warm[0]=start;warm[-1]=goal
                 result=minimize(cost,warm[1:-1].ravel(),jac=jac,method='SLSQP',
                                 constraints=[{'type':'ineq','fun':constraint,'jac':constraint_jac}],

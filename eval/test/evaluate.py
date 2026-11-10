@@ -15,9 +15,12 @@ from pathlib import Path
 import subprocess
 import sys
 import numpy as np
-from tasks import Task,EXPERIMENTS,TASKS_PER_EXPERIMENT,BUDGET,REQUEST_LIMIT,BOUND,NEAR_WIDTH
+from tasks import Task,EXPERIMENTS,TASKS_PER_EXPERIMENT,BUDGET,REQUEST_LIMIT,BOUND,NEAR_WIDTH,HORIZON
 
 SLICE='test'
+# Whole-run success gate on mean boundary-band recall of each class. It
+# rejects one-class and below-chance classifiers of either class.
+MIN_RECALL=.50
 HERE=Path(__file__).resolve().parent
 ROOT=HERE.parents[1]
 
@@ -61,7 +64,7 @@ def command_digest(manifest):
     digest.update((HERE/'tasks.py').read_bytes())
     # Metric/rank changes rescore raw outputs. Bump this version only when
     # acquisition messages or their interpretation change.
-    digest.update(b'acl-v2-online-protocol-2')
+    digest.update(b'acl-v2-online-protocol-3')
     return digest.hexdigest()
 
 
@@ -90,7 +93,7 @@ def run_instance(manifest,task):
         return json.loads(line,parse_constant=lambda v:(_ for _ in ()).throw(ValueError('nonfinite response')))
     failure=None
     try:
-        tell({'dimension':2,'bounds':[[-BOUND,BOUND],[-BOUND,BOUND]],'horizon':30,'dt':1,
+        tell({'dimension':2,'bounds':[[-BOUND,BOUND],[-BOUND,BOUND]],'horizon':HORIZON,'dt':1,
               'initial_demos':initial,'budget':BUDGET,'query_limit':REQUEST_LIMIT,'seed':7})
         while True:
             message=receive()
@@ -156,14 +159,13 @@ def metrics(records,exp):
              'near_boundary_balanced_accuracy':float(.5*(safe+unsafe)),
              'safe_recall':float(safe),'unsafe_recall':float(unsafe)}
         # The narrow inner band resolves the boundary closest to the surface.
-        distance=np.abs(np.linalg.norm(points,axis=1)-task.radius(np.arctan2(points[:,1],points[:,0])))
-        near=band&(distance<=NEAR_WIDTH)
+        near=band&(task.boundary_distance(points)<=NEAR_WIDTH)
         one['near_boundary_balanced_accuracy']=float(.5*(np.mean(p[near&(truth==1)]==1)+np.mean(p[near&(truth==0)]==0)))
         per_instance.append(one);values.append(one)
     if errors: return None,errors,per_instance
     result={k:float(np.mean([v[k] for v in values])) for k in values[0]}
-    if min(result['safe_recall'],result['unsafe_recall'])<.60:
-        return result,['required safe/unsafe recall below .60'],per_instance
+    if min(result['safe_recall'],result['unsafe_recall'])<MIN_RECALL:
+        return result,[f'required safe/unsafe recall below {MIN_RECALL:.2f}'],per_instance
     return result,[],per_instance
 
 

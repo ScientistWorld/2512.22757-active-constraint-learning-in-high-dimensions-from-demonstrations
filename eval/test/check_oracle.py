@@ -1,6 +1,6 @@
 """Job-only checks of expert feasibility, dynamics and P1 stationarity."""
 import numpy as np
-from tasks import Task,EXPERIMENTS
+from tasks import Task,EXPERIMENTS,INITIAL_PAIRS,BOUND
 
 diagnostics={}
 for experiment in EXPERIMENTS:
@@ -8,7 +8,7 @@ for experiment in EXPERIMENTS:
     for index in (0,1):
         task=Task(experiment,index)
         demonstrations=task.initial_demonstrations()
-        assert len(demonstrations)==4
+        assert len(demonstrations)==len(INITIAL_PAIRS)
         for demonstration in demonstrations:
             p=np.asarray(demonstration['positions'])
             v=np.asarray(demonstration['velocities'])
@@ -28,10 +28,14 @@ for experiment in EXPERIMENTS:
             maximum_gradient=max(maximum_gradient,float(np.max(np.linalg.norm(objective_gradient,axis=1))))
             maximum_stationarity=max(maximum_stationarity,float(residual))
         # An unobstructed straight trajectory has the known exact optimum.
-        start=np.array([9.5,-8.]);goal=np.array([9.5,8.])
+        start=np.array([BOUND-1,-8.]);goal=np.array([BOUND-1,8.])
         straight=task.demonstrate(start,goal)
         assert straight is not None
         assert np.allclose(straight['positions'],np.linspace(start,goal,30),atol=1e-12)
+        # Initial crossings must reveal the obstacle; endpoints inside it fail.
+        assert sum(len(np.flatnonzero(np.abs(2*(2*np.asarray(d['positions'])[1:-1]-np.asarray(d['positions'])[:-2]
+                   -np.asarray(d['positions'])[2:])).sum(axis=1)>1e-4)) for d in demonstrations)>0
+        assert task.demonstrate(task.center.copy(),np.array([BOUND-1,BOUND-1])) is None
     diagnostics[experiment]={'maximum_initial_gradient':maximum_gradient,
                              'maximum_stationarity_residual':maximum_stationarity}
 print('Expert feasibility, eliminated dynamics and P1 KKT checks: pass',diagnostics,flush=True)

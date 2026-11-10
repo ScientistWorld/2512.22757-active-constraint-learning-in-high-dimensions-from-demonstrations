@@ -47,6 +47,10 @@ else:
         # Restore the old public example's coordinate convention. The hidden
         # rotations, geometry and instances remain unavailable to this oracle.
         pred=(g_wavy(q/5)<=0).astype(int)
+    elif attack=='centered_disk':
+        # Prior-shape guess with no demonstrations: unsafe inside a disk of
+        # the typical obstacle radius around the workspace origin.
+        pred=(np.linalg.norm(q,axis=1)>=5.).astype(int)
     elif attack=='grid_order': pred=(np.arange(n)>=n//2).astype(int)
     elif attack=='grid_resize': pred=np.ones(32,int)
     elif attack=='replace_ground_truth': pred=(q[:,0]<=0).astype(int)

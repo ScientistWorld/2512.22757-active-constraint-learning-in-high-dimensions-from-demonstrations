@@ -17,13 +17,22 @@ from scipy.special import ndtr
 
 
 class GPModel:
-    def __init__(self, points, gradients, params=(.6, .1, 1e-5), values_only=False):
+    """Joint value/derivative RBF GP with a constant prior mean.
+
+    The constant has zero derivative, so gradient observations are unchanged;
+    value observations are measured relative to it. This is the constant-mean
+    derivative GP (GPyTorch ConstantMeanGrad/RBFKernelGrad) used by the GP
+    constraint-learning procedure the paper cites for its training.
+    """
+    def __init__(self, points, gradients, params=(.6, .1, 1e-5), values_only=False, constant=0.):
         self.points = np.asarray(points).reshape(-1, 2)
         self.gradients = np.asarray(gradients).reshape(-1, 2)
         self.ls, self.signal, self.noise = params
+        self.constant = float(constant)
         self.types = np.tile(np.arange(3), len(self.points)) if not values_only else np.zeros(len(self.points), int)
         self.x = np.repeat(self.points, 3, axis=0) if not values_only else self.points
         self.y = np.column_stack([np.zeros(len(self.points)), self.gradients]).ravel() if not values_only else np.zeros(len(self.points))
+        self.value_mask = (self.types == 0).astype(float)
         diff = self.x[:, None] - self.x[None, :]
         k = self.signal**2 * np.exp(-np.sum(diff**2, axis=2)/(2*self.ls**2))
         ti, tj = self.types[:, None], self.types[None, :]
@@ -36,7 +45,7 @@ class GPModel:
         self.kernel = k.copy()
         k.flat[::len(k)+1] += self.noise
         self.chol = cho_factor(k, lower=True, check_finite=False)
-        self.alpha = cho_solve(self.chol, self.y, check_finite=False)
+        self.alpha = cho_solve(self.chol, self.y-self.constant*self.value_mask, check_finite=False)
 
     def cross(self, query):
         q = np.atleast_2d(query)
@@ -48,7 +57,7 @@ class GPModel:
 
     def mean_var(self, query):
         k = self.cross(query)
-        m = k.T @ self.alpha
+        m = self.constant + k.T @ self.alpha
         v = np.maximum(self.signal**2-np.sum(k*cho_solve(self.chol,k,check_finite=False), axis=0), 1e-12)
         return m, v
 
@@ -80,7 +89,7 @@ class GPModel:
         def sample(q):
             q = np.atleast_2d(q)
             k = self.cross(q)
-            return k.T@self.alpha + alpha*(scale*np.cos(q@omega.T+phase)@weights-k.T@correction)
+            return self.constant + k.T@self.alpha + alpha*(scale*np.cos(q@omega.T+phase)@weights-k.T@correction)
         def derivative(q):
             q=np.atleast_2d(q)
             diff=self.x[:,None]-q[None,:]
@@ -124,58 +133,111 @@ def kkt_tight_points(demo, tolerance=1e-4):
     return np.asarray(points).reshape(-1,2), np.asarray(gradients).reshape(-1,2)
 
 
-def marginal_likelihood(logp, points, gradients, values_only=False):
-    """Mean negative log marginal likelihood and its exact hypergradient.
+# Chou et al. (2022), Sec. IV-B, which the paper's Sec. 2.3 says its GP
+# training parallels: minimize the negative marginal log likelihood plus the
+# demonstration-feasibility hinge mean_n max(mu(x_n)+rho*sd(x_n), 0) over all
+# demonstrated states. Neither paper reports rho; one standard deviation is
+# the packaged choice.
+RHO = 1.
 
-    Dividing by the observation count changes neither the objective's optimum
-    nor its observations. Analytic derivatives avoid finite differences of
-    nearly singular derivative-observation covariance factorizations.
+
+def _covariance_derivatives(gp):
+    """dK/dlog(length) for the joint value/derivative training covariance."""
+    diff=gp.x[:,None]-gp.x[None,:]
+    r2=np.sum(diff**2,axis=2)/gp.ls**2
+    base=gp.signal**2*np.exp(-r2/2)
+    dlength=gp.kernel*r2
+    ti,tj=gp.types[:,None],gp.types[None,:]
+    for i in (1,2):
+        mixed=((ti==i)&(tj==0))|((ti==0)&(tj==i))
+        dlength=np.where(mixed,gp.kernel*(r2-2),dlength)
+    for i in (1,2):
+        for j in (1,2):
+            derivative=base*((i==j)*(r2-2)/gp.ls**2
+                -diff[:,:,i-1]*diff[:,:,j-1]*(r2-4)/gp.ls**4)
+            dlength=np.where((ti==i)&(tj==j),derivative,dlength)
+    return dlength
+
+
+def training_objective(z, points, gradients, states=(), values_only=False, rho=RHO):
+    """Loss and exact gradient in z=(log length, log signal, log noise, mean).
+
+    The likelihood is averaged over observations (as GPyTorch's exact MLL is)
+    and the hinge over demonstrated states, with equal weights as in Chou et
+    al. (2022). Analytic derivatives avoid finite differences of nearly
+    singular derivative-observation factorizations.
     """
     try:
-        gp=GPModel(points,gradients,np.exp(logp),values_only)
-        count=len(gp.y)
-        value=(.5*gp.y@gp.alpha+np.log(np.diag(gp.chol[0])).sum()
-               +.5*count*np.log(2*np.pi))/count
-        diff=gp.x[:,None]-gp.x[None,:]
-        r2=np.sum(diff**2,axis=2)/gp.ls**2
-        base=gp.signal**2*np.exp(-r2/2)
-        dlength=gp.kernel*r2
-        ti,tj=gp.types[:,None],gp.types[None,:]
-        for i in (1,2):
-            mixed=((ti==i)&(tj==0))|((ti==0)&(tj==i))
-            dlength=np.where(mixed,gp.kernel*(r2-2),dlength)
-        for i in (1,2):
-            for j in (1,2):
-                derivative=base*((i==j)*(r2-2)/gp.ls**2
-                    -diff[:,:,i-1]*diff[:,:,j-1]*(r2-4)/gp.ls**4)
-                dlength=np.where((ti==i)&(tj==j),derivative,dlength)
-        residual=cho_solve(gp.chol,np.eye(count),check_finite=False)-np.outer(gp.alpha,gp.alpha)
-        gradient=.5*np.array([np.sum(residual*dlength),
-                              np.sum(residual*(2*gp.kernel)),
-                              gp.noise*np.trace(residual)])/count
-        return value,gradient
+        gp=GPModel(points,gradients,np.exp(z[:3]),values_only,z[3])
     except np.linalg.LinAlgError:
-        return 1e30,np.zeros(3)
+        return 1e30,np.zeros(4)
+    count=len(gp.y)
+    centered=gp.y-gp.constant*gp.value_mask
+    value=(.5*centered@gp.alpha+np.log(np.diag(gp.chol[0])).sum()
+           +.5*count*np.log(2*np.pi))/count
+    inverse=cho_solve(gp.chol,np.eye(count),check_finite=False)
+    residual=inverse-np.outer(gp.alpha,gp.alpha)
+    dlength=_covariance_derivatives(gp)
+    gradient=np.array([.5*np.sum(residual*dlength)/count,
+                       .5*np.sum(residual*(2*gp.kernel))/count,
+                       .5*gp.noise*np.trace(residual)/count,
+                       -(gp.value_mask@gp.alpha)/count])
+    states=np.asarray(states,float).reshape(-1,2)
+    if len(states):
+        kx=gp.cross(states)
+        v=cho_solve(gp.chol,kx,check_finite=False)
+        mean=gp.constant+kx.T@gp.alpha
+        raw=gp.signal**2-np.sum(kx*v,axis=0)
+        sd=np.sqrt(np.maximum(raw,1e-12))
+        hinge=mean+rho*sd
+        value+=np.mean(np.maximum(hinge,0))
+        active=hinge>0
+        if np.any(active):
+            ka,va,sa=kx[:,active],v[:,active],sd[active]
+            exact=raw[active]>1e-12
+            diff=gp.x[:,None]-states[active][None,:]
+            r2=np.sum(diff**2,axis=2)/gp.ls**2
+            dka=np.where((gp.types==0)[:,None],ka*r2,ka*(r2-2))
+            # Length: general formula. Signal: dK=2(K-noise I), dk=2k and
+            # K v=k simplify the quadratic form. Noise: dK=noise I, dk=0.
+            dmean=[dka.T@gp.alpha-va.T@(dlength@gp.alpha),
+                   2*ka.T@gp.alpha-va.T@(2*gp.kernel@gp.alpha),
+                   -gp.noise*(va.T@gp.alpha)]
+            quadratic_signal=2*np.sum(va*ka,axis=0)-2*gp.noise*np.sum(va*va,axis=0)
+            dvariance=[-2*np.sum(dka*va,axis=0)+np.sum(va*(dlength@va),axis=0),
+                       2*gp.signal**2-4*np.sum(ka*va,axis=0)+quadratic_signal,
+                       gp.noise*np.sum(va*va,axis=0)]
+            for j in range(3):
+                gradient[j]+=np.sum(dmean[j]+rho*np.where(exact,dvariance[j],0)/(2*sa))/len(states)
+            gradient[3]+=np.sum(1-gp.value_mask@va)/len(states)
+    return value,gradient
 
 
-def train_gp(points, gradients, values_only=False):
+def marginal_likelihood(logp, points, gradients, values_only=False):
+    """Zero-mean likelihood term alone (kept for the numerical checks)."""
+    value,gradient=training_objective(np.r_[logp,0.],points,gradients,(),values_only)
+    return value,gradient[:3]
+
+
+def train_gp(points, gradients, states=(), values_only=False):
     if not len(points):
         return None
-    # Optimize the same marginal likelihood from deterministic starts. Raw P8
-    # gradients retain their magnitudes. These initializations/bounds use the
-    # paper's physical position units, not the earlier position/5 convention.
+    # Deterministic starts in the paper's physical position units. Raw P8
+    # gradients retain their magnitudes. The prior mean starts on the hinge
+    # boundary for states far from data (mean = -rho * signal).
     rms=max(float(np.sqrt(np.mean(np.asarray(gradients)**2))),1e-4)
     fits=[]
     for length in (1.,3.25,6.):
-        init=np.log([length,max(rms*length,.001),max((.03*rms)**2,1e-8)])
-        fit=minimize(marginal_likelihood,init,args=(points,gradients,values_only),
+        signal=max(rms*length,.001)
+        init=np.r_[np.log([length,signal,max((.03*rms)**2,1e-8)]),-RHO*signal]
+        fit=minimize(training_objective,init,args=(points,gradients,states,values_only),
                      jac=True,method='L-BFGS-B',
-                     bounds=np.log([[.35,12.5],[1e-5,100],[1e-10,1.]]),
-                     options={'maxiter':200,'ftol':1e-10,'gtol':1e-6})
-        if np.isfinite(fit.fun): fits.append(fit)
-    if not fits: raise RuntimeError('GP marginal likelihood optimization failed')
-    params=np.exp(min(fits,key=lambda fit:fit.fun).x)
-    return GPModel(points, gradients, params, values_only)
+                     bounds=[tuple(b) for b in np.log([[.35,12.5],[1e-5,100],[1e-10,1.]])]+[(-1e3,1e3)],
+                     options={'maxiter':150,'ftol':1e-10,'gtol':1e-6})
+        if np.isfinite(fit.fun) and fit.fun<1e29: fits.append(fit)
+    if not fits: raise RuntimeError('GP training optimization failed')
+    best=min(fits,key=lambda fit:fit.fun).x
+    return GPModel(points, gradients, np.exp(best[:3]), values_only, best[3])
 
 
 def finite_gradient(f, x):
@@ -219,18 +281,21 @@ def scalar_feasible_extreme(constraints, upper, length, nearest=True):
 
 
 def endpoint_constraints(gp, sample, query, beta):
-    """P5/P6 endpoint inequalities, including the literal printed Eq. 10.
+    """P5/P6 endpoint inequalities of Eq. 10, as nonnegative residuals.
 
-    The paper prints Phi(+mean/sd), although its prose calls this a safety
-    probability for g<=0. Preserve the printed computational step and record
-    that inconsistency instead of silently changing the algorithm.
+    Sec. 3.1 defines the avoid set as g>0 and Eq. 10's prose requires
+    endpoints that are "safe with respect to the GP posterior with probability
+    at least beta", i.e. P(g<=0)=Phi(-mean/sd)>=beta. The printed Phi(+mean/sd)
+    is the probability of being unsafe under the paper's own convention (its
+    Appendix B.1 likewise misprints the avoid-set sign); using it places
+    endpoints inside the inferred obstacle, where the expert cannot start.
     """
     mean, variance = gp.mean_var(query)
     return np.column_stack([(-sample(query)-.001)/gp.signal,
-                            ndtr(mean/np.sqrt(variance))-beta])
+                            ndtr(-mean/np.sqrt(variance))-beta])
 
 
-def solve_queries(gp, rng, bounds, n_samples=4):
+def solve_queries(gp, rng, bounds, n_samples=2):
     """The continuous Programs 3--6, in physical position/cost units.
 
     P3 uses analytic derivatives and dimensionless residuals. P4--6 reduce
@@ -238,59 +303,69 @@ def solve_queries(gp, rng, bounds, n_samples=4):
     ray is only a reparameterization of tau: it preserves the minimizing
     endpoints and does not normalize the raw gradient in Equation 7.
     """
-    lo,hi=np.asarray(bounds).T
+    pairs=[]
+    for _ in range(n_samples):
+        f=gp.sample_function(rng,1000,.3)
+        try:
+            pairs.extend(sample_queries(gp,f,rng,bounds))
+        except (ValueError,ArithmeticError,np.linalg.LinAlgError,RuntimeError):
+            # A failed local solve yields no query, as a failed IPOPT solve would.
+            continue
+    return pairs
+
+
+def sample_queries(gp, f, rng, bounds):
+    """Programs 3--6 for one posterior draw f; returns its start/goal pairs."""
+    lo,hi=np.asarray(bounds,float).T
     signal=max(gp.signal,1e-10)
     pairs=[]
     def ray_bound(center,vector):
         return min([(hi[d]-center[d])/vector[d] if vector[d]>0 else
                     (lo[d]-center[d])/vector[d] for d in range(2) if abs(vector[d])>1e-12])
-    for _ in range(n_samples):
-        f=gp.sample_function(rng,1000,.3)
-        # P3 is a local constrained nonlinear program, as in the paper's
-        # IPOPT implementation. Initialize it on the inferred boundary, rather
-        # than selecting distant zero contours of a prior Fourier draw. The
-        # latter can maximize variance without querying the actual obstacle.
-        candidates=gp.points[np.all((gp.points>=lo)&(gp.points<=hi),axis=1)]
-        if not len(candidates): continue
-        selected=rng.choice(len(candidates),min(6,len(candidates)),replace=False)
-        starts=np.clip(candidates[selected]+rng.normal(0,.02*gp.ls,(len(selected),2)),lo,hi)
-        solutions=[]
-        for start in starts:
-            res=minimize(lambda q:-gp.mean_var(q)[1][0]/signal**2,start,
-                         jac=lambda q:-gp.derivatives(q)[1][0]/signal**2,
-                         method='SLSQP',bounds=bounds,
-                         constraints=[{'type':'eq','fun':lambda q:f(q)[0]/signal,
-                                       'jac':lambda q:f.derivative(q)[0]/signal}],
-                         options={'maxiter':150,'ftol':1e-9})
-            if res.success and abs(f(res.x)[0])/signal<1e-6: solutions.append(res)
-        if not solutions: continue
-        mi=min(solutions,key=lambda r:r.fun).x
-        raw=f.derivative(mi)[0]
-        norm=np.linalg.norm(raw)
-        if norm<1e-10: continue
-        center=mi+1.*raw  # Eq.7: eta=1 in physical position/cost units.
-        if np.any(center<lo) or np.any(center>hi) or f(center)[0]<=0: continue
-        tangent=np.array([-raw[1],raw[0]])/norm
-        p4=[]
-        for sign in (-1,1):
-            vector=sign*tangent
-            def unsafe(t): return f(center+np.asarray(t)[:,None]*vector)[:,None]/signal
-            far=scalar_feasible_extreme(unsafe,ray_bound(center,vector),gp.ls,nearest=False)
-            if far is not None: p4.append((far,far*vector))
-        directions=[]
-        if p4: directions.append((max(p4,key=lambda v:v[0])[1],(.55,.55)))
-        directions.append((raw,(.30,.55)))
-        for direction,betas in directions:
-            pair=[]
-            for sign,beta in zip((-1,1),betas):
-                vector=sign*direction/np.linalg.norm(direction)
-                def safe(t):
-                    q=center+np.asarray(t)[:,None]*vector
-                    return endpoint_constraints(gp,f,q,beta)
-                near=scalar_feasible_extreme(safe,ray_bound(center,vector),gp.ls)
-                if near is None: break
-                pair.append(center+near*vector)
-            if len(pair)==2: pairs.append(pair)
+    # P3 is a local constrained nonlinear program, as in the paper's IPOPT
+    # implementation. Initialize it on the inferred boundary, rather than at
+    # arbitrary zero contours of a posterior draw far from any observation.
+    candidates=gp.points[np.all((gp.points>=lo)&(gp.points<=hi),axis=1)]
+    if not len(candidates): return pairs
+    selected=rng.choice(len(candidates),min(6,len(candidates)),replace=False)
+    starts=np.clip(candidates[selected]+rng.normal(0,.02*gp.ls,(len(selected),2)),lo,hi)
+    solutions=[]
+    for start in starts:
+        res=minimize(lambda q:-gp.mean_var(q)[1][0]/signal**2,start,
+                     jac=lambda q:-gp.derivatives(q)[1][0]/signal**2,
+                     method='SLSQP',bounds=bounds,
+                     constraints=[{'type':'eq','fun':lambda q:f(q)[0]/signal,
+                                   'jac':lambda q:f.derivative(q)[0]/signal}],
+                     options={'maxiter':150,'ftol':1e-9})
+        if res.success and abs(f(res.x)[0])/signal<1e-6: solutions.append(res)
+    if not solutions: return pairs
+    mi=min(solutions,key=lambda r:r.fun).x
+    raw=f.derivative(mi)[0]
+    norm=np.linalg.norm(raw)
+    if norm<1e-10: return pairs
+    center=mi+1.*raw  # Eq.7: eta=1 in physical position/cost units.
+    if np.any(center<lo) or np.any(center>hi) or f(center)[0]<=0: return pairs
+    tangent=np.array([-raw[1],raw[0]])/norm
+    p4=[]
+    for sign in (-1,1):
+        vector=sign*tangent
+        def unsafe(t): return f(center+np.asarray(t)[:,None]*vector)[:,None]/signal
+        far=scalar_feasible_extreme(unsafe,ray_bound(center,vector),gp.ls,nearest=False)
+        if far is not None: p4.append((far,far*vector))
+    directions=[]
+    if p4: directions.append((max(p4,key=lambda v:v[0])[1],(.55,.55)))
+    directions.append((raw,(.30,.55)))
+    for direction,betas in directions:
+        pair=[]
+        for sign,beta in zip((-1,1),betas):
+            vector=sign*direction/np.linalg.norm(direction)
+            def safe(t):
+                q=center+np.asarray(t)[:,None]*vector
+                return endpoint_constraints(gp,f,q,beta)
+            near=scalar_feasible_extreme(safe,ray_bound(center,vector),gp.ls)
+            if near is None: break
+            pair.append(center+near*vector)
+        if len(pair)==2: pairs.append(pair)
     return pairs
 
 
@@ -298,10 +373,11 @@ def fit_periodic(points, gradients, query, order=12):
     """Honest headroom variant: periodic contact/normal regression.
 
     No oracle labels, task parameters or test feedback are used. A smooth
-    periodic representation is appropriate for approximately radial obstacles;
+    periodic radius about the contact centroid suits star-shaped obstacles;
     the private stress instances include unresolved high frequency structure.
     """
-    theta=np.arctan2(points[:,1],points[:,0]); radii=np.linalg.norm(points,axis=1)
+    origin=points.mean(axis=0); points=points-origin; query=query-origin
+    theta=np.arctan2(points[:,1],points[:,0]); radii=np.maximum(np.linalg.norm(points,axis=1),1e-9)
     radial=points/radii[:,None]; tangent=np.column_stack([-radial[:,1],radial[:,0]])
     nr=np.sum(gradients*radial,axis=1)
     norms=np.linalg.norm(gradients,axis=1)
@@ -325,6 +401,10 @@ def send(value):
     return json.loads(sys.stdin.readline())
 
 
+def demonstrated_states(demos):
+    return np.vstack([np.asarray(d['positions'],float) for d in demos])
+
+
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--variant',default='reference', choices=['reference','random','periodic','periodic6','normalized','no_gradients','no_acquisition'])
@@ -337,31 +417,30 @@ def main():
     for iteration in range(3):
         contacts=[kkt_tight_points(d) for d in demos]
         points=np.vstack([p for p,g in contacts]); gradients=np.vstack([g for p,g in contacts])
-        gp=train_gp(points,gradients)
+        states=demonstrated_states(demos)
+        gp=train_gp(points,gradients,states)
         # Unscored diagnostics only: the parent never uses these for metrics.
-        diagnostic={'stage':iteration,'contacts':len(points)}
+        diagnostic={'stage':iteration,'demos':len(demos),'contacts':len(points)}
         if gp is not None:
-            n=len(gp.y)
             diagnostic.update(lengthscale=float(gp.ls),signal=float(gp.signal),
-                              noise=float(gp.noise),mean_negative_log_likelihood=float(
-                                  (.5*gp.y@gp.alpha+np.log(np.diag(gp.chol[0])).sum()
-                                   +.5*n*np.log(2*np.pi))/n))
+                              noise=float(gp.noise),prior_mean=float(gp.constant))
         print(json.dumps(diagnostic,allow_nan=False),file=sys.stderr,flush=True)
         if iteration==2 or args.variant=='no_acquisition':
             break
         if available_requests<=0:
             continue
-        accepted=0
-        # Carry unused allowance into the remaining acquisition stage, while
-        # preserving the paper's two acquisition stages and three GP fits.
+        # Alg. 1 has two acquisition iterations between its three GP fits.
+        # Unused demonstration/request allowance carries into the next stage.
         stages_left=2-iteration
-        remaining=task['budget']-len(demos)
-        target=(remaining+stages_left-1)//stages_left
-        # Exhaust the same accepted-demo/proposal allowance before stopping
-        # for numerical acquisition failures. Posterior draws themselves do
-        # not expose the oracle and cannot bypass the parent's query cap.
-        for query_round in range(24):
-            if accepted>=target:
+        target=(task['budget']-len(demos)+stages_left-1)//stages_left
+        allowance=(available_requests+stages_left-1)//stages_left
+        accepted=used=0
+        # Each round is one Alg. 1 batch: P=2 posterior draws, each giving a
+        # hyperplane (P4-5) and a gradient-direction (P6) start/goal pair.
+        # Further draws from the same posterior replace failed solves or
+        # rejected endpoints until the stage allowance is used.
+        for query_round in range(12):
+            if accepted>=target or used>=allowance or available_requests<=0:
                 break
             if args.variant=='random' or gp is None:
                 lo,hi=np.asarray(bounds).T
@@ -369,26 +448,23 @@ def main():
             else:
                 pairs=solve_queries(gp,rng,bounds)
             for pair in pairs:
-                if accepted>=target:
+                if accepted>=target or used>=allowance or available_requests<=0:
                     break
                 response=send({'op':'query','start':pair[0].tolist(),'goal':pair[1].tolist()})
+                used+=1
                 available_requests=response.get('requests_remaining',0)
                 if response.get('demo'):
                     demos.append(response['demo']); accepted+=1
-                if response.get('requests_remaining',1)<=0:
-                    break
-            if 'response' in locals() and response.get('requests_remaining',1)<=0:
-                break
     response=send({'op':'finish'})
     query=np.asarray(response['points'],float)
     if args.variant in ('periodic','periodic6') and len(points)>4:
         pred=fit_periodic(points,gradients,query,6 if args.variant=='periodic6' else 12)
     elif args.variant=='normalized' and len(points):
         normals=.5*gradients/np.maximum(np.linalg.norm(gradients,axis=1,keepdims=True),1e-12)
-        alternative=train_gp(points,normals)
+        alternative=train_gp(points,normals,states)
         pred=(alternative.mean_var(query)[0]<=0).astype(int)
     elif args.variant=='no_gradients':
-        ablation=train_gp(points,gradients,True)
+        ablation=train_gp(points,gradients,states,True)
         pred=(ablation.mean_var(query)[0]<=0).astype(int) if ablation else np.ones(len(query),int)
     else:
         pred=(gp.mean_var(query)[0]<=0).astype(int) if gp else np.ones(len(query),int)
