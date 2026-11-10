@@ -2,4 +2,4 @@ action: submit
 gpus: 0
 test: false
 milestone: method_runs
-notes: "Final combined hardening job, second attempt. Same restorations as before with the unreported Chou hinge margin set to rho=0.1 (rho=1 made unexplored obstacle interiors confidently safe, so all queried endpoints were rejected). Starts with an interleaved 6-instance dev pilot (reference vs random), then both controls on both splits (published), test variants, fixed shortcuts, summary, final publication and validate."
+notes: "Final combined hardening job, third attempt. KKT gradient estimates enter the GP as unit directions (raw multiplier-scaled magnitudes differed up to 1000x between long and short demos, collapsing the GP and Eq. 7 offset); rho=0.1 hinge with constant mean. Starts with a 6-instance interleaved dev pilot, then controls on both splits (published), test variants (periodic fits, raw-gradient/no-gradient/no-acquisition ablations), fixed shortcuts, summary, publication, validate."
