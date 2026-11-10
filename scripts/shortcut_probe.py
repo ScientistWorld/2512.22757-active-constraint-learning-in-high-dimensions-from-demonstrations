@@ -40,6 +40,10 @@ elif attack in ('false_count','negative_count','nan_count','negative_inf_count',
         final['n_demos']={'false_count':0,'negative_count':-10**12,'nan_count':float('nan'),'negative_inf_count':-float('inf')}[attack]
     print(json.dumps(final),flush=True)
 else:
+    # Tight states of the shared initial demonstrations (nonzero curvature).
+    initial=np.vstack([np.asarray(d['positions'])[1:-1][np.abs(2*np.asarray(d['positions'])[1:-1]
+              -np.asarray(d['positions'])[:-2]-np.asarray(d['positions'])[2:]).sum(axis=1)>1e-6]
+              for d in task['initial_demos']])
     print(json.dumps({'op':'finish'}),flush=True)
     q=np.asarray(json.loads(sys.stdin.readline())['points']);n=len(q)
     if attack=='oracle':
@@ -47,6 +51,13 @@ else:
         # Restore the old public example's coordinate convention. The hidden
         # rotations, geometry and instances remain unavailable to this oracle.
         pred=(g_wavy(q/5)<=0).astype(int)
+    elif attack=='contact_disk':
+        # Simple learner without acquisition: a disk through the initial
+        # contacts (centroid, mean radius).
+        if len(initial):
+            centre=initial.mean(axis=0);radius=np.linalg.norm(initial-centre,axis=1).mean()
+            pred=(np.linalg.norm(q-centre,axis=1)>=radius).astype(int)
+        else: pred=np.ones(n,int)
     elif attack=='centered_disk':
         # Prior-shape guess with no demonstrations: unsafe inside a disk of
         # the typical obstacle radius around the workspace origin.

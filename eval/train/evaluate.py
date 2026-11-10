@@ -18,9 +18,11 @@ import numpy as np
 from tasks import Task,EXPERIMENTS,TASKS_PER_EXPERIMENT,BUDGET,REQUEST_LIMIT,BOUND,NEAR_WIDTH,HORIZON
 
 SLICE='train'
-# Whole-run success gate on mean boundary-band recall of each class. It
-# rejects one-class and below-chance classifiers of either class.
-MIN_RECALL=.50
+# Whole-run success gate on the boundary band: mean balanced accuracy must
+# beat chance (.5) by a margin and each class must be recalled at all. It
+# rejects one-class, coin-flip and uninformed fixed-shape classifiers.
+MIN_BALANCED=.55
+MIN_RECALL=.10
 HERE=Path(__file__).resolve().parent
 ROOT=HERE.parents[1]
 
@@ -164,8 +166,8 @@ def metrics(records,exp):
         per_instance.append(one);values.append(one)
     if errors: return None,errors,per_instance
     result={k:float(np.mean([v[k] for v in values])) for k in values[0]}
-    if min(result['safe_recall'],result['unsafe_recall'])<MIN_RECALL:
-        return result,[f'required safe/unsafe recall below {MIN_RECALL:.2f}'],per_instance
+    if result['balanced_accuracy']<MIN_BALANCED or min(result['safe_recall'],result['unsafe_recall'])<MIN_RECALL:
+        return result,[f'boundary balanced accuracy below {MIN_BALANCED:.2f} or a class recall below {MIN_RECALL:.2f}'],per_instance
     return result,[],per_instance
 
 

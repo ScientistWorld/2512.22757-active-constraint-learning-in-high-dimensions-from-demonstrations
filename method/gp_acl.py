@@ -337,6 +337,18 @@ def solve_queries(gp, rng, bounds, n_samples=2):
     return pairs
 
 
+def spread_points(points, count, rng):
+    """Greedy farthest-point subset, from a random first point."""
+    chosen=[int(rng.integers(len(points)))]
+    distance=np.linalg.norm(points-points[chosen[0]],axis=1)
+    while len(chosen)<min(count,len(points)):
+        index=int(np.argmax(distance))
+        if distance[index]<=0: break
+        chosen.append(index)
+        distance=np.minimum(distance,np.linalg.norm(points-points[index],axis=1))
+    return points[chosen]
+
+
 def sample_queries(gp, f, rng, bounds):
     """Programs 3--6 for one posterior draw f; returns its start/goal pairs."""
     lo,hi=np.asarray(bounds,float).T
@@ -345,13 +357,16 @@ def sample_queries(gp, f, rng, bounds):
     def ray_bound(center,vector):
         return min([(hi[d]-center[d])/vector[d] if vector[d]>0 else
                     (lo[d]-center[d])/vector[d] for d in range(2) if abs(vector[d])>1e-12])
-    # P3 is a local constrained nonlinear program, as in the paper's IPOPT
-    # implementation. Initialize it on the inferred boundary, rather than at
-    # arbitrary zero contours of a posterior draw far from any observation.
+    # P3 asks for the most uncertain state on the sampled boundary. It is a
+    # local constrained NLP (IPOPT in the paper), so it is multi-started on
+    # the inferred boundary rather than at arbitrary zero contours of a draw
+    # far from any observation. Starts are spread over all observed contacts
+    # (greedy farthest-point order): random contacts would mostly lie in the
+    # densest, already-resolved arc and return its local variance maxima.
     candidates=gp.points[np.all((gp.points>=lo)&(gp.points<=hi),axis=1)]
     if not len(candidates): return pairs
-    selected=rng.choice(len(candidates),min(6,len(candidates)),replace=False)
-    starts=np.clip(candidates[selected]+rng.normal(0,.02*gp.ls,(len(selected),2)),lo,hi)
+    spread=spread_points(candidates,10,rng)
+    starts=np.clip(spread+rng.normal(0,.02*gp.ls,(len(spread),2)),lo,hi)
     solutions=[]
     for start in starts:
         res=minimize(lambda q:-gp.mean_var(q)[1][0]/signal**2,start,

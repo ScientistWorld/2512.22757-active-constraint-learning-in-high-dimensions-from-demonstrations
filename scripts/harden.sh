@@ -42,7 +42,7 @@ for d in (full,probe):
     (d/'gp_acl.json').write_text(manifest(['python','method/gp_acl.py','--variant','reference']))
     # The reserved control name cannot replace the evaluator's frozen record.
     (d/'random_baseline.json').write_text(manifest(['python','scripts/shortcut_probe.py','--attack','impossible_predictions']))
-for name in ['oracle','centered_disk','grid_order','grid_resize','false_count','negative_count','nan_count',
+for name in ['oracle','centered_disk','contact_disk','grid_order','grid_resize','false_count','negative_count','nan_count',
              'negative_inf_count','over_budget','move_baseline','replace_ground_truth','impossible_predictions','forge_flags']:
     for d in (full,probe):
         (d/f'shortcut_{name}.json').write_text(manifest(['python','scripts/shortcut_probe.py','--attack',name]))
