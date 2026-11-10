@@ -11,8 +11,7 @@ import numpy as np
 test=json.loads(Path('eval/test/hardening_scores.json').read_text())
 train=json.loads(Path('eval/train/hardening_scores.json').read_text())
 rng=np.random.default_rng(872)
-CANDIDATES=['random_baseline','better_boundary_fit','better_boundary_fit_12',
-            'weaker_no_acquisition','weaker_no_gradients','weaker_raw_gradients']
+CANDIDATES=sorted(n for n in test['_paired_metrics'] if n!='gp_acl')
 
 
 def paired_metrics(scores,candidate):
@@ -59,8 +58,9 @@ report={'before':{
             'redteam_reference_accuracy':.9546448087431694,'redteam_random_accuracy':.9311475409836065,
             'redteam_better_rank':.473367,'redteam_better_simplified_rank':.636216,
             'redteam_weaker_no_gradients_rank':-4.462129,'redteam_seed_rank_spread':.579845,
-            'fourth_audit_test_ranks':{'random_baseline':.603014,'better_boundary_fit_12':1.988915,
-                                       'better_normalized_gradients':3.457279,'better_boundary_fit':.578652}},
+            'previous_iteration_final_audit_test_ranks':{'random_baseline':.565786,'better_boundary_fit':-4.045367,
+                'better_boundary_fit_12':-2.891025,'weaker_no_acquisition':-2.085307,
+                'weaker_raw_gradients':-4.438872,'weaker_no_gradients':None}},
         'test_rank':test['_rank'],
         'test_metrics':{e:v['results'] for e,v in test['experiments'].items()},
         'test_failures':test['_failures'],
@@ -80,24 +80,34 @@ report['train_paired_rank']={'random_baseline':paired_rank(train,'train','random
 report['acquisition']={}
 for side in ('test','train'):
     report['acquisition'][side]={}
-    for name in ('gp_acl','random_baseline'):
+    names=['gp_acl','random_baseline']+([n for n in CANDIDATES if n.startswith(('better_','weaker_'))] if side=='test' else [])
+    for name in names:
         path=Path(f'eval/{side}/runs/{name}.json')
         if not path.exists():
             continue
         records=json.loads(path.read_text())['records']
         report['acquisition'][side][name]={}
         for exp,instances in records.items():
-            totals=[];requests=[];informative=[]
+            totals=[];requests=[];informative=[];gained=[]
+            def cells(demos):
+                found=set()
+                for demo in demos:
+                    p=np.asarray(demo['positions'])
+                    tight=np.sum(np.abs(2*(2*p[1:-1]-p[:-2]-p[2:])),axis=1)>1e-4
+                    found|={tuple(c) for c in np.floor(p[1:-1][tight]).astype(int).tolist()}
+                return found
             for record in instances:
                 added=[r['demo'] for r in record['ledger'] if r['demo'] is not None]
                 totals.append(len(record['initial_demos'])+len(added));requests.append(len(record['ledger']))
+                gained.append(len(cells(record['initial_demos']+added))-len(cells(record['initial_demos'])))
                 for demo in added:
                     p=np.asarray(demo['positions'])
                     informative.append(bool(np.any(np.sum(np.abs(2*(2*p[1:-1]-p[:-2]-p[2:])),axis=1)>1e-4)))
             report['acquisition'][side][name][exp]={
                 'demos_mean':float(np.mean(totals)),'demos_min':int(min(totals)),
                 'requests_mean':float(np.mean(requests)),
-                'added_contact_bearing_fraction':float(np.mean(informative)) if informative else None}
+                'added_contact_bearing_fraction':float(np.mean(informative)) if informative else None,
+                'new_unit_boundary_cells_mean':float(np.mean(gained))}
 Path('eval/test/hardening_summary.json').write_text(json.dumps(report,indent=2,allow_nan=False)+'\n')
 print(json.dumps({'test_ranks':report['test_rank']['values'],'paired_rank':report['paired_rank'],
                   'train_paired_rank':report['train_paired_rank'],
@@ -105,5 +115,5 @@ print(json.dumps({'test_ranks':report['test_rank']['values'],'paired_rank':repor
                   'acquisition':report['acquisition']},indent=1),flush=True)
 for side,scores in (('train',train),('test',test)):
     for exp,v in scores['experiments'].items():
-        for name in ('gp_acl','random_baseline'):
+        for name in v['results']:
             print(side,exp,name,{k:round(x,4) for k,x in v['results'][name].items()},flush=True)

@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import time
 import numpy as np
 from tasks import Task,EXPERIMENTS,TASKS_PER_EXPERIMENT,BUDGET,REQUEST_LIMIT,BOUND,NEAR_WIDTH,HORIZON
 
@@ -66,7 +67,7 @@ def command_digest(manifest):
     digest.update((HERE/'tasks.py').read_bytes())
     # Metric/rank changes rescore raw outputs. Bump this version only when
     # acquisition messages or their interpretation change.
-    digest.update(b'acl-v2-online-protocol-3')
+    digest.update(b'acl-v2-online-protocol-4')
     return digest.hexdigest()
 
 
@@ -231,7 +232,7 @@ def main():
             for index in range(len(records),TASKS_PER_EXPERIMENT):
                 record=run_instance(manifest,Task(exp,index));records.append(record)
                 raw[name]['records'][exp]=records;write(path,raw[name])
-                print(f'{SLICE} {name} {exp} {index+1}/{TASKS_PER_EXPERIMENT}: '+str(record['failure'] or ('raw output saved; demos='+str(len(record['initial_demos'])+sum(x['demo'] is not None for x in record['ledger']))+', requests='+str(len(record['ledger']))+development_progress(record,exp,index))),flush=True)
+                print(f'[{time.strftime("%H:%M:%S")}] {SLICE} {name} {exp} {index+1}/{TASKS_PER_EXPERIMENT}: '+str(record['failure'] or ('raw output saved; demos='+str(len(record['initial_demos'])+sum(x['demo'] is not None for x in record['ledger']))+', requests='+str(len(record['ledger']))+development_progress(record,exp,index))),flush=True)
                 if record['failure']:
                     # Deterministic protocol violations need no more expensive
                     # solves; this attempt has already failed the whole task.

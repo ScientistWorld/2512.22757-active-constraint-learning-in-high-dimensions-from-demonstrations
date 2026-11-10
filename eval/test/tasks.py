@@ -13,9 +13,11 @@ TASKS_PER_EXPERIMENT = 36
 N_UNIFORM = 4096
 N_BOUNDARY = 8192
 HORIZON = 30
-# Sparse-demonstration regime: two shared initial demonstrations plus the
-# two Alg. 1 acquisition stages of four demonstrations each.
-BUDGET = 10
+# Four shared initial crossings give coarse coverage of each obstacle from
+# several sides (Alg. 1 takes an initial demonstration set S_D^(1) as input;
+# the paper's Fig. 5 starts both methods from a usable first model). Every
+# method then acquires at most eight more demonstrations.
+BUDGET = 12
 REQUEST_LIMIT = 40
 # The paper's 2D double-integrator g3 figures use the workspace [-15, 15]^2.
 BOUND = 15.0
@@ -25,7 +27,23 @@ BAND_WIDTH = .5
 NEAR_WIDTH = .175
 EXPERIMENTS = ('double_integrator_g3', 'complex_boundary_stress')
 # Fixed world-coordinate endpoints, outside every instance, shared by methods.
-INITIAL_PAIRS = (([-13.5,-11.5],[13.5,11.5]),([-13.5,11.5],[13.5,-11.5]))
+INITIAL_PAIRS = (([-13.5,-11.5],[13.5,11.5]),([-13.5,11.5],[13.5,-11.5]),
+                 ([-14.,1.5],[14.,-1.5]),([1.5,14.],[-1.5,-14.]))
+# Private per-instance smooth radial deformation of the paper's g3 polynomial:
+# localized angular bumps and dents (von Mises profiles). Its form and size
+# stay here; the development split uses a different family of comparable
+# size, so exact public obstacle formulas do not answer hidden instances.
+DEFORM_BUMPS = 3
+DEFORM_AMPLITUDE = .10
+DEFORM_CONCENTRATION = 3.
+
+
+def g3_root(t):
+    """Radius of the paper's g3 boundary along shape-frame angle t."""
+    co=np.cos(t); si=np.sin(t)
+    a=.25*co**2+si**2
+    b=-50*a+50*co**2
+    return np.sqrt((-b+np.sqrt(b*b+250*a*a))/(2*a*a))
 
 
 class Task:
@@ -37,18 +55,24 @@ class Task:
         self.phase=rng.uniform(-np.pi,np.pi,21)
         self.coefficients=rng.normal(0,.035,15)*(6/np.arange(6,21))**1.3
         self.center=rng.uniform(-CENTER_RANGE,CENTER_RANGE,2)
+        self.deform=rng.uniform(-DEFORM_AMPLITUDE,DEFORM_AMPLITUDE,DEFORM_BUMPS)
+        self.deform_phase=rng.uniform(-np.pi,np.pi,DEFORM_BUMPS)
         self.rng=rng
+
+    def warp(self, t):
+        """Radial scale w(t)=scale*(1+d(t)) of the g3 shape and dw/dt."""
+        t=np.asarray(t,float)
+        d=np.zeros_like(t); dd=np.zeros_like(t)
+        for amplitude,centre in zip(self.deform,self.deform_phase):
+            bump=amplitude*np.exp(DEFORM_CONCENTRATION*(np.cos(t-centre)-1))
+            d=d+bump; dd=dd-DEFORM_CONCENTRATION*np.sin(t-centre)*bump
+        return self.scale*(1+d),self.scale*dd
 
     def radius(self, theta):
         theta=np.asarray(theta)
-        if self.experiment==EXPERIMENTS[0]:
-            t=theta-self.rotation
-            co=np.cos(t); si=np.sin(t)
-            a=.25*co**2+si**2
-            b=-50*a+50*co**2
-            r2=(-b+np.sqrt(b*b+250*a*a))/(2*a*a)
-            return self.scale*np.sqrt(r2)
         t=theta-self.rotation
+        if self.experiment==EXPERIMENTS[0]:
+            return self.warp(t)[0]*g3_root(t)
         r=1.03+.16*np.sin(3*t+self.phase[3])+.10*np.cos(5*t+self.phase[5])
         for j,h in enumerate(range(6,21)):
             r=r+self.coefficients[j]*np.sin(h*t+self.phase[h])
@@ -62,13 +86,21 @@ class Task:
     def value_gradient(self, points):
         p=np.atleast_2d(points)-self.center
         if self.experiment==EXPERIMENTS[0]:
+            # The paper's g3 polynomial in radially warped shape coordinates
+            # z=z0/w(t), z0 the rotated offset and t its polar angle.
             co,si=np.cos(self.rotation),np.sin(self.rotation)
             rotation=np.array([[co,si],[-si,co]])
-            z=p@rotation.T/self.scale
+            z0=p@rotation.T
+            t=np.arctan2(z0[:,1],z0[:,0])
+            w,dw=self.warp(t)
+            z=z0/w[:,None]
             x,y=z.T; a=.25*x*x+y*y-25
             value=(-a*a-50*x*x+687.5)/687.5
-            grad=np.column_stack([-a*x-100*x,-4*a*y])@rotation/self.scale/687.5
-            return value,grad
+            gz=np.column_stack([-a*x-100*x,-4*a*y])/687.5
+            r2=np.maximum(np.sum(z0**2,axis=1),1e-300)
+            dt=np.column_stack([-z0[:,1],z0[:,0]])/r2[:,None]
+            g0=gz/w[:,None]-(np.sum(gz*z0,axis=1)*dw/w**2)[:,None]*dt
+            return value,g0@rotation
         theta=np.arctan2(p[:,1],p[:,0]); rr=np.maximum(np.linalg.norm(p,axis=1),1e-8)
         t=theta-self.rotation
         radius=self.radius(theta)

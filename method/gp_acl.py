@@ -8,12 +8,22 @@ not quantile contact detection. No simulator or truth module is imported.
 """
 from __future__ import annotations
 import argparse
+import hashlib
 import json
+import os
 import sys
+from pathlib import Path
 import numpy as np
 from scipy.linalg import cho_factor, cho_solve
 from scipy.optimize import minimize, linprog, brentq
 from scipy.special import ndtr
+
+# Memoized GP training results (hyperparameters only, keyed by a digest of
+# this source file and the exact training data). Variants that share the
+# reference acquisition and differ only in their final classifier reuse the
+# reference's fits instead of re-optimizing; no data are stored.
+SOURCE_DIGEST=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()[:16]
+FIT_CACHE=Path(os.environ.get('GP_ACL_FIT_CACHE',Path(__file__).resolve().parents[1]/'tmp'/'gp_fit_cache'))
 
 
 class GPModel:
@@ -242,25 +252,62 @@ def marginal_likelihood(logp, points, gradients, values_only=False):
     return value,gradient[:3]
 
 
-def train_gp(points, gradients, states=(), values_only=False):
+def _fit_key(points, gradients, states, values_only, init):
+    digest=hashlib.sha256(SOURCE_DIGEST.encode())
+    for array in (points,gradients,states):
+        digest.update(np.ascontiguousarray(array,float).tobytes()); digest.update(b'|')
+    digest.update(b'values' if values_only else b'joint')
+    digest.update(b'none' if init is None else np.ascontiguousarray(init,float).tobytes())
+    return digest.hexdigest()
+
+
+def train_gp(points, gradients, states=(), values_only=False, init=None):
+    """Minimize the training loss from deterministic starts (or warm start).
+
+    Starts are in the paper's physical position units; the prior mean starts
+    on the hinge boundary for states far from data (mean = -rho * signal).
+    With `init` (the previous Alg. 1 iteration's optimum) the optimizer is
+    warm-started from it plus one default start. The returned model carries
+    its optimum in `model.z` for the next iteration's warm start.
+    """
     if not len(points):
         return None
-    # Deterministic starts in the paper's physical position units. Raw P8
-    # gradients retain their magnitudes. The prior mean starts on the hinge
-    # boundary for states far from data (mean = -rho * signal).
-    rms=max(float(np.sqrt(np.mean(np.asarray(gradients)**2))),1e-4)
-    fits=[]
-    for length in (1.,3.25,6.):
-        signal=max(rms*length,.001)
-        init=np.r_[np.log([length,signal,max((.03*rms)**2,1e-8)]),-RHO*signal]
-        fit=minimize(training_objective,init,args=(points,gradients,states,values_only),
-                     jac=True,method='L-BFGS-B',
-                     bounds=[tuple(b) for b in np.log([[.35,12.5],[1e-5,100],[1e-10,1.]])]+[(-1e3,1e3)],
-                     options={'maxiter':150,'ftol':1e-10,'gtol':1e-6})
-        if np.isfinite(fit.fun) and fit.fun<1e29: fits.append(fit)
-    if not fits: raise RuntimeError('GP training optimization failed')
-    best=min(fits,key=lambda fit:fit.fun).x
-    return GPModel(points, gradients, np.exp(best[:3]), values_only, best[3])
+    points=np.asarray(points,float).reshape(-1,2); gradients=np.asarray(gradients,float).reshape(-1,2)
+    states=np.asarray(states,float).reshape(-1,2)
+    bounds=[tuple(b) for b in np.log([[.35,12.5],[1e-5,100],[1e-10,1.]])]+[(-1e3,1e3)]
+    key=_fit_key(points,gradients,states,values_only,init)
+    path=FIT_CACHE/f'{key}.json'
+    best=None
+    try:
+        best=np.asarray(json.loads(path.read_text()),float)
+        if best.shape!=(4,) or not np.all(np.isfinite(best)): best=None
+    except (OSError,ValueError):
+        best=None
+    if best is None:
+        rms=max(float(np.sqrt(np.mean(gradients**2))),1e-4)
+        starts=[]
+        if init is not None:
+            starts.append(np.clip(np.asarray(init,float),[b[0] for b in bounds],[b[1] for b in bounds]))
+        for length in ((3.25,) if init is not None else (1.,3.25,6.)):
+            signal=max(rms*length,.001)
+            starts.append(np.r_[np.log([length,signal,max((.03*rms)**2,1e-8)]),-RHO*signal])
+        fits=[]
+        for start in starts:
+            fit=minimize(training_objective,start,args=(points,gradients,states,values_only),
+                         jac=True,method='L-BFGS-B',bounds=bounds,
+                         options={'maxiter':150,'ftol':1e-10,'gtol':1e-6})
+            if np.isfinite(fit.fun) and fit.fun<1e29: fits.append(fit)
+        if not fits: raise RuntimeError('GP training optimization failed')
+        best=min(fits,key=lambda fit:fit.fun).x
+        try:
+            FIT_CACHE.mkdir(parents=True,exist_ok=True)
+            temp=path.with_suffix(f'.{os.getpid()}.tmp')
+            temp.write_text(json.dumps(best.tolist())); temp.replace(path)
+        except OSError:
+            pass
+    model=GPModel(points, gradients, np.exp(best[:3]), values_only, best[3])
+    model.z=best
+    return model
 
 
 def finite_gradient(f, x):
@@ -318,7 +365,7 @@ def endpoint_constraints(gp, sample, query, beta):
                             ndtr(-mean/np.sqrt(variance))-beta])
 
 
-def solve_queries(gp, rng, bounds, n_samples=2):
+def legacy_solve_queries(gp, rng, bounds, n_samples=2):
     """The continuous Programs 3--6, in physical position/cost units.
 
     P3 uses analytic derivatives and dimensionless residuals. P4--6 reduce
@@ -330,7 +377,7 @@ def solve_queries(gp, rng, bounds, n_samples=2):
     for _ in range(n_samples):
         f=gp.sample_function(rng,1000,.3)
         try:
-            pairs.extend(sample_queries(gp,f,rng,bounds))
+            pairs.extend(legacy_sample_queries(gp,f,rng,bounds))
         except (ValueError,ArithmeticError,np.linalg.LinAlgError,RuntimeError):
             # A failed local solve yields no query, as a failed IPOPT solve would.
             continue
@@ -349,8 +396,8 @@ def spread_points(points, count, rng):
     return points[chosen]
 
 
-def sample_queries(gp, f, rng, bounds):
-    """Programs 3--6 for one posterior draw f; returns its start/goal pairs."""
+def legacy_sample_queries(gp, f, rng, bounds):
+    """Previous packaged Programs 3--6 (P3 started at observed tight states)."""
     lo,hi=np.asarray(bounds,float).T
     signal=max(gp.signal,1e-10)
     pairs=[]
@@ -407,6 +454,167 @@ def sample_queries(gp, f, rng, bounds):
     return pairs
 
 
+# P3 is solved over the posterior sample's boundary within this many fitted
+# lengthscales of the nearest tight state, where that boundary is anchored by
+# observations (spurious zero contours of a draw far from all data, and the
+# back side of a sampled obstacle beyond the observed constraint, carry no
+# information about where demonstrations can touch the constraint).
+TRUST_LENGTHSCALES=1.5
+# Posterior draws per Alg. 1 batch (P); each yields a P4-5 and a P6 pair.
+POSTERIOR_DRAWS=2
+# A deterministic expert returns the same demonstration for (nearly) the same
+# start/goal pair, so such repeated requests are skipped.
+DUPLICATE_TOLERANCE=.25
+MAX_BATCHES=10
+MAX_REDRAWS=3
+
+
+def boundary_crossings(f, lo, hi, step, chunk=4096):
+    """All zero crossings of f along the edges of a regular grid on [lo,hi]."""
+    xs=lo[0]+step*np.arange(int(np.floor((hi[0]-lo[0])/step))+1)
+    ys=lo[1]+step*np.arange(int(np.floor((hi[1]-lo[1])/step))+1)
+    if len(xs)<2 or len(ys)<2: return np.zeros((0,2))
+    X,Y=np.meshgrid(xs,ys,indexing='ij')
+    grid=np.column_stack([X.ravel(),Y.ravel()])
+    v=np.concatenate([np.asarray(f(grid[i:i+chunk])).ravel() for i in range(0,len(grid),chunk)]).reshape(X.shape)
+    found=[]
+    for axis in (0,1):
+        a=v[:-1,:] if axis==0 else v[:,:-1]
+        b=v[1:,:] if axis==0 else v[:,1:]
+        mask=np.signbit(a)!=np.signbit(b)
+        if not np.any(mask): continue
+        den=a[mask]-b[mask]
+        frac=np.where(den!=0,a[mask]/np.where(den!=0,den,1.),.5)
+        if axis==0:
+            found.append(np.column_stack([X[:-1,:][mask]+frac*step,Y[:-1,:][mask]]))
+        else:
+            found.append(np.column_stack([X[:,:-1][mask],Y[:,:-1][mask]+frac*step]))
+    return np.vstack(found) if found else np.zeros((0,2))
+
+
+def nearest_distance(points, anchors, chunk=2048):
+    out=np.empty(len(points))
+    for i in range(0,len(points),chunk):
+        block=points[i:i+chunk]
+        out[i:i+chunk]=np.sqrt(np.min(np.sum((block[:,None,:]-anchors[None,:,:])**2,axis=2),axis=1))
+    return out
+
+
+def project_to_boundary(f, q, signal, steps=30):
+    """Newton projection of q onto f=0 along the sample gradient."""
+    q=np.asarray(q,float).copy()
+    for _ in range(steps):
+        value=f(q)[0]
+        if abs(value)/signal<1e-8: return q
+        gradient=f.derivative(q)[0]; norm=gradient@gradient
+        if norm<1e-20: return None
+        q=q-value*gradient/norm
+    return q if abs(f(q)[0])/signal<1e-6 else None
+
+
+def solve_p3(gp, f, lo, hi):
+    """Problem 3: argmax posterior variance on {f=0} near the observations.
+
+    The constrained global maximum is found by enumerating the sampled
+    boundary on a grid finer than the fitted lengthscale (zero crossings,
+    linear interpolation), then polishing the best distinct candidates with
+    the continuous constrained NLP. Starting the local solver from observed
+    tight states is avoided: the posterior variance is minimal, with zero
+    gradient, at observations, so a local solver started there returns them.
+    """
+    signal=max(gp.signal,1e-10)
+    contacts=gp.points
+    reach=TRUST_LENGTHSCALES*gp.ls
+    box_lo=np.maximum(lo,contacts.min(axis=0)-reach); box_hi=np.minimum(hi,contacts.max(axis=0)+reach)
+    if np.any(box_hi-box_lo<=0): return None
+    step=float(np.clip(gp.ls/4,.05,.5)); step=max(step,float(np.max(box_hi-box_lo))/160)
+    crossings=boundary_crossings(f,box_lo,box_hi,step)
+    if not len(crossings): return None
+    crossings=crossings[nearest_distance(crossings,contacts)<=reach]
+    if not len(crossings): return None
+    variance=gp.mean_var(crossings)[1]
+    chosen=[]
+    for i in np.argsort(-variance):
+        if all(np.linalg.norm(crossings[i]-crossings[j])>=gp.ls/2 for j in chosen): chosen.append(i)
+        if len(chosen)==3: break
+    best=None
+    for i in chosen:
+        start=crossings[i]
+        local=list(zip(np.maximum(lo,start-step),np.minimum(hi,start+step)))
+        res=minimize(lambda q:-gp.mean_var(q)[1][0]/signal**2,start,
+                     jac=lambda q:-gp.derivatives(q)[1][0]/signal**2,
+                     method='SLSQP',bounds=local,
+                     constraints=[{'type':'eq','fun':lambda q:f(q)[0]/signal,
+                                   'jac':lambda q:f.derivative(q)[0]/signal}],
+                     options={'maxiter':100,'ftol':1e-10})
+        q=res.x if (res.success and abs(f(res.x)[0])/signal<1e-6) else project_to_boundary(f,start,signal)
+        if q is None or np.any(q<lo) or np.any(q>hi): continue
+        value=gp.mean_var(q)[1][0]
+        if best is None or value>best[0]: best=(value,q)
+    return None if best is None else best[1]
+
+
+def sample_queries(gp, f, rng, bounds):
+    """Programs 3--6 for one posterior draw f; returns its start/goal pairs."""
+    lo,hi=np.asarray(bounds,float).T
+    signal=max(gp.signal,1e-10)
+    pairs=[]
+    def ray_bound(center,vector):
+        return min([(hi[d]-center[d])/vector[d] if vector[d]>0 else
+                    (lo[d]-center[d])/vector[d] for d in range(2) if abs(vector[d])>1e-12])
+    mi=solve_p3(gp,f,lo,hi)
+    if mi is None: return pairs
+    raw=f.derivative(mi)[0]
+    norm=np.linalg.norm(raw)
+    if norm<1e-10: return pairs
+    center=mi+1.*raw  # Eq.7: eta=1; with unit-gradient estimates this offset is ~1 position unit.
+    if np.any(center<lo) or np.any(center>hi) or f(center)[0]<=0: return pairs
+    tangent=np.array([-raw[1],raw[0]])/norm
+    p4=[]
+    for sign in (-1,1):
+        vector=sign*tangent
+        def unsafe(t): return f(center+np.asarray(t)[:,None]*vector)[:,None]/signal
+        far=scalar_feasible_extreme(unsafe,ray_bound(center,vector),gp.ls,nearest=False)
+        if far is not None: p4.append((far,far*vector))
+    directions=[]
+    if p4: directions.append((max(p4,key=lambda v:v[0])[1],(.55,.55)))
+    directions.append((raw,(.30,.55)))
+    for direction,betas in directions:
+        pair=[]
+        for sign,beta in zip((-1,1),betas):
+            vector=sign*direction/np.linalg.norm(direction)
+            def safe(t):
+                q=center+np.asarray(t)[:,None]*vector
+                return endpoint_constraints(gp,f,q,beta)
+            near=scalar_feasible_extreme(safe,ray_bound(center,vector),gp.ls)
+            if near is None: break
+            pair.append(center+near*vector)
+        if len(pair)==2: pairs.append(pair)
+    return pairs
+
+
+def solve_queries(gp, rng, bounds, n_samples=POSTERIOR_DRAWS):
+    """One Alg. 1 batch: P posterior draws, each giving Probs. 3--6 pairs."""
+    pairs=[]
+    for _ in range(n_samples):
+        f=gp.sample_function(rng,1000,.3)
+        try:
+            pairs.extend(sample_queries(gp,f,rng,bounds))
+        except (ValueError,ArithmeticError,np.linalg.LinAlgError,RuntimeError):
+            # A failed local solve yields no query, as a failed IPOPT solve would.
+            continue
+    return pairs
+
+
+def near_duplicate(pair, requested, tolerance=DUPLICATE_TOLERANCE):
+    s,g=np.asarray(pair[0],float),np.asarray(pair[1],float)
+    for s2,g2 in requested:
+        if ((np.linalg.norm(s-s2)<tolerance and np.linalg.norm(g-g2)<tolerance) or
+                (np.linalg.norm(s-g2)<tolerance and np.linalg.norm(g-s2)<tolerance)):
+            return True
+    return False
+
+
 def fit_periodic(points, gradients, query, order=12):
     """Honest headroom variant: periodic contact/normal regression.
 
@@ -434,6 +642,31 @@ def fit_periodic(points, gradients, query, order=12):
     return (np.linalg.norm(query,axis=1)>=radius).astype(int)
 
 
+def star_fill(points, query, unsafe, margin=.5, max_gap=np.pi/4):
+    """Headroom variant: fill the deep interior enclosed by the tight states.
+
+    Tight states, ordered by angle about their centroid, define a polar
+    piecewise-linear radius. States at least `margin` inside it (and only
+    across angular gaps up to `max_gap`) are also predicted unsafe, which
+    corrects a stationary-kernel posterior mean that relaxes back to its
+    safe prior inside large obstacles. No oracle labels or task parameters
+    are used; only a star-shaped obstacle is assumed.
+    """
+    if len(points)<8: return unsafe
+    centre=points.mean(axis=0)
+    rel=points-centre
+    angle=np.arctan2(rel[:,1],rel[:,0]); radius=np.linalg.norm(rel,axis=1)
+    order=np.argsort(angle); angle=angle[order]; radius=radius[order]
+    angle=np.r_[angle[-1]-2*np.pi,angle,angle[0]+2*np.pi]; radius=np.r_[radius[-1],radius,radius[0]]
+    q=np.asarray(query,float)-centre
+    qa=np.arctan2(q[:,1],q[:,0]); qr=np.linalg.norm(q,axis=1)
+    right=np.clip(np.searchsorted(angle,qa),1,len(angle)-1); left=right-1
+    gap=angle[right]-angle[left]
+    weight=np.where(gap>0,(qa-angle[left])/np.where(gap>0,gap,1.),0.)
+    boundary=(1-weight)*radius[left]+weight*radius[right]
+    return unsafe|((qr<boundary-margin)&(gap<=max_gap))
+
+
 def send(value):
     print(json.dumps(value,allow_nan=False),flush=True)
     return json.loads(sys.stdin.readline())
@@ -443,47 +676,56 @@ def demonstrated_states(demos):
     return np.vstack([np.asarray(d['positions'],float) for d in demos])
 
 
-def main():
-    parser=argparse.ArgumentParser()
-    parser.add_argument('--variant',default='reference', choices=['reference','random','periodic','periodic6','raw_gradients','no_gradients','no_acquisition'])
-    args=parser.parse_args()
-    task=json.loads(sys.stdin.readline())
-    rng=np.random.default_rng(task['seed'])
-    demos=list(task['initial_demos'])
-    bounds=task['bounds']
-    available_requests=task['query_limit']
+def diagnostic(stage, demos, points, gp, **extra):
+    # Unscored diagnostics only: the parent never uses these for metrics.
+    info={'stage':stage,'demos':len(demos),'contacts':len(points),**extra}
+    if gp is not None:
+        info.update(lengthscale=float(gp.ls),signal=float(gp.signal),
+                    noise=float(gp.noise),prior_mean=float(gp.constant))
+    print(json.dumps(info,allow_nan=False),file=sys.stderr,flush=True)
+
+
+class Observations:
+    """Per-demonstration P7/P8 results, computed once per demonstration."""
+    def __init__(self, raw=False):
+        self.raw=raw; self.items=[]
+    def __call__(self, demos):
+        while len(self.items)<len(demos):
+            self.items.append(kkt_tight_points(demos[len(self.items)]))
+        points=np.vstack([p for p,g in self.items]).reshape(-1,2)
+        gradients=np.vstack([g for p,g in self.items]).reshape(-1,2)
+        if not self.raw and len(gradients):
+            gradients=gradients/np.linalg.norm(gradients,axis=1,keepdims=True)
+        return points,gradients
+
+
+def legacy_acquire(task, rng, demos, observe):
+    """The previous packaged acquisition (kept as a weaker comparison).
+
+    Three fits; two stages that repeatedly redraw posterior samples from one
+    fit, with Problem 3 started at observed tight states.
+    """
+    bounds=task['bounds']; available_requests=task['query_limit']
+    gp=None
     for iteration in range(3):
-        points,gradients=observations(demos,raw=args.variant=='raw_gradients')
-        states=demonstrated_states(demos)
-        gp=train_gp(points,gradients,states)
-        # Unscored diagnostics only: the parent never uses these for metrics.
-        diagnostic={'stage':iteration,'demos':len(demos),'contacts':len(points)}
-        if gp is not None:
-            diagnostic.update(lengthscale=float(gp.ls),signal=float(gp.signal),
-                              noise=float(gp.noise),prior_mean=float(gp.constant))
-        print(json.dumps(diagnostic,allow_nan=False),file=sys.stderr,flush=True)
-        if iteration==2 or args.variant=='no_acquisition':
-            break
-        if available_requests<=0:
+        points,gradients=observe(demos)
+        gp=train_gp(points,gradients,demonstrated_states(demos))
+        diagnostic(iteration,demos,points,gp)
+        if iteration==2 or available_requests<=0:
+            if iteration==2: break
             continue
-        # Alg. 1 has two acquisition iterations between its three GP fits.
-        # Unused demonstration/request allowance carries into the next stage.
         stages_left=2-iteration
         target=(task['budget']-len(demos)+stages_left-1)//stages_left
         allowance=(available_requests+stages_left-1)//stages_left
         accepted=used=0
-        # Each round is one Alg. 1 batch: P=2 posterior draws, each giving a
-        # hyperplane (P4-5) and a gradient-direction (P6) start/goal pair.
-        # Further draws from the same posterior replace failed solves or
-        # rejected endpoints until the stage allowance is used.
         for query_round in range(12):
             if accepted>=target or used>=allowance or available_requests<=0:
                 break
-            if args.variant=='random' or gp is None:
+            if gp is None:
                 lo,hi=np.asarray(bounds).T
                 pairs=[rng.uniform(lo,hi,(2,2)) for _ in range(target-accepted)]
             else:
-                pairs=solve_queries(gp,rng,bounds)
+                pairs=legacy_solve_queries(gp,rng,bounds)
             for pair in pairs:
                 if accepted>=target or used>=allowance or available_requests<=0:
                     break
@@ -492,15 +734,97 @@ def main():
                 available_requests=response.get('requests_remaining',0)
                 if response.get('demo'):
                     demos.append(response['demo']); accepted+=1
+    return gp
+
+
+def gp_acl_acquire(task, rng, demos, observe):
+    """Alg. 1, iterated until the demonstration or request budget is spent.
+
+    Every iteration refits the GP to all demonstrations (Probs. 7-8 and the
+    training loss), draws P posterior samples, solves Probs. 3-6 for each
+    and requests the resulting start/goal pairs. Rejected (infeasible)
+    requests return no demonstration, as an infeasible Prob. 1 would.
+    """
+    bounds=task['bounds']; budget=task['budget']; requests_left=task['query_limit']
+    requested=[]; warm=None; batch=0
+    while True:
+        points,gradients=observe(demos)
+        gp=train_gp(points,gradients,demonstrated_states(demos),init=warm)
+        warm=None if gp is None else gp.z
+        diagnostic(batch,demos,points,gp,requests=len(requested))
+        if len(demos)>=budget or requests_left<=0 or batch>=MAX_BATCHES:
+            return gp
+        pairs=[]
+        for _ in range(MAX_REDRAWS):
+            if gp is None:
+                lo,hi=np.asarray(bounds,float).T
+                candidates=[rng.uniform(lo,hi,(2,2)) for _ in range(2*POSTERIOR_DRAWS)]
+            else:
+                candidates=solve_queries(gp,rng,bounds)
+            pairs=[pair for pair in candidates if not near_duplicate(pair,requested)]
+            if pairs: break
+        if not pairs:
+            return gp
+        for pair in pairs:
+            if len(demos)>=budget or requests_left<=0: break
+            if near_duplicate(pair,requested): continue
+            response=send({'op':'query','start':np.asarray(pair[0]).tolist(),'goal':np.asarray(pair[1]).tolist()})
+            requested.append((np.asarray(pair[0],float),np.asarray(pair[1],float)))
+            requests_left=response.get('requests_remaining',0)
+            if response.get('demo'):
+                demos.append(response['demo'])
+        batch+=1
+
+
+def random_acquire(task, rng, demos):
+    """Random-sampling baseline: uniform start/goal pairs in the workspace."""
+    lo,hi=np.asarray(task['bounds'],float).T
+    requests_left=task['query_limit']
+    while len(demos)<task['budget'] and requests_left>0:
+        pair=rng.uniform(lo,hi,(2,2))
+        response=send({'op':'query','start':pair[0].tolist(),'goal':pair[1].tolist()})
+        requests_left=response.get('requests_remaining',0)
+        if response.get('demo'):
+            demos.append(response['demo'])
+
+
+VARIANTS=['reference','random','legacy','no_acquisition','no_gradients','raw_gradients',
+          'fill','periodic','periodic6']
+
+
+def main():
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--variant',default='reference',choices=VARIANTS)
+    args=parser.parse_args()
+    task=json.loads(sys.stdin.readline())
+    rng=np.random.default_rng(task['seed'])
+    demos=list(task['initial_demos'])
+    observe=Observations(raw=args.variant=='raw_gradients')
+    if args.variant=='legacy':
+        gp=legacy_acquire(task,rng,demos,observe)
+    elif args.variant in ('random','no_acquisition'):
+        if args.variant=='random':
+            random_acquire(task,rng,demos)
+        points,gradients=observe(demos)
+        gp=train_gp(points,gradients,demonstrated_states(demos))
+        diagnostic('final',demos,points,gp)
+    else:
+        # The reference acquisition; the remaining variants change only the
+        # gradient observations or the final classifier.
+        gp=gp_acl_acquire(task,rng,demos,observe)
+    points,gradients=observe(demos)
     response=send({'op':'finish'})
     query=np.asarray(response['points'],float)
+    unsafe=(gp.mean_var(query)[0]>0) if gp is not None else np.zeros(len(query),bool)
     if args.variant in ('periodic','periodic6') and len(points)>4:
         pred=fit_periodic(points,gradients,query,6 if args.variant=='periodic6' else 12)
     elif args.variant=='no_gradients':
-        ablation=train_gp(points,gradients,states,True)
+        ablation=train_gp(points,gradients,demonstrated_states(demos),True)
         pred=(ablation.mean_var(query)[0]<=0).astype(int) if ablation else np.ones(len(query),int)
+    elif args.variant=='fill':
+        pred=(~star_fill(points,query,unsafe)).astype(int)
     else:
-        pred=(gp.mean_var(query)[0]<=0).astype(int) if gp else np.ones(len(query),int)
+        pred=(~unsafe).astype(int)
     print(json.dumps({'predictions':pred.tolist()},allow_nan=False),flush=True)
 
 

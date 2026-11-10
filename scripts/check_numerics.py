@@ -79,3 +79,46 @@ model=train_gp(ring,-.5*ring/3,4.5*np.column_stack([np.cos(angles+.2),np.sin(ang
 probe=np.array([[0.,0.],[1.5,0.],[3.5,0.],[6.,0.],[12.,12.]])
 print('Ring probe: length %.3f signal %.3f noise %.2e prior mean %.3f; mean at r=0,1.5,3.5,6,17: %s'%(
     model.ls,model.signal,model.noise,model.constant,np.round(model.mean_var(probe)[0],3).tolist()),flush=True)
+
+# New Problem 3 machinery: zero-crossing enumeration, projection, the
+# trust-region global solve, duplicate requests, and memoized/warm training.
+from method.gp_acl import (boundary_crossings,nearest_distance,project_to_boundary,solve_p3,
+                           near_duplicate,star_fill,solve_queries,TRUST_LENGTHSCALES)
+def circle(q):
+    q=np.atleast_2d(q);return 4.-np.sum(q**2,axis=1)
+circle.derivative=lambda q:-2*np.atleast_2d(q)
+crossings=boundary_crossings(circle,np.array([-3.,-3.]),np.array([3.,3.]),.1)
+assert len(crossings)>100 and np.max(np.abs(np.linalg.norm(crossings,axis=1)-2.))<.01
+assert np.allclose(nearest_distance(np.array([[0.,0.],[3.,4.]]),np.array([[0.,1.],[3.,0.]])),[1.,4.])
+projected=project_to_boundary(circle,np.array([1.,1.]),1.)
+assert projected is not None and abs(np.linalg.norm(projected)-2.)<1e-8
+assert near_duplicate((np.array([0.,0.]),np.array([1.,1.])),[(np.array([1.05,1.]),np.array([0.,.1]))])
+assert not near_duplicate((np.array([0.,0.]),np.array([1.,1.])),[(np.array([2.,1.]),np.array([0.,0.]))])
+ring_states=4.5*np.column_stack([np.cos(angles+.2),np.sin(angles+.2)])
+first=train_gp(ring,-ring/3,ring_states)
+again=train_gp(ring,-ring/3,ring_states)
+assert np.allclose(first.z,again.z)
+warm=train_gp(ring,-ring/3,ring_states,init=first.z)
+assert np.all(np.isfinite(warm.z))
+# Half-ring of contacts: P3 must leave the observations (zero variance
+# gradient there) and return a sampled-boundary state of higher variance,
+# within the trust region, for most posterior draws.
+half=ring[:6];half_gp=train_gp(half,-half/3,ring_states[:6])
+contact_variance=float(np.max(half_gp.mean_var(half)[1]))
+rng=np.random.default_rng(11);found=0
+for _ in range(6):
+    sample=half_gp.sample_function(rng,1000,.3)
+    point=solve_p3(half_gp,sample,np.array([-15.,-15.]),np.array([15.,15.]))
+    if point is None: continue
+    found+=1
+    assert abs(sample(point)[0])/half_gp.signal<1e-5
+    assert nearest_distance(point[None],half)[0]<=TRUST_LENGTHSCALES*half_gp.ls+1.
+    assert half_gp.mean_var(point)[1][0]>max(10*contact_variance,.01*half_gp.signal**2)
+assert found>=4,found
+pairs=solve_queries(half_gp,np.random.default_rng(5),[[-15,15],[-15,15]])
+assert all(np.all(np.isfinite(np.asarray(p))) for p in pairs)
+# Interior fill marks only states well inside the tight-state polygon.
+fill=star_fill(ring,np.array([[0.,0.],[2.9,0.],[5.,0.]]),np.zeros(3,bool))
+assert fill.tolist()==[True,False,False]
+print('Problem 3 crossing enumeration, projection, trust-region solve, duplicate filter, memoized fits and fill: pass;',
+      'half-ring P3 solutions',found,'of 6; batch pairs',len(pairs),flush=True)

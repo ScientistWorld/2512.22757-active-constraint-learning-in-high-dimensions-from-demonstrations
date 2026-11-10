@@ -1,5 +1,8 @@
+# Once you set action to 'submit' or 'done', STOP immediately.
+# Do NOT sleep, poll, or wait for jobs. The system reads this file
+# only after your turn ends.
 action: submit
 gpus: 0
 test: false
 milestone: method_runs
-notes: "Final combined hardening job, fourth attempt. Unit-direction KKT gradients, rho=0.1 hinge with constant mean, P3 multi-starts spread over all contacts (random starts clustered queries in resolved arcs); success gate = boundary balanced accuracy >= 0.55 and each recall >= 0.10. Dev pilot, controls on both splits (published), test variants, fixed shortcuts incl. centred/contact disks, summary, publication, validate."
+notes: "Final hardening job: P3 solved over the sampled boundary (bug fix: starts at observations never moved), Alg. 1 refit per batch, 4 shared initial crossings, private g3 deformations (closes public-formula fit); dev pilot, controls on both splits, publish, then prioritized audit of better/weaker variants and shortcut probes under a time guard."
