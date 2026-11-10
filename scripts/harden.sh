@@ -28,9 +28,6 @@ python eval/test/check_oracle.py
 find outputs -maxdepth 1 -type f -name '*.json' ! -name gp_acl.json ! -name random_baseline.json -exec mv -t outputs/previous {} +
 bash scripts/method.sh
 bash scripts/baseline.sh
-# Interleaved paired development instances first, for progress reports; the
-# evaluator resumes from these saved records.
-python scripts/dev_pilot.py 6
 bash scripts/evaluate_train.sh --bootstrap
 cp scoring/scores_train.json eval/train/hardening_scores.json
 bash scripts/evaluate_test.sh --bootstrap

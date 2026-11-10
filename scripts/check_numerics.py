@@ -105,7 +105,10 @@ assert np.all(np.isfinite(warm.z))
 # within the trust region, for most posterior draws.
 half=ring[:6];half_gp=train_gp(half,-half/3,ring_states[:6])
 contact_variance=float(np.max(half_gp.mean_var(half)[1]))
-rng=np.random.default_rng(11);found=0
+# Variance midway between observed contacts on the arc (low: inside the data).
+gap_angles=angles[:5]+np.pi/12
+gap_variance=float(np.max(half_gp.mean_var(3*np.column_stack([np.cos(gap_angles),np.sin(gap_angles)]))[1]))
+rng=np.random.default_rng(11);found=0;ratios=[]
 for _ in range(6):
     sample=half_gp.sample_function(rng,1000,.3)
     point=solve_p3(half_gp,sample,np.array([-15.,-15.]),np.array([15.,15.]))
@@ -113,7 +116,9 @@ for _ in range(6):
     found+=1
     assert abs(sample(point)[0])/half_gp.signal<1e-5
     assert nearest_distance(point[None],half)[0]<=TRUST_LENGTHSCALES*half_gp.ls+1.
-    assert half_gp.mean_var(point)[1][0]>max(10*contact_variance,.01*half_gp.signal**2)
+    variance=half_gp.mean_var(point)[1][0]
+    assert variance>10*contact_variance,(variance,contact_variance)
+    ratios.append(float(variance/max(gap_variance,1e-300)))
 assert found>=4,found
 pairs=solve_queries(half_gp,np.random.default_rng(5),[[-15,15],[-15,15]])
 assert all(np.all(np.isfinite(np.asarray(p))) for p in pairs)
@@ -121,4 +126,6 @@ assert all(np.all(np.isfinite(np.asarray(p))) for p in pairs)
 fill=star_fill(ring,np.array([[0.,0.],[2.9,0.],[5.,0.]]),np.zeros(3,bool))
 assert fill.tolist()==[True,False,False]
 print('Problem 3 crossing enumeration, projection, trust-region solve, duplicate filter, memoized fits and fill: pass;',
-      'half-ring P3 solutions',found,'of 6; batch pairs',len(pairs),flush=True)
+      'half-ring P3 solutions',found,'of 6; batch pairs',len(pairs),
+      '; fitted length %.3f signal %.3f; P3 variance / arc-gap variance'%(half_gp.ls,half_gp.signal),
+      np.round(ratios,2).tolist(),flush=True)

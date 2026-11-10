@@ -5,4 +5,4 @@ action: submit
 gpus: 0
 test: false
 milestone: method_runs
-notes: "Final hardening job: P3 solved over the sampled boundary (bug fix: starts at observations never moved), Alg. 1 refit per batch, 4 shared initial crossings, private g3 deformations (closes public-formula fit); dev pilot, controls on both splits, publish, then prioritized audit of better/weaker variants and shortcut probes under a time guard."
+notes: "Resubmit final hardening job: fixed over-strict P3 unit check (relative variance test), parallel instance evaluation across available CPUs; then controls on both splits, publish, prioritized audit of variants and shortcut probes under a time guard."

@@ -142,6 +142,45 @@ def run_instance(manifest,task):
             'producer_stderr':producer_stderr[-16384:]}
 
 
+# Independent instances may run concurrently; records are kept in index order.
+WORKERS=max(1,min(8,int(os.environ.get('ACL_EVAL_WORKERS',len(os.sched_getaffinity(0))))))
+
+
+def _instance(job):
+    manifest,exp,index=job
+    return index,run_instance(manifest,Task(exp,index))
+
+
+def collect(manifest,exp,records,save,report):
+    """Run the missing instances; stop scheduling more after a failure.
+
+    Deterministic protocol violations need no more expensive solves: such an
+    attempt has already failed the whole task.
+    """
+    pending=list(range(len(records),TASKS_PER_EXPERIMENT))
+    if WORKERS<=1 or len(pending)<=1:
+        for index in pending:
+            record=run_instance(manifest,Task(exp,index));records.append(record);save();report(index,record)
+            if record['failure']: break
+        return records
+    from concurrent.futures import ProcessPoolExecutor,as_completed
+    done={};failed=False
+    with ProcessPoolExecutor(max_workers=min(WORKERS,len(pending))) as pool:
+        futures=[pool.submit(_instance,(manifest,exp,index)) for index in pending]
+        for future in as_completed(futures):
+            if future.cancelled(): continue
+            index,record=future.result()
+            report(index,record);done[index]=record
+            if record['failure'] and not failed:
+                failed=True
+                for other in futures: other.cancel()
+            grew=False
+            while len(records) in done:
+                records.append(done.pop(len(records)));grew=True
+            if grew: save()
+    return records
+
+
 def metrics(records,exp):
     values=[]; errors=[]; per_instance=[]
     if len(records)!=TASKS_PER_EXPERIMENT:
@@ -229,14 +268,11 @@ def main():
         raw[name]={'digest':digest,'records':{}}
         for exp in EXPERIMENTS:
             records=old.get(exp,[])
-            for index in range(len(records),TASKS_PER_EXPERIMENT):
-                record=run_instance(manifest,Task(exp,index));records.append(record)
-                raw[name]['records'][exp]=records;write(path,raw[name])
+            raw[name]['records'][exp]=records
+            def save(): write(path,raw[name])
+            def report(index,record,name=name,exp=exp):
                 print(f'[{time.strftime("%H:%M:%S")}] {SLICE} {name} {exp} {index+1}/{TASKS_PER_EXPERIMENT}: '+str(record['failure'] or ('raw output saved; demos='+str(len(record['initial_demos'])+sum(x['demo'] is not None for x in record['ledger']))+', requests='+str(len(record['ledger']))+development_progress(record,exp,index))),flush=True)
-                if record['failure']:
-                    # Deterministic protocol violations need no more expensive
-                    # solves; this attempt has already failed the whole task.
-                    break
+            collect(manifest,exp,records,save,report)
             raw[name]['records'][exp]=records
             value,error,instances=metrics(records,exp)
             all_metrics.setdefault(name,{})[exp]=value
