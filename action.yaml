@@ -2,4 +2,4 @@ action: submit
 gpus: 0
 test: false
 milestone: method_runs
-notes: "Final combined hardening job, third attempt. KKT gradient estimates enter the GP as unit directions (raw multiplier-scaled magnitudes differed up to 1000x between long and short demos, collapsing the GP and Eq. 7 offset); rho=0.1 hinge with constant mean. Starts with a 6-instance interleaved dev pilot, then controls on both splits (published), test variants (periodic fits, raw-gradient/no-gradient/no-acquisition ablations), fixed shortcuts, summary, publication, validate."
+notes: "Final combined hardening job, fourth attempt. Unit-direction KKT gradients, rho=0.1 hinge with constant mean, P3 multi-starts spread over all contacts (random starts clustered queries in resolved arcs); success gate = boundary balanced accuracy >= 0.55 and each recall >= 0.10. Dev pilot, controls on both splits (published), test variants, fixed shortcuts incl. centred/contact disks, summary, publication, validate."
