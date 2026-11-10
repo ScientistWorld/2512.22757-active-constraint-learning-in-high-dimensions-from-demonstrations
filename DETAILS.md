@@ -4,7 +4,7 @@ This workspace studies recovery of unknown robot safety constraints from a limit
 
 The final gym uses thirty-step double-integrator trajectories on varied nonlinear obstacles, with independent development and test instances. It measures overall classification accuracy and both sides of the boundary under an authenticated demonstration budget. A second setting adds more complex curvature to expose remaining recovery errors. See `problem.md` and `evaluation.md` for the task and command protocol.
 
-Paper-reported results remain in `scoring/reference.json` under underscore-prefixed keys. Final measured reference results are published only after the combined hardening job. `HARDENING.md` records the audit, ranking checks and remaining limitations.
+Paper-reported results remain in `scoring/reference.json` under underscore-prefixed keys. Measured reference results are published from end-to-end reference runs on the final setup. `HARDENING.md` records the audit, ranking checks and remaining limitations.
 
 ---
 
@@ -12,9 +12,9 @@ Paper-reported results remain in `scoring/reference.json` under underscore-prefi
 
 Recover an unknown continuous safety boundary from sparse expert demonstrations. The demonstrations are locally optimal paths that avoid a hidden obstacle. You may request start and goal positions, observe the resulting state/control trajectories, and then classify new positions as safe or unsafe. Direct constraint values and labels are unavailable.
 
-The simulator uses two-dimensional positions with unconstrained double-integrator dynamics, a one-unit time step, thirty states and the sum of squared successive position changes as its trajectory cost. Only endpoint positions are prescribed. The observation space includes positions, velocities and controls. Position coordinates use physical units within the fixed workspace bounds [-10,10].
+The simulator uses two-dimensional positions with unconstrained double-integrator dynamics, a one-unit time step, thirty states and the sum of squared successive position changes as its trajectory cost. Only endpoint positions are prescribed. The observation space includes positions, velocities and controls. Position coordinates use physical units within the fixed workspace bounds [-15,15].
 
-There are two measurement settings: a complex nonlinear obstacle family and more varied boundaries with small-scale curvature. Each instance has a different hidden shape or orientation. Methods must infer each instance from its own demonstrations rather than memorize one public obstacle. Four initial trajectories are shared; the total budget is twenty demonstrations with at most eighty additional start/goal requests. Rejected requests also consume this request allowance.
+There are two measurement settings: a complex nonlinear obstacle family and more varied boundaries with small-scale curvature. Each instance has a different hidden shape, orientation, size and position. Methods must infer each instance from its own demonstrations rather than memorize one public obstacle. Two initial trajectories are shared; the total budget is ten demonstrations with at most forty additional start/goal requests. Rejected requests also consume this request allowance.
 
 Success means accurate recovery of both the feasible region and the obstacle, especially close to their shared boundary. A method that predicts everything safe sacrifices obstacle detection; predicting everything unsafe sacrifices feasible motion. Compare methods under the fixed observation budget and on the same unseen inputs. The evaluation contract is in `briefing/evaluation.md`.
 
@@ -36,7 +36,7 @@ The primary claim is that actively selected demonstrations recover unknown nonli
 
 ## Packaged specialization
 
-The restored implementation uses the paper's double-integrator setting at dt=1 and T=30. With free velocities/controls and position-only endpoints, eliminating dynamics is exact: successive position differences determine velocities, and successive velocity differences determine controls. It solves the reduced tightness/gradient KKT linear programs, uses derivative observations and marginal-likelihood fitting, samples the conditioned posterior with 1,000 features and alpha 0.3, and solves the continuous constrained query programs. No quantile contact selection, gradient normalization, grid-only acquisition, or infeasible clipped endpoint fallback is used by the reference. See HARDENING.md for scaling choices and numerical deviations.
+The implementation uses the paper's double-integrator setting at dt=1 and T=30 on the paper's [-15,15]^2 workspace. With free velocities/controls and position-only endpoints, eliminating dynamics is exact: successive position differences determine velocities, and successive velocity differences determine controls. It solves the reduced tightness/gradient KKT linear programs, keeps each gradient estimate as a unit direction (the estimates are identified only up to a positive scale), and trains a value/derivative GP with the loss of the GP constraint-learning work the paper cites for its training (negative marginal likelihood plus a hinge keeping demonstrated states predicted safe, with a learned constant prior mean). It samples the conditioned posterior with 1,000 features and alpha 0.3, solves the continuous constrained query programs with Eq. 10 read as a safe probability, and runs Alg. 1's three fits with two acquisition stages of P=2 posterior draws. See HARDENING.md for unspecified settings and deviations.
 
 ---
 
@@ -50,15 +50,15 @@ A submission is a JSON command manifest at `outputs/<name>.json`:
 
 Run `bash scripts/evaluate.sh` for development feedback and `bash scripts/evaluate_test.sh` for the private test. Both discover every manifest in `outputs/`; the identifier is its filename. The test requires no arguments and does not select methods through train scores. `random_baseline` is reserved for the evaluator's immutable control. The packaged `scripts/method.sh` registers the reproduced reference.
 
-Each command handles one instance using newline-delimited JSON on stdin/stdout. It first receives bounds, dimension, horizon, time step, a fixed random seed, four initial demonstrations, a total limit of twenty demonstrations, and a limit of eighty additional requests. Each demonstration contains positions, velocities and controls. Request another demonstration with `{"op":"query","start":[x,y],"goal":[x,y]}`. The response contains `demo` (or null for an infeasible/failed request) and `requests_remaining`. The evaluator records every request; only it generates demonstrations. Requesting more than the allowed number fails the run.
+Each command handles one instance using newline-delimited JSON on stdin/stdout. It first receives bounds, dimension, horizon, time step, a fixed random seed, two initial demonstrations, a total limit of ten demonstrations, and a limit of forty additional requests. Each demonstration contains positions, velocities and controls. Request another demonstration with `{"op":"query","start":[x,y],"goal":[x,y]}`. The response contains `demo` (or null for an infeasible/failed request) and `requests_remaining`. The evaluator records every request; only it generates demonstrations. Requesting more than the allowed number fails the run.
 
 Send `{"op":"finish"}` when acquisition is complete. The evaluator then sends `{"points":[[x,y],...]}` in shuffled order. Return `{"predictions":[0,1,...]}`, where 1 means safe and 0 means unsafe, then exit. The number of predictions must match exactly. No more oracle queries are allowed after receiving these points. Only `predictions` and optional `n_demos` are allowed in the final response. Truth, settings, comparison fields, flags and written scores are rejected. An optional `n_demos` declaration must equal the evaluator's ledger; it earns no reward.
 
 Two experiments each contain thirty-six independent obstacles. Test and development draw different obstacles and different coordinates from the same distributions. Every method in a split sees the same initial trajectories, obstacles and query coordinates. Private parameters, answer generators, raw reference records and baseline records live in `eval/test/`. Development owns independent implementations in `eval/train/`. `data/constraints.py` supplies legacy toy examples and is not a test dependency.
 
-Accuracy is the fraction correct on 4,096 uniformly sampled states per obstacle. Balanced accuracy, safe recall and unsafe recall use 8,192 independent states within 0.50 position units of each boundary. Near-boundary balanced accuracy restricts that band to distance at most 0.175. Positions use the paper's physical units, with bounds [-10, 10] in each coordinate. Test coordinates are never presented in signed-distance or label order.
+Accuracy is the fraction correct on 4,096 uniformly sampled states per obstacle. Balanced accuracy, safe recall and unsafe recall use 8,192 independent states within 0.50 position units of each boundary. Near-boundary balanced accuracy restricts that band to distance at most 0.175. Positions use the paper's physical units, with bounds [-15, 15] in each coordinate. Obstacles are rotated, rescaled and translated per instance, so no fixed shape or position answers them. Test coordinates are never presented in signed-distance or label order.
 
-A protocol violation, nonbinary/nonfinite/wrong-sized output, excess query budget, or safe/unsafe boundary recall below 0.60 on either experiment fails the whole run. Failed runs receive zero scored metrics and are ordered below all successful runs; raw diagnostics explain failures. Demonstration count is a hard constraint, not a self-reported reward.
+A protocol violation, nonbinary/nonfinite/wrong-sized output, excess query budget, or, on either experiment, mean boundary balanced accuracy below 0.55 or a mean class recall below 0.10 fails the whole run. Failed runs receive zero scored metrics and are ordered below all successful runs; raw diagnostics explain failures. Demonstration count is a hard constraint, not a self-reported reward.
 
 For successful methods, rank is the sum over metrics of experiment weight × coefficient magnitude × improvement over the frozen reference in the metric's better direction, divided by that metric's population standard deviation across the successful attempts being ranked. Zero-variance terms contribute zero. The evaluator publishes the scales and failures with its ranking. Rescoring another cohort recomputes the scales. Baseline and reference comparisons are recomputed from fixed raw outputs, never from candidate-written scores.
 
@@ -438,4 +438,9 @@ The test performs no offline training and never retrains the baseline. It runs e
 - Rechecked method-agnostic documentation and validation before final handoff.
 
 </details>
+
+### Iteration 11: claude-opus-5-5 (hardener)
+- **Milestone**: `core_claim` | **Status**: error
+- **Working time**: 38m | **GPU**: 0.0h
+- **Jobs**: 12 total (3 completed, 3 failed)
 
