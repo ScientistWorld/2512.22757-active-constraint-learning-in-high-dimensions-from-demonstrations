@@ -133,6 +133,24 @@ def kkt_tight_points(demo, tolerance=1e-4):
     return np.asarray(points).reshape(-1,2), np.asarray(gradients).reshape(-1,2)
 
 
+def observations(demos, raw=False):
+    """Tight states and gradient estimates of all demonstrations (Eqs. 3-4).
+
+    App. A.1: P8's w recovers the constraint gradient only up to an unknown
+    positive scale per state (it absorbs the true multiplier). Measured raw
+    magnitudes here scale with a demonstration's step length: long crossings
+    give |w|~1, short queried demonstrations |w|~0.001-0.1, for the same g.
+    The reference fixes this free scale by unit-norm estimates, i.e. it
+    learns g normalized to unit gradient on its boundary; raw=True keeps the
+    multiplier-scaled magnitudes (an ablation).
+    """
+    contacts=[kkt_tight_points(d) for d in demos]
+    points=np.vstack([p for p,g in contacts]); gradients=np.vstack([g for p,g in contacts])
+    if not raw and len(gradients):
+        gradients=gradients/np.linalg.norm(gradients,axis=1,keepdims=True)
+    return points,gradients
+
+
 # Chou et al. (2022), Sec. IV-B, which the paper's Sec. 2.3 says its GP
 # training parallels: minimize the negative marginal log likelihood plus the
 # demonstration-feasibility hinge mean_n max(mu(x_n)+rho*sd(x_n), 0) over all
@@ -348,7 +366,7 @@ def sample_queries(gp, f, rng, bounds):
     raw=f.derivative(mi)[0]
     norm=np.linalg.norm(raw)
     if norm<1e-10: return pairs
-    center=mi+1.*raw  # Eq.7: eta=1 in physical position/cost units.
+    center=mi+1.*raw  # Eq.7: eta=1; with unit-gradient estimates this offset is ~1 position unit.
     if np.any(center<lo) or np.any(center>hi) or f(center)[0]<=0: return pairs
     tangent=np.array([-raw[1],raw[0]])/norm
     p4=[]
@@ -412,7 +430,7 @@ def demonstrated_states(demos):
 
 def main():
     parser=argparse.ArgumentParser()
-    parser.add_argument('--variant',default='reference', choices=['reference','random','periodic','periodic6','normalized','no_gradients','no_acquisition'])
+    parser.add_argument('--variant',default='reference', choices=['reference','random','periodic','periodic6','raw_gradients','no_gradients','no_acquisition'])
     args=parser.parse_args()
     task=json.loads(sys.stdin.readline())
     rng=np.random.default_rng(task['seed'])
@@ -420,8 +438,7 @@ def main():
     bounds=task['bounds']
     available_requests=task['query_limit']
     for iteration in range(3):
-        contacts=[kkt_tight_points(d) for d in demos]
-        points=np.vstack([p for p,g in contacts]); gradients=np.vstack([g for p,g in contacts])
+        points,gradients=observations(demos,raw=args.variant=='raw_gradients')
         states=demonstrated_states(demos)
         gp=train_gp(points,gradients,states)
         # Unscored diagnostics only: the parent never uses these for metrics.
@@ -464,10 +481,6 @@ def main():
     query=np.asarray(response['points'],float)
     if args.variant in ('periodic','periodic6') and len(points)>4:
         pred=fit_periodic(points,gradients,query,6 if args.variant=='periodic6' else 12)
-    elif args.variant=='normalized' and len(points):
-        normals=.5*gradients/np.maximum(np.linalg.norm(gradients,axis=1,keepdims=True),1e-12)
-        alternative=train_gp(points,normals,states)
-        pred=(alternative.mean_var(query)[0]<=0).astype(int)
     elif args.variant=='no_gradients':
         ablation=train_gp(points,gradients,states,True)
         pred=(ablation.mean_var(query)[0]<=0).astype(int) if ablation else np.ones(len(query),int)

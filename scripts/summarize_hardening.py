@@ -11,8 +11,8 @@ import numpy as np
 test=json.loads(Path('eval/test/hardening_scores.json').read_text())
 train=json.loads(Path('eval/train/hardening_scores.json').read_text())
 rng=np.random.default_rng(872)
-CANDIDATES=['random_baseline','better_boundary_fit_12','better_normalized',
-            'weaker_no_acquisition','weaker_no_gradients']
+CANDIDATES=['random_baseline','better_boundary_fit','better_boundary_fit_12',
+            'weaker_no_acquisition','weaker_no_gradients','weaker_raw_gradients']
 
 
 def paired_metrics(scores,candidate):
@@ -60,7 +60,7 @@ report={'before':{
             'redteam_better_rank':.473367,'redteam_better_simplified_rank':.636216,
             'redteam_weaker_no_gradients_rank':-4.462129,'redteam_seed_rank_spread':.579845,
             'fourth_audit_test_ranks':{'random_baseline':.603014,'better_boundary_fit_12':1.988915,
-                                       'better_normalized':3.457279,'better_boundary_fit':.578652}},
+                                       'better_normalized_gradients':3.457279,'better_boundary_fit':.578652}},
         'test_rank':test['_rank'],
         'test_metrics':{e:v['results'] for e,v in test['experiments'].items()},
         'test_failures':test['_failures'],

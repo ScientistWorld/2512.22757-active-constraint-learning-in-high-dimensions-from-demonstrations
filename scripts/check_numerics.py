@@ -1,7 +1,7 @@
 """Small meaningful checks of restored GP/KKT mathematical primitives."""
 import numpy as np
 from method.gp_acl import (GPModel,kkt_tight_points,finite_gradient,scalar_feasible_extreme,
-                           marginal_likelihood,training_objective,train_gp,endpoint_constraints)
+                           marginal_likelihood,training_objective,train_gp,endpoint_constraints,observations)
 p=np.array([[.4,.1],[-.5,.3]])
 g=np.array([[.3,-.4],[-.2,.5]])
 gp=GPModel(p,g,(.6,.7,1e-9))
@@ -51,6 +51,12 @@ point,gradient=kkt_tight_points({'positions':[[0,0],[1,.2],[2,0]]})
 assert len(point)==1 and np.allclose(gradient,[[0,-.8]])
 point,gradient=kkt_tight_points({'positions':[[0,0],[1,0],[2,0]]})
 assert len(point)==0
+# P8 estimates are identified up to a positive scale: unit directions are kept.
+bent=[{'positions':[[0,0],[1,.2],[2,0]]},{'positions':[[0,0],[.1,.02],[.2,0]]}]
+point,gradient=observations(bent)
+assert len(point)==2 and np.allclose(gradient,[[0,-1],[0,-1]])
+point,gradient=observations(bent,raw=True)
+assert np.allclose(gradient,[[0,-.8],[0,-.08]])
 print('GP likelihood, hinge training loss, constant-mean posterior derivatives, continuous ray programs, and KKT programs: pass',flush=True)
 
 # Eq. 10 as a safety probability under the paper's avoid set {g>0}:

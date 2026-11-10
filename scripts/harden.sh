@@ -51,8 +51,9 @@ for name in ['shortcut_oracle','shortcut_grid_order','shortcut_grid_resize','sho
     path=Path('redteam')/name/'artifact.json'
     if path.exists():
         for d in (full,probe): (d/f'legacy_{name}.json').write_text(path.read_text())
-variants={'weaker_no_acquisition':'no_acquisition','better_boundary_fit_12':'periodic',
-          'better_normalized':'normalized','weaker_no_gradients':'no_gradients'}
+variants={'weaker_no_acquisition':'no_acquisition','better_boundary_fit':'periodic6',
+          'better_boundary_fit_12':'periodic','weaker_no_gradients':'no_gradients',
+          'weaker_raw_gradients':'raw_gradients'}
 (probe/'weaker_no_acquisition.json').write_text(manifest(['python','method/gp_acl.py','--variant','no_acquisition']))
 for name,variant in variants.items():
     (full/f'{name}.json').write_text(manifest(['python','method/gp_acl.py','--variant',variant]))
