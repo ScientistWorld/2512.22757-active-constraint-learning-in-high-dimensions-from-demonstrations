@@ -2,4 +2,4 @@ action: submit
 gpus: 0
 test: false
 milestone: method_runs
-notes: "Combined scientific correction: analytic derivatives of unchanged GP likelihood, eta=1, up to 24 acquisition rounds within unchanged 20-demo/80-proposal caps; rerun final reference/random and better/weaker variants on both paired splits, replay fixed shortcuts, publish reference-only scores and validate. Resume versioned checkpoints."
+notes: "Combined sparse-data verification: one common initial trajectory, unchanged 20-demo/80-request caps and GP-ACL algorithm; rerun reference/random and all better/weaker variants on both 36-instance paired splits, replay fixed shortcuts, report paired train/test intervals and ledger diagnostics, publish reference-only scores and validate. Resume source-versioned checkpoints."

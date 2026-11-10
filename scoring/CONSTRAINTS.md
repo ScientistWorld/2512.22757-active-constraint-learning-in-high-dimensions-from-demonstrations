@@ -2,7 +2,7 @@
 
 Use the newline-delimited JSON interface documented in `briefing/evaluation.md`. Learn only from the initial demonstrations and those returned by the evaluator. Direct access to private task parameters, labels, evaluator files or raw test caches is forbidden. External observations, dense constraint queries and hardcoded instance answers bypass the task.
 
-The total demonstration cap is twenty, including four fixed initial trajectories. At most eighty additional requests are allowed, including rejected requests. The evaluator records acquisition and generates trajectories; a candidate's counts or trajectories cannot replace that record. Test coordinates are revealed only after acquisition ends.
+The total demonstration cap is twenty, including one fixed initial trajectory. At most eighty additional requests are allowed, including rejected requests. The evaluator records acquisition and generates trajectories; a candidate's counts or trajectories cannot replace that record. Test coordinates are revealed only after acquisition ends.
 
 Keep the simulator dynamics, demonstration objective, task distributions, measurement size, thresholds and evaluator-owned controls fixed. Do not edit `eval/`, its frozen comparisons or `scoring/reference.json`. `random_baseline` is a reserved result identifier; candidate commands cannot replace that comparison. No metric depends on runtime.
 

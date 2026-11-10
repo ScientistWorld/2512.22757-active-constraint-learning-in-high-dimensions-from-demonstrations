@@ -1,12 +1,12 @@
 # Hardening
 
-Status: three combined verifications ran all variants and probes. The third passes structural validation and reference quality, closes every replayed shortcut, and establishes paired headroom. It also shows random acquisition significantly outranking the reference, so the scientific reproduction requirement remains unmet. The numerical/acquisition corrections below are applied together and await one combined verification. Historical before-results are from `REDTEAM.md`; they are on a different task and ranking scale.
+Status: four combined verifications ran all variants and probes. The fourth passes structural validation and reference quality, closes every replayed shortcut, and establishes paired headroom. Random acquisition still outranks the reference on both splits, so the scientific reproduction requirement remains unmet. A sparse common initialization awaits combined verification. Historical before-results are from `REDTEAM.md`; they are on a different task and ranking scale.
 
 ## Findings and changes
 
 The previous test exposed its answer generator, let submissions choose the test grid and comparison metadata, and rewarded unverified demonstration counts. Its active-versus-random effect also reversed across seeds. The previous simplified tight-point and query searches did not implement the paper's optimization programs faithfully enough to justify its claimed milestone.
 
-The implementation now solves the reduced KKT Programs 7/8, derivative-observation GP marginal likelihood, conditioned posterior samples (1,000 RFF, alpha 0.3), and continuous constrained Programs 3–6. It uses T=30 and the paper's double-integrator setting, with positions in the paper's physical units (bounds [-10,10]). Free velocities and controls are eliminated exactly and reconstructed; no velocity/control limits or endpoint velocities are assumed. The simulator uses the paper's squared successive-position cost and locally optimal constrained trajectories. The paper's safe convention requires Phi(-mean/sd); the positive sign printed in its chance expression conflicts with that convention. Eta=1 (previously 0.1), four initial demonstrations, twenty total demonstrations, and eighty proposal attempts are explicit final benchmark settings. Three fits are used. These choices and the added complex-boundary experiment are not presented as the full high-dimensional or hardware reproduction.
+The implementation now solves the reduced KKT Programs 7/8, derivative-observation GP marginal likelihood, conditioned posterior samples (1,000 RFF, alpha 0.3), and continuous constrained Programs 3–6. It uses T=30 and the paper's double-integrator setting, with positions in the paper's physical units (bounds [-10,10]). Free velocities and controls are eliminated exactly and reconstructed; no velocity/control limits or endpoint velocities are assumed. The simulator uses the paper's squared successive-position cost and locally optimal constrained trajectories. The paper's safe convention requires Phi(-mean/sd); the positive sign printed in its chance expression conflicts with that convention. Eta=1 (previously 0.1), one initial demonstration (previously four), twenty total demonstrations, and eighty proposal attempts are explicit benchmark settings. Three fits are used. These choices and the added complex-boundary experiment are not presented as the full high-dimensional or hardware reproduction.
 
 Private instance generation, seeds, truth, initial expert trajectories and all frozen comparison raw records are confined to `eval/test/`. Training has an independent implementation and different instances from the same distribution. An online command interface evaluates unseen instances; prediction points arrive only after acquisition ends. Signed-distance order and submission-selected grids are gone. There is no finite public candidate enumeration to solve: acquisition ranges continuously over endpoints on new hidden obstacles.
 
@@ -73,9 +73,27 @@ The next combined correction keeps the likelihood, observation noise model, kern
 
 The cited earlier GP paper also contains a demonstration-feasibility hinge loss, but the target paper explicitly specifies marginal likelihood in Section 2.3 and its Appendix A.2 posterior. No hinge loss or additional training objective is introduced on the strength of that citation. All changed methods and controls will rerun from source, and the shortcut replays and paired estimates will be checked in the same job. Until its results arrive the milestone remains `method_runs`.
 
+## Fourth verification and sparse-initialization correction
+
+Job f6c52544-4c0 completed with exit 0. The likelihood hypergradient check and structural validation passed. All twelve adapted shortcuts and seven legacy artifacts failed again. The fourth audit is preserved in `eval/test/hardening_fourth_summary.json`.
+
+| Variant | Old rank | Fourth verification test rank | Paired 95% interval |
+|---|---:|---:|---|
+| Reference | 0 | 0 | Anchor |
+| Random acquisition | -0.244327 | +0.603014 | [-0.059525, 1.300636] |
+| Order-6 contact/normal fit | +0.473367 | +0.578652 | [0.168987, 0.997900] |
+| Order-12 contact/normal fit | Not previously measured | +1.988915 | [1.597440, 2.406720] |
+| Normalized-gradient fit | Not previously measured | +3.457279 | [3.059205, 3.893139] |
+| No acquisition | -0.425626 | Failed | Recall requirement fails |
+| No gradients | -4.462129 | Failed | Both recall requirements fail |
+
+The reference remains zero by definition. Its raw test g3 accuracy is now 0.633213, boundary balanced accuracy 0.831427, versus random 0.680840 and 0.838752. On stress these are 0.829508/0.748706 versus random 0.836283/0.773515. Train g3 is 0.646023/0.822007 versus random 0.669752/0.833645; train stress is 0.822795/0.760952 versus random 0.838725/0.782521. Random ranks +0.519918 on train. Improved boundary recovery after the numerical correction has not produced the paper's direction. No scored reference metric is at one; the stronger alternatives remain below the bounds, including on stress. Headroom and shortcut closure are supported, while the core claim is still unproven.
+
+The next change is to the common initial dataset, whose size the paper does not specify. Four initial long crossings cover an average 31.9% of twenty-four angular sectors on test g3 and 45.1% on stress, leaving less scope for an acquisition benefit. The first trajectory alone covers 9.8%/15.7%, and has at least two identified contacts on every train and test instance. Both independent simulators now supply this one trajectory, preserving the original world-coordinate endpoints. Every method retains the same total twenty-demonstration and eighty-request allowances. Geometry, seeds, test size, training algorithm and coefficients are unchanged. This is a test of the sparse-demonstration regime, not an adjustment toward a reported score. All reference/control/variant and affected shortcut runs must rerun on the new inputs; old measured scores are interim until that job completes. The combined report now includes paired rank intervals on development as well as test, and budget/contact diagnostics derived from raw ledgers.
+
 ## Shortcut replay
 
-After-values below are the completed third verification, before the pending numerical correction. All failures sort below every successful attempt.
+After-values below are the completed fourth verification, before the pending initialization correction. All failures sort below every successful attempt.
 
 | Shortcut | Before rank / result | Fix | After |
 |---|---|---|---|
@@ -97,4 +115,4 @@ The old saved shortcut artifacts are also passed directly to the new test; a sta
 
 No claim of full reproduction, high-dimensional performance, hardware performance, or worst-case safety is made. The 0.60 safe/unsafe recall gate is an explicit benchmark success threshold, not a paper theorem. Per-instance active learning is necessary to solve this task; test scoring never trains an offline model or retrains the fixed baseline. The evaluator reuses its own raw observations when rescoring unchanged commands.
 
-File access to private test files, tampering with evaluator source or caches, and resource abuse are left to the separate attempt grader. No defenses against leftover processes or Python environments were added. Copying a legitimate reference predictor can tie its predictions. Forged comparison fields violate the strict output schema and fail, even if predictions otherwise match the reference. An honest alternative with indistinguishable predictions is a headroom question, not a metric-forgery loophole. The third run demonstrates paired headroom and matched train/test difficulty, but reverses the paper's active-versus-random claim. This remains an explicit unresolved requirement pending the corrected run; no `core_claim` or completed hardening status is asserted.
+File access to private test files, tampering with evaluator source or caches, and resource abuse are left to the separate attempt grader. No defenses against leftover processes or Python environments were added. Copying a legitimate reference predictor can tie its predictions. Forged comparison fields violate the strict output schema and fail, even if predictions otherwise match the reference. An honest alternative with indistinguishable predictions is a headroom question, not a metric-forgery loophole. The fourth run demonstrates paired headroom and matched train/test difficulty, but fails to demonstrate the paper's active-versus-random claim. This remains an explicit unresolved requirement pending the changed initial regime; no `core_claim` or completed hardening status is asserted.

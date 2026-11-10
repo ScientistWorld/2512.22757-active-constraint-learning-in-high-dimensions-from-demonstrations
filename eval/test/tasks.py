@@ -85,8 +85,10 @@ class Task:
     def initial_demonstrations(self):
         # Endpoints are fixed in world coordinates and guaranteed outside all
         # instances. They carry no obstacle parameters or selected contacts.
-        pairs=[([ -1.9,-1.6],[1.9,1.6]),([-1.9,1.6],[1.9,-1.6]),
-               ([-1.95,.2],[1.95,.2]),([.2,-1.95],[.2,1.95])]
+        # One existing demonstration leaves acquisition responsible for
+        # exploring the remaining boundary. The total allowance stays twenty
+        # for every method, including the random control.
+        pairs=[([-1.9,-1.6],[1.9,1.6])]
         result=[self.demonstrate(5*np.asarray(s),5*np.asarray(g)) for s,g in pairs]
         if any(d is None for d in result):
             raise RuntimeError('Fixed initial demonstration failed')
