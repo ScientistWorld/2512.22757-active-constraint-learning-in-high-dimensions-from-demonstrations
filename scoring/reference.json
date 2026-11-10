@@ -101,11 +101,11 @@
         },
         "gp_acl": {
           "type": "proposed",
-          "accuracy": 0.6657375759548612,
-          "balanced_accuracy": 0.8076617876159882,
-          "near_boundary_balanced_accuracy": 0.7663105314016448,
-          "safe_recall": 0.7868266478613507,
-          "unsafe_recall": 0.8284969273706256
+          "accuracy": 0.6332126193576388,
+          "balanced_accuracy": 0.8314266218100063,
+          "near_boundary_balanced_accuracy": 0.7947238079089453,
+          "safe_recall": 0.8169775985620427,
+          "unsafe_recall": 0.8458756450579699
         }
       }
     },
@@ -147,11 +147,11 @@
         },
         "gp_acl": {
           "type": "proposed",
-          "accuracy": 0.806396484375,
-          "balanced_accuracy": 0.7386153847967103,
-          "near_boundary_balanced_accuracy": 0.6656516276589515,
-          "safe_recall": 0.6387391825285228,
-          "unsafe_recall": 0.8384915870648978
+          "accuracy": 0.8295084635416666,
+          "balanced_accuracy": 0.7487056602178117,
+          "near_boundary_balanced_accuracy": 0.6707755630705825,
+          "safe_recall": 0.6549008191331809,
+          "unsafe_recall": 0.8425105013024423
         }
       }
     }
@@ -162,11 +162,11 @@
         "double_integrator_g3": {
           "results": {
             "gp_acl": {
-              "accuracy": 0.6341349283854166,
-              "balanced_accuracy": 0.7838740414982904,
-              "near_boundary_balanced_accuracy": 0.739253382332843,
-              "safe_recall": 0.7695583069800397,
-              "unsafe_recall": 0.7981897760165411
+              "accuracy": 0.6460232204861112,
+              "balanced_accuracy": 0.8220073299742741,
+              "near_boundary_balanced_accuracy": 0.7827547016679147,
+              "safe_recall": 0.8063770862942025,
+              "unsafe_recall": 0.8376375736543455
             },
             "random_baseline": {
               "accuracy": 0.6697523328993056,
@@ -180,11 +180,11 @@
         "complex_boundary_stress": {
           "results": {
             "gp_acl": {
-              "accuracy": 0.8210381401909722,
-              "balanced_accuracy": 0.7650410284838043,
-              "near_boundary_balanced_accuracy": 0.6949256170078316,
-              "safe_recall": 0.7167994132678626,
-              "unsafe_recall": 0.8132826436997456
+              "accuracy": 0.8227945963541666,
+              "balanced_accuracy": 0.7609515284728889,
+              "near_boundary_balanced_accuracy": 0.6912332189234407,
+              "safe_recall": 0.7168882464899571,
+              "unsafe_recall": 0.8050148104558208
             },
             "random_baseline": {
               "accuracy": 0.8387247721354166,
@@ -204,11 +204,11 @@
         "double_integrator_g3": {
           "results": {
             "gp_acl": {
-              "accuracy": 0.6657375759548612,
-              "balanced_accuracy": 0.8076617876159882,
-              "near_boundary_balanced_accuracy": 0.7663105314016448,
-              "safe_recall": 0.7868266478613507,
-              "unsafe_recall": 0.8284969273706256
+              "accuracy": 0.6332126193576388,
+              "balanced_accuracy": 0.8314266218100063,
+              "near_boundary_balanced_accuracy": 0.7947238079089453,
+              "safe_recall": 0.8169775985620427,
+              "unsafe_recall": 0.8458756450579699
             },
             "random_baseline": {
               "accuracy": 0.6808403862847222,
@@ -222,18 +222,18 @@
         "complex_boundary_stress": {
           "results": {
             "gp_acl": {
-              "accuracy": 0.806396484375,
-              "balanced_accuracy": 0.7386153847967103,
-              "near_boundary_balanced_accuracy": 0.6656516276589515,
-              "safe_recall": 0.6387391825285228,
-              "unsafe_recall": 0.8384915870648978
+              "accuracy": 0.8295084635416666,
+              "balanced_accuracy": 0.7487056602178117,
+              "near_boundary_balanced_accuracy": 0.6707755630705825,
+              "safe_recall": 0.6549008191331809,
+              "unsafe_recall": 0.8425105013024423
             },
             "random_baseline": {
-              "accuracy": 0.8416205512152778,
-              "balanced_accuracy": 0.7738575605502483,
-              "near_boundary_balanced_accuracy": 0.6887960616660018,
-              "safe_recall": 0.6978797716899665,
-              "unsafe_recall": 0.8498353494105301
+              "accuracy": 0.8362833658854166,
+              "balanced_accuracy": 0.7735152918896819,
+              "near_boundary_balanced_accuracy": 0.688928465286391,
+              "safe_recall": 0.6984343917418202,
+              "unsafe_recall": 0.8485961920375438
             }
           }
         }
