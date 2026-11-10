@@ -1,43 +1,22 @@
-# Historical iteration records
-
-These records describe earlier public-grid iterations. Current behavior, results and limitations are in HARDENING.md, PROGRESS.md and the briefing/scoring documents. Earlier core-claim statements are not certification of the final restored implementation.
-
 # Overview
 
-This paper studies learning hidden robot safety constraints from demonstrations. Its core result is GP-ACL, which repeatedly learns a GP boundary model from KKT-derived tight points and gradients, samples plausible constraints, and asks for demonstrations that should reduce posterior uncertainty near likely obstacle boundaries.
+This workspace studies recovery of unknown robot safety constraints from a limited set of expert demonstrations. The source is *Active Constraint Learning in High Dimensions from Demonstrations*, paper 2512.22757.
 
-This workspace implements a scaled 2D obstacle-recovery benchmark that preserves the paper's main computational loop and compares it with the paper's random start/goal query baseline. The main score is safe/unsafe classification accuracy under a fixed demonstration budget.
+The final gym uses thirty-step double-integrator trajectories on varied nonlinear obstacles, with independent development and test instances. It measures overall classification accuracy and both sides of the boundary under an authenticated demonstration budget. A second setting adds more complex curvature to expose remaining recovery errors. See `problem.md` and `evaluation.md` for the task and command protocol.
 
-- **Paper ID:** 2512.22757
-- **Title:** Active Constraint Learning in High Dimensions from Demonstrations
-- **Domain:** Robot learning / learning from demonstrations
-- **TL;DR:** GP-ACL actively chooses demonstrations that reduce uncertainty in a GP constraint model, improving hidden obstacle recovery over random query selection.
-
-## Short Summary
-
-The paper addresses learning unknown robot safety constraints from sparse locally optimal demonstrations. It extracts tight constraint states and gradient information from KKT optimality conditions, fits a GP constraint representation, samples plausible posterior constraints, and chooses new start/goal states near uncertain sampled boundaries. The reported experiments show higher safe/unsafe constraint recovery accuracy than random start/goal sampling across simulated robot systems and hardware.
-
-## Key Results
-
-- On the paper's unicycle complex-constraint setting `g3`, GP-ACL reports 0.9956 accuracy versus 0.9492 for the random sampling baseline.
-- This reproduction preserves the GP-ACL computational loop at reduced 2D scale and scores a nonlinear boundary-band recovery task.
-- The reproduced scaled benchmark reaches 0.9495 accuracy for GP-ACL versus 0.9245 for the random-query baseline with the same 12 demonstrations.
+Paper-reported results remain in `scoring/reference.json` under underscore-prefixed keys. Final measured reference results are published only after the combined hardening job. `HARDENING.md` records the audit, ranking checks and remaining limitations.
 
 ---
 
-# Problem Definition
+# Problem
 
-## Research Question
+Recover an unknown continuous safety boundary from sparse expert demonstrations. The demonstrations are locally optimal paths that avoid a hidden obstacle. You may request start and goal positions, observe the resulting state/control trajectories, and then classify new positions as safe or unsafe. Direct constraint values and labels are unavailable.
 
-Learn an unknown safety constraint in a continuous robot state or configuration space from a small sequence of expert demonstrations. Demonstrations are feasible, locally optimal trajectories between requested start and goal states, but the learner does not directly observe the hidden obstacle or constraint function that shaped them.
+The simulator uses two-dimensional positions with unconstrained double-integrator dynamics, a one-unit time step, thirty states and the sum of squared successive position changes as its trajectory cost. Only endpoint positions are prescribed. The observation space includes positions, velocities and controls. Position coordinates use physical units within the fixed workspace bounds [-10,10].
 
-## Why It Matters
+There are two measurement settings: a complex nonlinear obstacle family and more varied boundaries with small-scale curvature. Each instance has a different hidden shape or orientation. Methods must infer each instance from its own demonstrations rather than memorize one public obstacle. Four initial trajectories are shared; the total budget is twenty demonstrations with at most eighty additional start/goal requests. Rejected requests also consume this request allowance.
 
-Robots deployed around unknown obstacles or task restrictions need to infer safety boundaries from limited expert behavior. A good learner should recover the safe/unsafe split accurately while requiring few demonstrations, because demonstrations may be expensive or risky to collect.
-
-## Success Criteria
-
-A successful system uses a small budget of demonstrations, fits a constraint representation from the resulting trajectories, and correctly classifies held-out constraint states as safe or unsafe. It should improve over a random start/goal query strategy under the same demonstration budget.
+Success means accurate recovery of both the feasible region and the obstacle, especially close to their shared boundary. A method that predicts everything safe sacrifices obstacle detection; predicting everything unsafe sacrifices feasible motion. Compare methods under the fixed observation budget and on the same unseen inputs. The evaluation contract is in `briefing/evaluation.md`.
 
 ---
 
@@ -55,23 +34,35 @@ At each iteration, the learner extracts tight states and constraint-gradient est
 
 The primary claim is that actively selected demonstrations recover unknown nonlinear constraints more accurately than random start/goal selection with the same sparse demonstration budget. Secondary claims are that the method applies to high-dimensional nonlinear dynamics and can handle both simulation and robot hardware settings.
 
+## Packaged specialization
+
+The restored implementation uses the paper's double-integrator setting at dt=1 and T=30. With free velocities/controls and position-only endpoints, eliminating dynamics is exact: successive position differences determine velocities, and successive velocity differences determine controls. It solves the reduced tightness/gradient KKT linear programs, uses derivative observations and marginal-likelihood fitting, samples the conditioned posterior with 1,000 features and alpha 0.3, and solves the continuous constrained query programs. No quantile contact selection, gradient normalization, grid-only acquisition, or infeasible clipped endpoint fallback is used by the reference. See HARDENING.md for scaling choices and numerical deviations.
+
 ---
 
 # Evaluation
 
-## Metrics
+A submission is a JSON command manifest at `outputs/<name>.json`:
 
-The primary metric is constraint recovery accuracy: the fraction of sampled constraint states whose safe/unsafe label is predicted correctly. Higher is better. The reproduction also records the number of demonstrations used, because the paper's claim is about improving accuracy from sparse but informative demonstrations rather than simply collecting more data.
+```json
+{"protocol":"acl-v2","command":["python","my_solver.py"]}
+```
 
-## Baselines and Targets
+Run `bash scripts/evaluate.sh` for development feedback and `bash scripts/evaluate_test.sh` for the private test. Both discover every manifest in `outputs/`; the identifier is its filename. The test requires no arguments and does not select methods through train scores. `random_baseline` is reserved for the evaluator's immutable control. The packaged `scripts/method.sh` registers the reproduced reference.
 
-The paper compares informative demonstration selection against a random-sampling baseline. In the main unicycle setting for the complex constraint `g3`, the reported method reaches 0.9956 accuracy over 2500 sampled constraint states, while the random baseline reaches 0.9492.
+Each command handles one instance using newline-delimited JSON on stdin/stdout. It first receives bounds, dimension, horizon, time step, a fixed random seed, four initial demonstrations, a total limit of twenty demonstrations, and a limit of eighty additional requests. Each demonstration contains positions, velocities and controls. Request another demonstration with `{"op":"query","start":[x,y],"goal":[x,y]}`. The response contains `demo` (or null for an infeasible/failed request) and `requests_remaining`. The evaluator records every request; only it generates demonstrations. Requesting more than the allowed number fails the run.
 
-## Evaluation Protocol
+Send `{"op":"finish"}` when acquisition is complete. The evaluator then sends `{"points":[[x,y],...]}` in shuffled order. Return `{"predictions":[0,1,...]}`, where 1 means safe and 0 means unsafe, then exit. The number of predictions must match exactly. No more oracle queries are allowed after receiving these points. Only `predictions` and optional `n_demos` are allowed in the final response. Truth, settings, comparison fields, flags and written scores are rejected. An optional `n_demos` declaration must equal the evaluator's ledger; it earns no reward.
 
-Run candidate systems and the random-query baseline with the same initial demonstrations, iteration count, start/goal query budget, trajectory horizon, and boundary-band evaluation grid. The boundary-band grid samples radius offsets from -0.12 to +0.12 around the benchmark obstacle boundary, emphasizing the region where classification is most sensitive. Systems may use the separate broad unlabeled candidate grid for choosing demonstrations, but only final prediction artifacts are scored on the boundary band. Each method writes prediction artifacts under `outputs/`; `scripts/evaluate.sh` reads those artifacts and writes `scoring/scores.json`.
+Two experiments each contain thirty-six independent obstacles. Test and development draw different obstacles and different coordinates from the same distributions. Every method in a split sees the same initial trajectories, obstacles and query coordinates. Private parameters, answer generators, raw reference records and baseline records live in `eval/test/`. Development owns independent implementations in `eval/train/`. `data/constraints.py` supplies legacy toy examples and is not a test dependency.
 
-The evaluator reads method predictions and metadata from the artifacts, but it recomputes the fixed evaluation grid and safe/unsafe labels from `data/constraints.py`. It does not trust method-written labels.
+Accuracy is the fraction correct on 4,096 uniformly sampled states per obstacle. Balanced accuracy, safe recall and unsafe recall use 8,192 independent states within 0.50 position units of each boundary. Near-boundary balanced accuracy restricts that band to distance at most 0.175. Positions use the paper's physical units, with bounds [-10, 10] in each coordinate. Test coordinates are never presented in signed-distance or label order.
+
+A protocol violation, nonbinary/nonfinite/wrong-sized output, excess query budget, or safe/unsafe boundary recall below 0.60 on either experiment fails the whole run. Failed runs receive zero scored metrics and are ordered below all successful runs; raw diagnostics explain failures. Demonstration count is a hard constraint, not a self-reported reward.
+
+For successful methods, rank is the sum over metrics of experiment weight × coefficient magnitude × improvement over the frozen reference in the metric's better direction, divided by that metric's population standard deviation across the successful attempts being ranked. Zero-variance terms contribute zero. The evaluator publishes the scales and failures with its ranking. Rescoring another cohort recomputes the scales. Baseline and reference comparisons are recomputed from fixed raw outputs, never from candidate-written scores.
+
+The test performs no offline training and never retrains the baseline. It runs each submitted active learner on unseen instances; the learner's per-instance adaptation is part of solving the task. Oracle trajectories and raw method responses are cached privately, with source version checks, so evaluator-only checks can rescore them. `scripts/reproduce.sh` reruns both reference and random control end to end before freezing their records. Do not invoke its packager-only bootstrap operation when submitting an alternative.
 
 ---
 
@@ -448,12 +439,3 @@ The evaluator reads method predictions and metadata from the artifacts, but it r
 
 </details>
 
-
----
-
-# Reproduction Milestones
-
-**Current: core_claim**
-
-## Stop Justification
-- Completed at milestone `core_claim`.
