@@ -68,15 +68,26 @@ for side in ('test','train'):
         report['acquisition'][side][name]={}
         for exp,instances in records.items():
             totals=[];requests=[];informative=[]
+            initial_gradient=[];added_gradient=[];initial_edge=[];added_edge=[]
             for record in instances:
                 added=[r['demo'] for r in record['ledger'] if r['demo'] is not None]
                 totals.append(len(record['initial_demos'])+len(added));requests.append(len(record['ledger']))
                 for demo in added:
                     p=np.asarray(demo['positions'])
                     informative.append(bool(np.any(np.sum(np.abs(2*(2*p[1:-1]-p[:-2]-p[2:])),axis=1)>1e-4)))
+                for demos,gradient,edge in ((record['initial_demos'],initial_gradient,initial_edge),
+                                            (added,added_gradient,added_edge)):
+                    for demo in demos:
+                        p=np.asarray(demo['positions'])
+                        gradient.extend(np.linalg.norm(2*(2*p[1:-1]-p[:-2]-p[2:]),axis=1).tolist())
+                        edge.append(float(np.max(np.linalg.norm(np.diff(p,axis=0),axis=1))))
             report['acquisition'][side][name][exp]={
                 'demos_mean':float(np.mean(totals)),'demos_min':int(min(totals)),
                 'requests_mean':float(np.mean(requests)),
-                'added_contact_bearing_fraction':float(np.mean(informative)) if informative else None}
+                'added_contact_bearing_fraction':float(np.mean(informative)) if informative else None,
+                'initial_gradient_quantiles':np.quantile(initial_gradient,[.5,.9,.99,1.]).tolist(),
+                'added_gradient_quantiles':np.quantile(added_gradient,[.5,.9,.99,1.]).tolist() if added_gradient else None,
+                'initial_longest_edge_quantiles':np.quantile(initial_edge,[.5,.9,1.]).tolist(),
+                'added_longest_edge_quantiles':np.quantile(added_edge,[.5,.9,1.]).tolist() if added_edge else None}
 Path('eval/test/hardening_summary.json').write_text(json.dumps(report,indent=2,allow_nan=False)+'\n')
 print(json.dumps({'paired_rank':report['paired_rank'],'test_ranks':report['test_rank']['values']},indent=2))

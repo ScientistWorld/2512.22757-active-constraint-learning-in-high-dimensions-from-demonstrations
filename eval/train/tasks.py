@@ -85,9 +85,9 @@ class Task:
     def initial_demonstrations(self):
         # Endpoints are fixed in world coordinates and guaranteed outside all
         # instances. They carry no obstacle parameters or selected contacts.
-        # A sparse common initialization; all methods retain the same total
-        # allowance for acquiring further observations.
-        pairs=[([-1.9,-1.6],[1.9,1.6])]
+        # Shared initial observations count against every method's total cap.
+        pairs=[([-1.9,-1.6],[1.9,1.6]),([-1.9,1.6],[1.9,-1.6]),
+               ([-1.95,.2],[1.95,.2]),([.2,-1.95],[.2,1.95])]
         result=[self.demonstrate(5*np.asarray(s),5*np.asarray(g)) for s,g in pairs]
         if any(d is None for d in result):
             raise RuntimeError('Fixed initial demonstration failed')
@@ -97,8 +97,6 @@ class Task:
         if np.any(self.value_gradient(np.vstack([start,goal]))[0]>1e-8) or np.linalg.norm(start-goal)<.15:
             return None
         line=np.linspace(start,goal,HORIZON)
-        direction=goal-start; tangent=np.array([-direction[1],direction[0]])/np.linalg.norm(direction)
-        bow=np.sin(np.linspace(0,np.pi,HORIZON))[:,None]*tangent
         def unpack(z): return np.vstack([start,z.reshape(-1,2),goal])
         def cost(z): return np.sum(np.diff(unpack(z),axis=0)**2)
         def jac(z):
@@ -109,21 +107,35 @@ class Task:
             mat=np.zeros((HORIZON-2,2*(HORIZON-2)))
             k=np.arange(HORIZON-2); mat[k,2*k]=grad[:,0]; mat[k,2*k+1]=grad[:,1]
             return mat
-        best=None
-        for amplitude in (0,3.25,-3.25,6.5,-6.5):
-            result=minimize(cost,(line+amplitude*bow)[1:-1].ravel(),jac=jac,method='SLSQP',
-                            constraints=[{'type':'ineq','fun':constraint,'jac':constraint_jac}],
-                            options={'maxiter':400,'ftol':2e-12})
-            if result.success and np.min(constraint(result.x))>=-1e-7:
-                if best is None or result.fun<best.fun:
-                    best=result
-                # These are local optima, as in Problem 1. A feasible straight
-                # trajectory is globally optimal; more starts cannot improve it.
-                if amplitude==0 and np.max(np.abs(jac(result.x)))<1e-6:
+        positions=None
+        if np.min(constraint(line[1:-1].ravel()))>=0:
+            # The feasible straight line is the exact unconstrained minimizer.
+            positions=line
+        else:
+            # P1 permits a locally optimal expert. Start from a feasible route
+            # around the obstacle, rather than competing infeasible starts
+            # whose cheapest solution can jump across a narrow waist at knots.
+            # These are initial guesses only: the objective and discrete
+            # constraints solved below are exactly the same P1 program.
+            endpoints=np.vstack([start,goal])
+            start_angle,goal_angle=np.arctan2(endpoints[:,1],endpoints[:,0])
+            turn=(goal_angle-start_angle+np.pi)%(2*np.pi)-np.pi
+            alternate=turn-2*np.pi if turn>=0 else turn+2*np.pi
+            fraction=np.linspace(0,1,HORIZON)
+            endpoint_radius=np.linspace(np.linalg.norm(start),np.linalg.norm(goal),HORIZON)
+            for angular_turn in (turn,alternate):
+                angles=start_angle+angular_turn*fraction
+                radius=np.maximum(endpoint_radius,self.radius(angles)+.3)
+                warm=np.column_stack([radius*np.cos(angles),radius*np.sin(angles)])
+                warm[0]=start;warm[-1]=goal
+                result=minimize(cost,warm[1:-1].ravel(),jac=jac,method='SLSQP',
+                                constraints=[{'type':'ineq','fun':constraint,'jac':constraint_jac}],
+                                options={'maxiter':400,'ftol':2e-12})
+                if result.success and np.min(constraint(result.x))>=-1e-7:
+                    positions=unpack(result.x)
                     break
-        if best is None:
+        if positions is None:
             return None
-        positions=unpack(best.x)
         velocity=np.vstack([np.diff(positions,axis=0),positions[-1]-positions[-2]])
         controls=np.diff(velocity,axis=0)
         return {'positions':positions.tolist(),'velocities':velocity.tolist(),'controls':controls.tolist()}

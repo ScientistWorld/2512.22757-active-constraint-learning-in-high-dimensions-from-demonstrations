@@ -4,7 +4,7 @@ set -euo pipefail
 cd /home/user
 export PYTHONPATH=/home/user
 export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
-mkdir -p outputs/previous outputs/audit
+mkdir -p outputs/previous outputs/audit tmp
 # Recover an interrupted persistent-file probe before taking a new snapshot.
 if [ -e tmp/hardening_public_edit_active ]; then
   cp tmp/constraints.before_hardening.py data/constraints.py
@@ -12,9 +12,15 @@ if [ -e tmp/hardening_public_edit_active ]; then
 fi
 python scripts/check_numerics.py
 python eval/test/check_contract.py
+python eval/test/check_oracle.py
 find outputs -maxdepth 1 -type f -name '*.json' -exec mv -t outputs/previous {} +
 bash scripts/method.sh
 bash scripts/baseline.sh
+# Check the two controls first in the same job, so progress reports expose a
+# failed reference before expensive variant runs. Later evaluations reuse these
+# source-versioned raw responses and recompute their metrics for the full cohort.
+bash scripts/evaluate_train.sh --bootstrap --output tmp/reference_control_train.json
+bash scripts/evaluate_test.sh --bootstrap --output tmp/reference_control_test.json
 python - <<'PY'
 import json
 from pathlib import Path
