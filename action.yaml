@@ -2,4 +2,4 @@ action: submit
 gpus: 0
 test: false
 milestone: method_runs
-notes: "Restore literal positive-mean CDF in paper Eq. 10; retain sixth-run failed control evidence. One combined CPU verification checks GP/KKT/ray/endpoint equations, oracle and ranking, reruns affected reference/random/better/weaker methods on both paired splits, replays fixed shortcuts, measures paired headroom and publishes successful reference-only scores. Other scientific settings remain fixed; retain unscored fit diagnostics and resume source-versioned progress."
+notes: "Resume the unchanged combined printed-Equation-10 audit after worker drain/node death. Twelve development reference instances are saved; numerical, oracle and rank checks passed. Source-digest verification reuses valid checkpoints, then completes both paired splits, controls, better/weaker variants and fixed shortcut replay before paired analysis and reference-only publication."

@@ -130,6 +130,10 @@ Rechecking [the paper's Equation 10](https://arxiv.org/html/2512.22757v1) expose
 
 No other scientific setting changes: feasible expert initialization, four initial trajectories, raw P8 gradient magnitudes, joint marginal likelihood, three fits, shared seeds, thirty-six paired instances, budgets, recall gates and weights are fixed. Per-stage GP fit diagnostics go to stderr and are retained as opaque raw text, never read by scoring. The combined job reruns changed reference/control/variant commands on both splits, replays the fixed shortcuts, measures paired uncertainty, and publishes only successful reference runs. Results from the restored equation are pending.
 
+## Printed-equation audit interrupted by infrastructure
+
+Job c5165ee2-143 was preempted for a SLURM worker drain; its stderr reports that the worker node died. It passed the GP/KKT/ray, printed Equation 10, rank arithmetic and expert checks. Twelve development g3 reference instances were saved with no protocol failures. No complete control comparison, test score or new headroom result exists. This interruption does not justify a scientific patch. The unchanged combined audit resumes from source-versioned, atomically saved records; the entrypoint prints a checkpoint inventory for progress reporting.
+
 ## Shortcut replay
 
 After-values below are the completed fourth verification, before the pending printed-equation rerun. All failures sort below every successful attempt.
