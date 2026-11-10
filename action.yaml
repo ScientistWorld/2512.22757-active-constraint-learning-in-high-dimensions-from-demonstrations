@@ -2,4 +2,4 @@ action: submit
 gpus: 0
 test: false
 milestone: method_runs
-notes: "Final combined hardening job. Restored paper settings (Eq. 10 safe probability, cited Chou et al. Sec. IV-B GP training with feasibility hinge and constant prior mean, [-15,15] workspace, sparse 10-demo budget) plus obstacle translation. Runs numeric/oracle checks, reference and random on both splits (published immediately), then test variants and fixed shortcuts, summary, final publication and validate."
+notes: "Final combined hardening job, second attempt. Same restorations as before with the unreported Chou hinge margin set to rho=0.1 (rho=1 made unexplored obstacle interiors confidently safe, so all queried endpoints were rejected). Starts with an interleaved 6-instance dev pilot (reference vs random), then both controls on both splits (published), test variants, fixed shortcuts, summary, final publication and validate."
