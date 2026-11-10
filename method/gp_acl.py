@@ -33,6 +33,7 @@ class GPModel:
         for i in (1, 2):
             for j in (1, 2):
                 k = np.where((ti==i)&(tj==j), k * ((i==j)/self.ls**2-diff[:,:,i-1]*diff[:,:,j-1]/self.ls**4), k)
+        self.kernel = k.copy()
         k.flat[::len(k)+1] += self.noise
         self.chol = cho_factor(k, lower=True, check_finite=False)
         self.alpha = cho_solve(self.chol, self.y, check_finite=False)
@@ -123,15 +124,43 @@ def kkt_tight_points(demo, tolerance=1e-4):
     return np.asarray(points).reshape(-1,2), np.asarray(gradients).reshape(-1,2)
 
 
+def marginal_likelihood(logp, points, gradients, values_only=False):
+    """Mean negative log marginal likelihood and its exact hypergradient.
+
+    Dividing by the observation count changes neither the objective's optimum
+    nor its observations. Analytic derivatives avoid finite differences of
+    nearly singular derivative-observation covariance factorizations.
+    """
+    try:
+        gp=GPModel(points,gradients,np.exp(logp),values_only)
+        count=len(gp.y)
+        value=(.5*gp.y@gp.alpha+np.log(np.diag(gp.chol[0])).sum()
+               +.5*count*np.log(2*np.pi))/count
+        diff=gp.x[:,None]-gp.x[None,:]
+        r2=np.sum(diff**2,axis=2)/gp.ls**2
+        base=gp.signal**2*np.exp(-r2/2)
+        dlength=gp.kernel*r2
+        ti,tj=gp.types[:,None],gp.types[None,:]
+        for i in (1,2):
+            mixed=((ti==i)&(tj==0))|((ti==0)&(tj==i))
+            dlength=np.where(mixed,gp.kernel*(r2-2),dlength)
+        for i in (1,2):
+            for j in (1,2):
+                derivative=base*((i==j)*(r2-2)/gp.ls**2
+                    -diff[:,:,i-1]*diff[:,:,j-1]*(r2-4)/gp.ls**4)
+                dlength=np.where((ti==i)&(tj==j),derivative,dlength)
+        residual=cho_solve(gp.chol,np.eye(count),check_finite=False)-np.outer(gp.alpha,gp.alpha)
+        gradient=.5*np.array([np.sum(residual*dlength),
+                              np.sum(residual*(2*gp.kernel)),
+                              gp.noise*np.trace(residual)])/count
+        return value,gradient
+    except np.linalg.LinAlgError:
+        return 1e30,np.zeros(3)
+
+
 def train_gp(points, gradients, values_only=False):
     if not len(points):
         return None
-    def objective(logp):
-        try:
-            gp = GPModel(points, gradients, np.exp(logp), values_only)
-            return .5*gp.y@gp.alpha + np.log(np.diag(gp.chol[0])).sum() + .5*len(gp.y)*np.log(2*np.pi)
-        except np.linalg.LinAlgError:
-            return 1e30
     # Optimize the same marginal likelihood from deterministic starts. Raw P8
     # gradients retain their magnitudes. These initializations/bounds use the
     # paper's physical position units, not the earlier position/5 convention.
@@ -139,9 +168,10 @@ def train_gp(points, gradients, values_only=False):
     fits=[]
     for length in (1.,3.25,6.):
         init=np.log([length,max(rms*length,.001),max((.03*rms)**2,1e-8)])
-        fit=minimize(objective,init,method='L-BFGS-B',
+        fit=minimize(marginal_likelihood,init,args=(points,gradients,values_only),
+                     jac=True,method='L-BFGS-B',
                      bounds=np.log([[.35,12.5],[1e-5,100],[1e-10,1.]]),
-                     options={'maxiter':100,'ftol':1e-9})
+                     options={'maxiter':200,'ftol':1e-10,'gtol':1e-6})
         if np.isfinite(fit.fun): fits.append(fit)
     if not fits: raise RuntimeError('GP marginal likelihood optimization failed')
     params=np.exp(min(fits,key=lambda fit:fit.fun).x)
@@ -226,7 +256,7 @@ def solve_queries(gp, rng, bounds, n_samples=4):
         raw=f.derivative(mi)[0]
         norm=np.linalg.norm(raw)
         if norm<1e-10: continue
-        center=mi+.1*raw  # Eq.7: the paper does not specify eta; eta=.1 here.
+        center=mi+1.*raw  # Eq.7: eta=1 in physical position/cost units.
         if np.any(center<lo) or np.any(center>hi) or f(center)[0]<=0: continue
         tangent=np.array([-raw[1],raw[0]])/norm
         p4=[]
@@ -294,7 +324,6 @@ def main():
     demos=list(task['initial_demos'])
     bounds=task['bounds']
     available_requests=task['query_limit']
-    per_stage=max(1,(task['budget']-len(demos))//2)
     for iteration in range(3):
         contacts=[kkt_tight_points(d) for d in demos]
         points=np.vstack([p for p,g in contacts]); gradients=np.vstack([g for p,g in contacts])
@@ -304,8 +333,15 @@ def main():
         if available_requests<=0:
             continue
         accepted=0
-        target=min(per_stage,task['budget']-len(demos))
-        for query_round in range(8):
+        # Carry unused allowance into the remaining acquisition stage, while
+        # preserving the paper's two acquisition stages and three GP fits.
+        stages_left=2-iteration
+        remaining=task['budget']-len(demos)
+        target=(remaining+stages_left-1)//stages_left
+        # Exhaust the same accepted-demo/proposal allowance before stopping
+        # for numerical acquisition failures. Posterior draws themselves do
+        # not expose the oracle and cannot bypass the parent's query cap.
+        for query_round in range(24):
             if accepted>=target:
                 break
             if args.variant=='random' or gp is None:

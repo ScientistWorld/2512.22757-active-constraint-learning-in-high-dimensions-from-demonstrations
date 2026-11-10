@@ -1,9 +1,17 @@
 """Small meaningful checks of restored GP/KKT mathematical primitives."""
 import numpy as np
-from method.gp_acl import GPModel,kkt_tight_points,finite_gradient,scalar_feasible_extreme
+from method.gp_acl import GPModel,kkt_tight_points,finite_gradient,scalar_feasible_extreme,marginal_likelihood
 p=np.array([[.4,.1],[-.5,.3]])
 g=np.array([[.3,-.4],[-.2,.5]])
 gp=GPModel(p,g,(.6,.7,1e-9))
+# Verify the actual training objective, including all derivative covariances.
+for values_only in (False,True):
+    logp=np.log([.6,.7,.003])
+    value,analytic=marginal_likelihood(logp,p,g,values_only)
+    step=np.eye(3)*1e-5
+    numeric=np.array([(marginal_likelihood(logp+s,p,g,values_only)[0]
+                      -marginal_likelihood(logp-s,p,g,values_only)[0])/2e-5 for s in step])
+    assert np.allclose(analytic,numeric,rtol=1e-5,atol=1e-6),(analytic,numeric)
 assert np.max(np.abs(gp.mean_var(p)[0]))<1e-6
 for point,gradient in zip(p,g):
     actual=finite_gradient(lambda q:gp.mean_var(q)[0],point)
@@ -27,4 +35,4 @@ point,gradient=kkt_tight_points({'positions':[[0,0],[1,.2],[2,0]]})
 assert len(point)==1 and np.allclose(gradient,[[0,-.8]])
 point,gradient=kkt_tight_points({'positions':[[0,0],[1,0],[2,0]]})
 assert len(point)==0
-print('GP/posterior analytic derivatives, continuous ray programs, and KKT programs: pass')
+print('GP likelihood/posterior analytic derivatives, continuous ray programs, and KKT programs: pass')

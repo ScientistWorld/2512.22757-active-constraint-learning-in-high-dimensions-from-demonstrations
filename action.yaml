@@ -2,4 +2,4 @@ action: submit
 gpus: 0
 test: false
 milestone: method_runs
-notes: "Combined verification: contact-initialized P3, equal 20-demo/80-proposal caps, 36 paired instances per experiment; rerun final reference/random and better/weaker variants, replay fixed shortcuts, quantify paired effects, publish reference-only scores and validate. Preserve versioned checkpoints."
+notes: "Combined scientific correction: analytic derivatives of unchanged GP likelihood, eta=1, up to 24 acquisition rounds within unchanged 20-demo/80-proposal caps; rerun final reference/random and better/weaker variants on both paired splits, replay fixed shortcuts, publish reference-only scores and validate. Resume versioned checkpoints."
