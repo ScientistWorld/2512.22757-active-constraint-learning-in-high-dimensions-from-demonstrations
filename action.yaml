@@ -2,4 +2,4 @@ action: submit
 gpus: 0
 test: false
 milestone: method_runs
-notes: "Resume the unchanged combined printed-Equation-10 audit after worker drain/node death. Twelve development reference instances are saved; numerical, oracle and rank checks passed. Source-digest verification reuses valid checkpoints, then completes both paired splits, controls, better/weaker variants and fixed shortcut replay before paired analysis and reference-only publication."
+notes: "Final combined hardening job. Restored paper settings (Eq. 10 safe probability, cited Chou et al. Sec. IV-B GP training with feasibility hinge and constant prior mean, [-15,15] workspace, sparse 10-demo budget) plus obstacle translation. Runs numeric/oracle checks, reference and random on both splits (published immediately), then test variants and fixed shortcuts, summary, final publication and validate."
