@@ -136,9 +136,14 @@ def kkt_tight_points(demo, tolerance=1e-4):
 # Chou et al. (2022), Sec. IV-B, which the paper's Sec. 2.3 says its GP
 # training parallels: minimize the negative marginal log likelihood plus the
 # demonstration-feasibility hinge mean_n max(mu(x_n)+rho*sd(x_n), 0) over all
-# demonstrated states. Neither paper reports rho; one standard deviation is
-# the packaged choice.
-RHO = 1.
+# demonstrated states. Neither paper reports rho. Demonstrated states far from
+# any contact pin the learned prior mean at -rho*signal, so unexplored states
+# have prior safety probability Phi(rho). rho=0.1 keeps that (0.54) just below
+# the paper's endpoint safety level beta=0.55: Eq. 10 endpoints then need
+# evidence of safety, while states far from all data still default to safe.
+# (rho=1 made unexplored obstacle interiors 84% "safe", so queried endpoints
+# fell inside the obstacle and were rejected by the demonstrator.)
+RHO = .1
 
 
 def _covariance_derivatives(gp):
