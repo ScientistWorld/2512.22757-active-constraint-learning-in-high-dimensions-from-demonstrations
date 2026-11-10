@@ -100,7 +100,12 @@
           "type": "baseline"
         },
         "gp_acl": {
-          "type": "proposed"
+          "type": "proposed",
+          "accuracy": 0.9766303168402778,
+          "balanced_accuracy": 0.7265392695531075,
+          "near_boundary_balanced_accuracy": 0.7051481659951854,
+          "safe_recall": 0.924286875612264,
+          "unsafe_recall": 0.5287916634939511
         }
       }
     },
@@ -141,9 +146,100 @@
           "type": "baseline"
         },
         "gp_acl": {
-          "type": "proposed"
+          "type": "proposed",
+          "accuracy": 0.9261474609375,
+          "balanced_accuracy": 0.6378891559687682,
+          "near_boundary_balanced_accuracy": 0.6200572968868308,
+          "safe_recall": 0.9798965853941842,
+          "unsafe_recall": 0.29588172654335243
         }
       }
+    }
+  },
+  "_measured_reference_runs": {
+    "train": {
+      "experiments": {
+        "double_integrator_g3": {
+          "results": {
+            "gp_acl": {
+              "accuracy": 0.9745686848958334,
+              "balanced_accuracy": 0.7330779654007183,
+              "near_boundary_balanced_accuracy": 0.7122883911790865,
+              "safe_recall": 0.8805185236148734,
+              "unsafe_recall": 0.5856374071865632
+            },
+            "random_baseline": {
+              "accuracy": 0.9785970052083334,
+              "balanced_accuracy": 0.7297076081044079,
+              "near_boundary_balanced_accuracy": 0.7047811050454454,
+              "safe_recall": 0.8145061682936814,
+              "unsafe_recall": 0.6449090479151347
+            }
+          }
+        },
+        "complex_boundary_stress": {
+          "results": {
+            "gp_acl": {
+              "accuracy": 0.9243367513020834,
+              "balanced_accuracy": 0.6294941793052676,
+              "near_boundary_balanced_accuracy": 0.6122059073779881,
+              "safe_recall": 0.983203098264454,
+              "unsafe_recall": 0.2757852603460814
+            },
+            "random_baseline": {
+              "accuracy": 0.9287109375,
+              "balanced_accuracy": 0.6610511467548399,
+              "near_boundary_balanced_accuracy": 0.6355953601294032,
+              "safe_recall": 0.9704782744024789,
+              "unsafe_recall": 0.351624019107201
+            }
+          }
+        }
+      },
+      "failures": {},
+      "raw_metrics_of_failed": {}
+    },
+    "test": {
+      "experiments": {
+        "double_integrator_g3": {
+          "results": {
+            "gp_acl": {
+              "accuracy": 0.9766303168402778,
+              "balanced_accuracy": 0.7265392695531075,
+              "near_boundary_balanced_accuracy": 0.7051481659951854,
+              "safe_recall": 0.924286875612264,
+              "unsafe_recall": 0.5287916634939511
+            },
+            "random_baseline": {
+              "accuracy": 0.9778984917534722,
+              "balanced_accuracy": 0.727315099514194,
+              "near_boundary_balanced_accuracy": 0.7046539864185953,
+              "safe_recall": 0.8899400206983602,
+              "unsafe_recall": 0.5646901783300281
+            }
+          }
+        },
+        "complex_boundary_stress": {
+          "results": {
+            "gp_acl": {
+              "accuracy": 0.9261474609375,
+              "balanced_accuracy": 0.6378891559687682,
+              "near_boundary_balanced_accuracy": 0.6200572968868308,
+              "safe_recall": 0.9798965853941842,
+              "unsafe_recall": 0.29588172654335243
+            },
+            "random_baseline": {
+              "accuracy": 0.9297892252604166,
+              "balanced_accuracy": 0.6650745521787874,
+              "near_boundary_balanced_accuracy": 0.6359722047913555,
+              "safe_recall": 0.9651132923856226,
+              "unsafe_recall": 0.3650358119719525
+            }
+          }
+        }
+      },
+      "failures": {},
+      "raw_metrics_of_failed": {}
     }
   }
 }
