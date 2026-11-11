@@ -8,5 +8,5 @@
 - [x] One combined audit job (`3b3ba72f-7f9`).
 - [x] Reference-only scores regenerated from final code; fresh-clone reproduction checked.
 - [x] HARDENING.md with before/after evidence.
-- [ ] scripts/run.sh restored to end-to-end reproduction.
-- [ ] Final commit and action: done.
+- [x] scripts/run.sh restored to end-to-end reproduction.
+- [x] Final commit and action: done.

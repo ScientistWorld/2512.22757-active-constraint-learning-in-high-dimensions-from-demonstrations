@@ -8,13 +8,13 @@ Ranks follow the gym's rule: weight × |coefficient| × better-direction improve
 
 Jobs:
 - `3b3ba72f-7f9`: the combined audit, exit 0; `validate.py --post-design` passed.
-- `VERIFY_JOB`: end-to-end reproduction from the final code in a fresh-clone state, compared with the frozen records.
+- `5aa244fe-ed9`: end-to-end reproduction from the final code in a fresh-clone state, compared with the frozen records.
 - `05339383-a8e` (previous iteration): the undeformed-g3 formula-fit measurement used as a "before" below.
 
 Evidence:
 - `eval/test/hardening_summary.json`: every number below.
 - `eval/test/hardening_seventh_summary.json`: the previous audit.
-- `tmp/prior_selection.json`: the development prior selection.
+- `eval/test/hardening_summary.json` → `prior_selection`: the development prior selection.
 
 ## What changed this iteration
 
@@ -70,16 +70,16 @@ Yes, in both cohorts.
 | Variant | Before (previous audit) | After, core cohort | After, evaluator audit cohort |
 |---|---:|---:|---:|
 | Reference GP-ACL | 0 | 0 | 0 |
-| Better: interior fill + coverage top-up (`better_fill_topup`) | n/a | **+1.331 [1.005, 1.680]** | +0.687 [0.448, 0.945] |
-| Better: interior fill (`better_fill`) | +1.088 [0.789, 1.378] | +0.887 [0.623, 1.149] | +0.408 [0.239, 0.580] |
-| Better: coverage top-up (`better_topup`) | n/a | +0.314 [0.131, 0.528] | +0.256 [0.101, 0.437] |
-| Random-query control | −0.906 [−1.586, −0.230] | **−0.777 [−1.347, −0.195]** | −1.110 [−1.561, −0.661] |
-| P=2 posterior draws (`weaker_two_draws`) | +0.151 [−0.409, +0.681] | +0.194 [−0.290, +0.653] | +0.262 [−0.091, +0.611] |
-| Learned prior mean | −0.759 [−1.579, +0.069] | −0.780 [−1.518, −0.051] | −1.440 [−1.972, −0.902] |
-| No acquisition (initial 4 demonstrations) | −2.156 | −1.837 [−2.456, −1.226] | −2.084 [−2.520, −1.676] |
-| Raw (unnormalized) KKT gradients | −4.328 | −4.281 [−5.092, −3.526] | −3.625 [−4.130, −3.133] |
+| Better: interior fill + coverage top-up (`better_fill_topup`) | n/a | **+1.331 [0.992, 1.673]** | +0.687 [0.447, 0.939] |
+| Better: interior fill (`better_fill`) | +1.088 [0.789, 1.378] | +0.887 [0.631, 1.142] | +0.408 [0.236, 0.580] |
+| Better: coverage top-up (`better_topup`) | n/a | +0.314 [0.136, 0.535] | +0.256 [0.103, 0.440] |
+| Random-query control | −0.906 [−1.586, −0.230] | **−0.777 [−1.368, −0.192]** | −1.110 [−1.562, −0.665] |
+| P=2 posterior draws (`weaker_two_draws`) | +0.151 [−0.409, +0.681] | +0.194 [−0.312, +0.676] | +0.262 [−0.092, +0.604] |
+| Learned prior mean | −0.759 [−1.579, +0.069] | −0.780 [−1.507, −0.046] | −1.440 [−1.974, −0.887] |
+| No acquisition (initial 4 demonstrations) | −2.156 | −1.837 [−2.477, −1.248] | −2.084 [−2.511, −1.674] |
+| Raw (unnormalized) KKT gradients | −4.328 | −4.281 [−5.069, −3.531] | −3.625 [−4.132, −3.135] |
 | No gradient observations | fails gate | fails gate | fails gate |
-| Paper's zero-mean prior (`alt_zero_prior`) | n/a | excluded | −3.275 [−3.699, −2.848] |
+| Paper's zero-mean prior (`alt_zero_prior`) | n/a | excluded | −3.275 [−3.709, −2.867] |
 
 - Every better variant is above the reference beyond paired noise.
 - Every ablation and the random control are below it. The learned prior is now clearly below in both cohorts.
@@ -92,13 +92,13 @@ Paired gains of the best variant (`better_fill_topup` − reference, test):
 | g3 | +0.0027 [0.0016, 0.0038] | +0.026 [0.014, 0.039] | +0.008 [0.001, 0.015] |
 | stress | +0.0229 [0.0175, 0.0283] | +0.032 [0.016, 0.050] | +0.023 [0.009, 0.040] |
 
-It also generalizes from development: there it ranks +1.018 [0.623, 1.414] against the reference.
+It also generalizes from development: there it ranks +1.018 [0.611, 1.424] against the reference.
 
 ## Shortcuts
 
 | Shortcut | Before | Fix | After |
 |---|---|---|---|
-| **Write down the visible stress generator** (fit it to all contacts; reference on g3, fit on stress) | **+1.572 [1.121, 1.942]**: near-boundary BA +0.054, accuracy +0.054 on stress | Private hidden stress family | **+0.337 [−0.248, +0.950]** in the same three-member cohort (+0.539 [0.223, 0.864] in the core cohort); near-boundary BA now **−0.044** |
+| **Write down the visible stress generator** (fit it to all contacts; reference on g3, fit on stress) | **+1.572 [1.114, 1.936]**: near-boundary BA +0.054, accuracy +0.054 on stress | Private hidden stress family | **+0.337 [−0.244, +0.929]** in the same three-member cohort (+0.539 [0.219, 0.873] in the core cohort); near-boundary BA now **−0.044** |
 | Same fit applied to both experiments | −1.377 | (same) | −2.464; on g3 the stress model always fits contacts best (RMS ≤ 0.016) and is wrong |
 | Fit the paper's g3 polynomial (previous iteration) | +2.584 on undeformed g3 (job `05339383-a8e`) | Private per-instance g3 deformation (previous iteration) | −0.184 [−1.699, +1.074]; g3 instances and reference unchanged since |
 
@@ -139,7 +139,9 @@ All failed the whole run in the previous audit.
 - **g3**: identical to the previous iteration: accuracy 0.9637, balanced 0.8084, near-boundary 0.7783, safe recall 0.9453, unsafe recall 0.6716. The method and instances are unchanged.
 - **stress**: before (old family) 0.9368 / 0.7667 / 0.7493 / 0.9751 / 0.5582; after (private family) 0.9371 / 0.7654 / 0.7463 / 0.9724 / 0.5583.
 
-`scoring/scores_test.json` and `scores_train.json` contain only the reference and the frozen random control, both regenerated from the final code. The paper's reported numbers are unchanged (`_paper_reported_*`).
+`scoring/scores_test.json` and `scores_train.json` contain only the reference and the frozen random control, both regenerated from the final code.
+
+Job `5aa244fe-ed9` checked this from a fresh-clone state: no oracle, run or GP-fit caches. It reran `scripts/reproduce.sh` end to end in 15 minutes and reproduced every frozen record exactly: identical predictions and identical oracle ledgers on all 2 × (24 + 36) instances of both methods, on both splits. `validate.py --post-design` passed. The paper's reported numbers are unchanged (`_paper_reported_*`).
 
 ## Paper direction (reference vs random, paired)
 
