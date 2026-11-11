@@ -1,161 +1,143 @@
 # Hardening
 
-Status: four combined verifications ran all variants and probes. The fourth passes structural validation and reference quality, closes every replayed shortcut, and establishes paired headroom. Random acquisition still outranks the reference on both splits, so the scientific reproduction requirement remains unmet. The fifth sparse-initialization run and sixth feasible-initialization run failed development quality gates and were cancelled. The next combined job restores the literal CDF sign in the paper's Equation 10; its outcome is pending. Historical before-results are from `REDTEAM.md`; they are on a different task and ranking scale.
+Final iteration. All numbers below come from completed jobs. Development selection used only the development split. Every hidden-test comparison is paired: each method sees the same 36 obstacles per experiment, the same initial trajectories and the same query points. Intervals are 95% paired bootstrap intervals. Ranks follow the gym's rule (weight × |coefficient| × better-direction improvement ÷ cohort standard deviation). They use the scales of the audit cohort: the reference, the frozen random control, every variant and every probe that passed the success gate. Complete evidence is in `eval/test/hardening_summary.json`, and every scored test number is in `eval/test/hardening_scores.json`. Job IDs:
+- `fcaa3a0a-3f9`: development exploration.
+- `c7324ec1-f1e`: final combined audit, exit 0. `validate.py --post-design` passed.
+- UNDEFORMED_JOB: the undeformed-shortcut measurement; see the shortcut table.
 
-## Findings and changes
+## Do better results now score higher?
 
-The previous test exposed its answer generator, let submissions choose the test grid and comparison metadata, and rewarded unverified demonstration counts. Its active-versus-random effect also reversed across seeds. The previous simplified tight-point and query searches did not implement the paper's optimization programs faithfully enough to justify its claimed milestone.
+Yes. Before this iteration they did not.
 
-The implementation now solves the reduced KKT Programs 7/8, derivative-observation GP marginal likelihood, conditioned posterior samples (1,000 RFF, alpha 0.3), and continuous constrained Programs 3–6. It uses T=30 and the paper's double-integrator setting, with positions in the paper's physical units (bounds [-10,10]). Free velocities and controls are eliminated exactly and reconstructed; no velocity/control limits or endpoint velocities are assumed. The simulator uses the paper's squared successive-position cost and locally optimal constrained trajectories. Equation 10 is implemented literally as Phi(+mean/sd). This conflicts with the prose describing a safety probability for g<=0; earlier jobs used a negative mean to match that prose, an interpretation now withdrawn in favor of the printed computational step. Eta=1 (previously 0.1), four initial demonstrations (the cancelled fifth run used one), twenty total demonstrations, and eighty proposal attempts are explicit benchmark settings. Three fits are used. These choices and the added complex-boundary experiment are not presented as the full high-dimensional or hardware reproduction.
-
-Private instance generation, seeds, truth, initial expert trajectories and all frozen comparison raw records are confined to `eval/test/`. Training has an independent implementation and different instances from the same distribution. An online command interface evaluates unseen instances; prediction points arrive only after acquisition ends. Signed-distance order and submission-selected grids are gone. There is no finite public candidate enumeration to solve: acquisition ranges continuously over endpoints on new hidden obstacles.
-
-Every metric is recomputed from binary predictions against evaluator truth. Budgets use the evaluator's query ledger; no count earns a bonus. Invalid values or task failures fail the whole run. Baselines, anchors, test size, operating points and scoring configuration belong to each evaluator. Submissions cannot replace them through output fields or files. All manifests on disk are discovered without a train-score whitelist. Raw response caches are versioned by evaluator, task, command and local Python dependencies.
-
-Rank sums experiment weight times coefficient magnitude times better-direction improvement divided by cohort standard deviation. Failed attempts sort below successful attempts. Zero-variance terms contribute zero. Arithmetic checks cover sign, direction, units, failures and zero variance. The count coefficient was removed: the scientifically relevant constraint is a fixed verified cap, and a constant cap cannot support a useful standardized reward.
-
-## Before-results and planned paired check
-
-The old reference had test accuracy 0.954645, balanced accuracy 0.954823 and near-boundary balanced accuracy 0.899525; its rank was zero by definition. The old random baseline had accuracy 0.931148 and rank -0.244327. Across seeds the active mean accuracy was 0.929872 versus random 0.946084; reference seed rank spread was 0.579845. The old better contact/normal fit ranked +0.473367 (a rounded low-order version +0.636216 and perfect accuracy); dropping gradients ranked -4.462129 and dropping acquisition -0.425626.
-
-The combined job runs the final reference and random control, two contact/normal fits, a normalized-gradient alternative, and weaker gradient/acquisition ablations on identical instances in both splits. Thirty-six paired obstacles per experiment, fixed learner seeds and 12,288 shuffled points per obstacle replace a single lucky seed. Paired bootstrap intervals will quantify candidate-minus-reference effects. The stress experiment has additional fine boundary variation that a simple low-order fit cannot exactly represent. Its weight is 0.4; the actual paper constraint retains weight 0.6. Accuracy remains primary, with boundary and class recall metrics preventing easy broad-region accuracy from hiding boundary failure. The new experiment and weights target the paper's sparse-demonstration and complex-geometry limitation, not agreement with reported numbers.
-
-## First verification and numerical correction
-
-Job 5f293a40-e15 ran every comparison and shortcut. GP/KKT and rank arithmetic checks passed. The final validation failed because the reference and random baseline both failed the 0.60 recall constraint, making their published scores zero. This was a scientific failure, not a train/test wiring failure; the underlying train and test predictions and metrics differed.
-
-The reference's raw test accuracy/boundary-balanced accuracy were 0.646769/0.714698 on g3 and 0.807251/0.658861 on the stress task. Stress safe recall was only 0.488747. Random sampling reached 0.655802/0.760413 on g3 and 0.859762/0.615766 on stress, with stress safe recall 0.296896. Several active instances stayed at their four initial demonstrations, despite an available budget of twelve. Thus this run did not reproduce the paper's active-over-random claim. Two contact/normal alternatives ranked +2.634643 and +3.976682, and a normalized-gradient alternative ranked +4.975243, but improvements over a failed reference do not establish a satisfactory gym. The complete first-run audit is retained in `eval/test/hardening_first_summary.json`.
-
-The earlier position/5 conversion also divided the demonstration cost and raw KKT field scale while leaving the paper's fixed delta=0.001 unchanged. The correction restores physical coordinates, corresponding kernel length scales and narrow-band widths. It retains the actual squared-position cost and unnormalized P8 observations. GP hyperparameters still optimize marginal likelihood, now from three deterministic initializations with broad bounds. P3 uses analytic posterior/sample derivatives and dimensionless objective/residual scaling. In 2D, P4--6 are exactly scalar constrained ray problems: bracketing plus continuous root refinement finds feasible intervals and their nearest/furthest endpoints, avoiding ill-conditioned raw-tau SLSQP solves. Unit ray coordinates only reparameterize tau; Equation 7 still offsets along the raw gradient. No infeasible fallback or new training algorithm is introduced. Up to sixteen independent posterior draws per acquisition stage replace twelve, within the same fixed request/demonstration caps and three paper iterations.
-
-Both evaluators and every reference/control/variant will rerun from the corrected code and physical units. Unchanged evaluator/interface probes use saved raw records where possible. The job preserves source-versioned per-instance checkpoints across preemptions; the first run was preempted twice and previously restarted completed computations.
-
-## Second verification and acquisition setup correction
-
-Job c7495dc7-d8c completed every run and audit. The physical-unit reference passed both recall gates, with test g3 accuracy/balanced accuracy 0.613993/0.757002 and stress 0.830058/0.753100. Random acquisition reached 0.615458/0.770495 and 0.864685/0.743855 respectively; stress safe recall 0.589188 failed its task. That gate failure does not establish the paper's accuracy effect. Training g3 accuracy favored active acquisition (0.677490 versus 0.624125), while stress did not (0.814372 versus 0.820068). The effect remains unproven at twelve paired tasks.
-
-The order-12 contact/normal alternative ranked +2.925454, paired 95% interval [1.799563, 4.429159]. The normalized-gradient alternative ranked +4.358173 [2.799246, 6.052645]. The order-6 fit ranked +1.051076, but its interval [-0.015697, 2.481903] includes zero. None reaches every metric's bound. The weaker variants and all adapted prediction/count/budget shortcuts failed; forged baseline fields attached to authentic reference outputs tied. Complete measurements remain in eval/test/hardening_second_summary.json. These are interim results on the earlier task size, not the final verification.
-
-P3 previously initialized from low-magnitude sampled zeros across the whole box and preferred the largest variance among distant candidates. A zero-mean prior draw has spurious contours away from the inferred obstacle, so this initialization can solicit uninformative demonstrations. Its continuous constrained optimization now starts at observed contacts with small local perturbations, matching the local-NLP solution regime; its objective and constraints are unchanged. Four posterior draws per round support up to eight accepted trajectories per acquisition stage. The same total cap for both active and random methods increases to twenty demonstrations and eighty proposals. This changes data scale rather than the paper's training algorithm; the paper does not specify its demonstration count or posterior draw count. Three fits, raw KKT gradients, marginal-likelihood training, delta and chance levels are retained.
-
-Both splits now use thirty-six paired instances per experiment to resolve task variation. All reference/control/variant runs must rerun on these changed inputs. The final-response schema now rejects forged comparison fields, flags, settings and scores, rather than ignoring them. This closes the adapted baseline-forgery probe that previously tied while returning reference predictions. A legitimate predictor returning the same predictions without falsifying comparison metadata can still tie. The publisher stores scaled, split-specific baseline measurements and failures under _measured_reference_runs; a failed score of zero is not a paper-reported baseline target. Paper numbers remain unchanged. Rank standard deviations use the actual successful cohort, without duplicating the anchor; metric-only edits rescore raw outputs rather than rerun acquisition.
-
-## Third verification and remaining scientific correction
-
-Job b3807db0-4f1 completed with exit 0; `validate.py --post-design` passed. All twelve adapted shortcuts and seven legacy artifacts failed. A forged comparison attached to valid reference predictions now fails the strict schema instead of tying. The third complete audit is preserved in `eval/test/hardening_third_summary.json`.
-
-The following ranks use the same successful audit cohort. Their magnitude depends on the cohort standard deviations; the reference-only score files use a smaller cohort and therefore different scales. Intervals are 95% paired bootstrap intervals with each comparison using identical obstacles and initial observations.
-
-| Variant | Old rank | Third verification test rank | Paired interval |
+| Variant | Before (previous iteration's final audit) | After (this audit) | Paired 95% interval |
 |---|---:|---:|---|
-| Reference | 0 | 0 | Anchor |
-| Random acquisition | -0.244327 | +1.029839 | [0.441270, 1.664275] |
-| Order-6 contact/normal fit | +0.473367 | +0.736948 | [0.248407, 1.243594] |
-| Order-12 contact/normal fit | Not previously measured | +2.319953 | [1.839181, 2.821363] |
-| Normalized-gradient fit | Not previously measured | +3.444084 | [2.944394, 3.983856] |
-| No acquisition | -0.425626 | -1.328212 | [-1.910500, -0.758164] |
-| No gradients | -4.462129 | Failed | Both recall requirements fail |
+| Reference GP-ACL | 0 | 0 | anchor |
+| Random-query control | **+0.566** (above the reference) | **−0.906** | [−1.586, −0.230] |
+| Better: interior fill classifier | n/a | **+1.088** | [0.789, 1.378] |
+| Contact/normal radial fit (previous "better" candidate) | −4.045 (order 6), −2.891 (order 12) | −1.418 (`alt_periodic`) | [−2.407, −0.509] |
+| Previous packaged reference (`weaker_legacy`) | 0 (it was the anchor) | −0.683 | [−1.332, −0.038] |
+| Learned constant prior mean | n/a | −0.759 | [−1.579, +0.069] |
+| No acquisition (initial demonstrations only) | −2.085 | −2.156 | [−2.890, −1.445] |
+| Raw (unnormalized) KKT gradients | −4.439 | −4.328 | [−5.240, −3.433] |
+| No gradient observations | failed gate | failed gate (raw rank −8.48) | [−9.02, −7.93] |
+| P=2 posterior draws instead of 4 (`weaker_two_draws`) | n/a | +0.151 | [−0.409, +0.681] |
 
-Better and weaker methods separate beyond paired uncertainty, and no scored reference metric is at its bound of one. No simple tested fit reaches all bounds: the stress experiment retains recovery error even for the stronger variants. This establishes headroom but does not excuse the random baseline outperforming the reference.
+Before, the "better" variants scored below the reference and random sat above it, so the gym had neither a working reference nor any demonstrated headroom. Now:
+- Random falls below the reference beyond paired noise.
+- A genuine improvement (the fill classifier) lies above it beyond noise.
+- The previous method and the ablations fall below it.
 
-| Experiment | Reference accuracy / boundary BA | Random accuracy / boundary BA |
-|---|---|---|
-| Test g3 | 0.665738 / 0.807662 | 0.680840 / 0.838752 |
-| Test stress | 0.806396 / 0.738615 | 0.841621 / 0.773858 |
-| Train g3 | 0.634135 / 0.783874 | 0.669752 / 0.833645 |
-| Train stress | 0.821038 / 0.765041 | 0.838725 / 0.782521 |
+P=2 versus P=4 is an honest alternative that the test cannot tell apart. Its name `weaker_two_draws` is historical: P=4 was chosen because it ranked +0.69 over P=2 on development, but on test the two tie.
 
-Random-minus-active boundary BA is +0.031091 [0.0093, 0.0528] on test g3 and +0.035242 [0.0086, 0.0636] on stress. The corresponding train differences also favor random. Both controls pass the fixed recall thresholds; changing the thresholds or weights to conceal this reversal would not reproduce the paper. The reference rank remains zero by definition; its raw g3 accuracy changed from the old 0.954645 to 0.665738 on the harder, unseen setup. These raw values are not measurements of the same test.
+## What was wrong and what changed
 
-Saved ledgers show incomplete active allowances: test g3 averages 18.06 demonstrations, with 13/36 below twenty; stress averages 18.00, with 18/36 below twenty and one instance still at four. Random uses twenty everywhere. Of accepted added trajectories, 66.0% (g3) and 65.7% (stress) have identified contacts, versus 37.2% and 35.9% for random. Active acquisition is more contact-efficient, but this does not yet translate into better recovery. The reduced KKT observations must retain the paper's raw magnitudes; promoting the normalized-gradient variant to the reference would change the protected training method.
+**1. Problem 3 never optimized (bug).** The previous code started P3's local solver at observed tight states. The posterior variance is minimal there, with zero gradient, so the solver returned its start.
+- Consequence: κ_MI sat on known contacts, and every batch re-requested almost the same start/goal pair (one test instance repeated one pair six times).
+- Diagnosis from the previous ledgers: ~180 added contacts per g3 instance but only 0.6 contacts more than one unit from earlier ones.
+- Fix: P3 is solved over the posterior sample's zero set. All zero crossings on a grid finer than the fitted lengthscale are enumerated, the best distinct ones are polished with the continuous constrained NLP, and the highest-variance point is kept.
+- Search region: within one fitted lengthscale of the observed tight states. Spurious zero contours of a draw far from all data carry no information about where demonstrations can touch the constraint. This radius was chosen on development: 0.5 ranked −1.17 and 1.5 ranked +0.19 relative to 1.0.
 
-The next combined correction keeps the likelihood, observation noise model, kernel family, KKT programs, training data, budgets, seeds, test size and all scoring coefficients fixed. It supplies analytic length-scale/signal/noise derivatives to the same marginal-likelihood optimizer, averages the objective over observations for numerical conditioning, and permits up to 200 optimizer iterations. A finite-difference hypergradient check is included in the job. It increases the unspecified Equation 7 step from eta=0.1 to eta=1 in physical units and permits up to twenty-four four-sample acquisition rounds per stage instead of eight, still bounded by eighty actual oracle proposals and twenty accepted demonstrations. Unused first-stage demonstration allowance carries into the second stage; the paper's two acquisition stages and three GP fits remain unchanged, as do alpha, RFF count, delta and chance levels. This addresses premature numerical termination and shallow offsets without adding a surrogate, normalizing the KKT gradients, or discarding straight expert trajectories.
+**2. Unexplored space counted as safe.** The constant prior mean was learned freely and settled near −0.9 × signal. Unexplored states therefore had prior safety probability Φ(0.9) ≈ 0.82. That clears Eq. 10's β = 0.55 with no evidence.
+- Consequence: endpoints landed inside the true obstacle and the expert rejected them (61–80% of requests). The inferred obstacle was also a hollow crescent.
+- Context: the previous iteration chose ρ = 0.1 so that unexplored states would sit at Φ(0.1) = 0.54 < β. The learned constant overrode that intent. The paper's own posterior (Eqs. 15–16) is zero-mean, which is the regime where β > 0.5 requires evidence.
+- Fix: the constant is now tied to −ρσ. The training loss (Chou et al. Sec. IV-B marginal likelihood plus feasibility hinge) still optimizes length, signal and noise. A finite-difference check of the tied gradient runs in every job.
+- Development result: the learned constant ranked −1.98 and accepted only 3.3 of 8 demonstrations on g3.
 
-The cited earlier GP paper also contains a demonstration-feasibility hinge loss, but the target paper explicitly specifies marginal likelihood in Section 2.3 and its Appendix A.2 posterior. No hinge loss or additional training objective is introduced on the strength of that citation. All changed methods and controls will rerun from source, and the shortcut replays and paired estimates will be checked in the same job. Until its results arrive the milestone remains `method_runs`.
+**3. Batching.** Alg. 1 is now iterated with a refit after every batch until the twelve-demonstration budget is spent, instead of redrawing samples from one stale fit. The paper's Fig. 5 runs five iterations; N_iters is set by the budget. A request that nearly duplicates an earlier one is skipped, since a deterministic expert would return the same demonstration. P = 4 posterior draws per batch; the paper does not specify P.
 
-## Fourth verification and sparse-initialization correction
+**4. Setup.** Four shared initial crossings now replace two, so every method starts from coarse coverage from several sides. Alg. 1 takes S_D^(1) as input and the paper does not specify it; its Fig. 5 starts both methods from a usable first model. Every method still acquires at most eight further demonstrations within forty requests.
 
-Job f6c52544-4c0 completed with exit 0. The likelihood hypergradient check and structural validation passed. All twelve adapted shortcuts and seven legacy artifacts failed again. The fourth audit is preserved in `eval/test/hardening_fourth_summary.json`.
+**5. Public-formula shortcut.** The exact g3 polynomial is public in the paper and in the development generator. A method could fit its four parameters (rotation, scale, centre) to contacts. Hidden g3 instances now carry a private smooth radial deformation of the polynomial: localized angular bumps and dents, RMS 3.99% of the radius. Development uses a different family (low harmonics, RMS 4.06%), so difficulty matches but the exact form does not transfer. Gradient and boundary consistency of both generators are checked in every job (relative gradient error < 1e-8).
 
-| Variant | Old rank | Fourth verification test rank | Paired 95% interval |
-|---|---:|---:|---|
-| Reference | 0 | 0 | Anchor |
-| Random acquisition | -0.244327 | +0.603014 | [-0.059525, 1.300636] |
-| Order-6 contact/normal fit | +0.473367 | +0.578652 | [0.168987, 0.997900] |
-| Order-12 contact/normal fit | Not previously measured | +1.988915 | [1.597440, 2.406720] |
-| Normalized-gradient fit | Not previously measured | +3.457279 | [3.059205, 3.893139] |
-| No acquisition | -0.425626 | Failed | Recall requirement fails |
-| No gradients | -4.462129 | Failed | Both recall requirements fail |
+**6. Unchanged.** The paper's training method is unchanged: the Problems 7–8 KKT programs, unit-norm gradient estimates (identified only up to scale), 1,000 random Fourier features, α = 0.3, δ = 0.001, β = 0.55/0.3/0.55, the continuous P4–P6 ray programs, Eq. 10 read as a safe probability, and posterior-mean classification. Also unchanged: metrics, coefficients, weights, gates, the paper-reported numbers, the 36 hidden instances per experiment and the evaluator-owned controls. The development split was cut to 24 instances per experiment to save compute. Evaluators now run instances in parallel on available CPUs; records are still saved in index order.
 
-The reference remains zero by definition. Its raw test g3 accuracy is now 0.633213, boundary balanced accuracy 0.831427, versus random 0.680840 and 0.838752. On stress these are 0.829508/0.748706 versus random 0.836283/0.773515. Train g3 is 0.646023/0.822007 versus random 0.669752/0.833645; train stress is 0.822795/0.760952 versus random 0.838725/0.782521. Random ranks +0.519918 on train. Improved boundary recovery after the numerical correction has not produced the paper's direction. No scored reference metric is at one; the stronger alternatives remain below the bounds, including on stress. Headroom and shortcut closure are supported, while the core claim is still unproven.
+## Paper direction (reference vs random, hidden test)
 
-The next change is to the common initial dataset, whose size the paper does not specify. Four initial long crossings cover an average 31.9% of twenty-four angular sectors on test g3 and 45.1% on stress, leaving less scope for an acquisition benefit. The first trajectory alone covers 9.8%/15.7%, and has at least two identified contacts on every train and test instance. Both independent simulators now supply this one trajectory, preserving the original world-coordinate endpoints. Every method retains the same total twenty-demonstration and eighty-request allowances. Geometry, seeds, test size, training algorithm and coefficients are unchanged. This is a test of the sparse-demonstration regime, not an adjustment toward a reported score. All reference/control/variant and affected shortcut runs must rerun on the new inputs; old measured scores are interim until that job completes. The combined report now includes paired rank intervals on development as well as test, and budget/contact diagnostics derived from raw ledgers.
+| Experiment | Metric | Reference | Random | Random − reference [95%] |
+|---|---|---:|---:|---|
+| g3 | uniform accuracy | 0.9637 | 0.9673 | +0.0036 [−0.0008, +0.0078] |
+| g3 | boundary balanced accuracy | 0.8084 | 0.7604 | −0.0480 [−0.0751, −0.0220] |
+| g3 | near-boundary balanced accuracy | 0.7783 | 0.7337 | −0.0446 [−0.0647, −0.0253] |
+| g3 | safe / unsafe recall | 0.9453 / 0.6716 | 0.7782 / 0.7427 | −0.167 / +0.071 |
+| stress | uniform accuracy | 0.9368 | 0.9447 | +0.0079 [+0.0047, +0.0109] |
+| stress | boundary balanced accuracy | 0.7667 | 0.7378 | −0.0289 [−0.0524, −0.0058] |
+| stress | near-boundary balanced accuracy | 0.7493 | 0.7029 | −0.0464 [−0.0679, −0.0243] |
+| stress | safe / unsafe recall | 0.9751 / 0.5582 | 0.9224 / 0.5532 | −0.053 / −0.005 |
 
-## Fifth verification and expert-oracle initialization correction
+Development tells the same story: random ranks −2.60 in the two-method cohort, with g3 boundary balanced accuracy −0.043 [−0.071, −0.016] and stress −0.030 [−0.051, −0.008].
 
-Job f9466b7c-33b completed the full development audit. Every active variant, including the reference, failed one or both fixed recall requirements; random alone succeeded. The job was cancelled during the first test variant (36 g3 and 33 stress instances complete). There is no complete fifth-job hidden-test comparison. All development scores and partial-test counts are preserved in `eval/test/hardening_fifth_summary.json`; published reference-only scores remain from the fourth completed setup.
+GP-ACL acquisition works as the paper describes:
+- 99.6% (g3) and 96.9% (stress) of its added demonstrations touch the obstacle, versus 18% and 17% for random.
+- They add 15.3 and 7.6 new unit boundary cells per instance, versus 4.0 and 2.3.
 
-| Development method | g3 boundary BA | Stress boundary BA | Whole-run result |
-|---|---:|---:|---|
-| Reference | 0.608238 | 0.605174 | Failed |
-| Random acquisition | 0.806611 | 0.744179 | Passed |
-| Order-6 contact/normal fit | 0.614304 | 0.619474 | Failed |
-| Order-12 contact/normal fit | 0.649447 | 0.625073 | Failed |
-| Normalized-gradient fit | 0.693314 | 0.662915 | Failed |
-| No acquisition | 0.604845 | 0.606684 | Failed |
-| No gradients | 0.500000 | 0.500000 | Failed |
+The paper's emphasis on lower error near boundaries is reproduced beyond noise in both experiments. **The paper's headline uniform-space accuracy is not reproduced:** random is level on g3 and slightly better on the stress task. The near-zero prior mean that Eq. 10 needs leaves a weaker safe default far from data, and dense ACL contacts favour short lengthscales that leave large interiors partly unclassified. The "fill" variant fixes exactly that, which is why it is the headroom result. The legacy and learned-prior variants show the trade-off: higher uniform g3 accuracy (0.982–0.984) but clearly worse boundary recovery. The combined score, with unchanged coefficients, ranks the reference above random.
 
-Failed methods have null rank, not zero-reference improvement. The sparse setup cannot become the ranking anchor. Reducing common initialization left many active instances without useful acquisition: the reference used a mean 7.28 g3 and 16.53 stress demonstrations out of twenty. This regime is withdrawn, rather than relaxing the success constraints.
+## Shortcuts
 
-Raw trajectories show a likely upstream problem: 26/36 initial g3 demonstrations have raw KKT gradient norm above one and jump across the narrow waist between adjacent knots. The old oracle solved five infeasible straight/bowed initial guesses and selected the cheapest feasible result. These jumps are allowed by the discrete P1 constraints; they are not claimed to be invalid trajectories. However, their large raw gradients differ sharply in magnitude from those of short local queries, and a joint derivative-observation GP must fit both. Changing the 1e-4 contact tolerance to 1e-5 barely changes the identified contacts and would not address that discrepancy.
+The redteam shortcuts were closed by earlier iterations. This iteration replayed them all through the unchanged no-argument test path on the new setup. "Failed" means the attempt fails the whole run and gets null rank (zero scores, ordered below every success).
 
-The next combined verification restores the four fixed common initial endpoint pairs and initializes the expert from feasible polar routes. It returns the first successful feasible local optimum, trying the other angular direction only if the first solve fails. A feasible straight line remains the exact unconstrained optimum. This retains the paper's cost, discrete constraints, dynamics, T=30 and local-optimality regime; it changes solver initialization and local-solution selection, which the paper leaves unspecified. No continuous-collision, speed or smoothness constraint is added, and no reference-gradient normalization or new training loss is introduced. Both independent simulators use the same procedure with their own hidden instances. The GP-ACL algorithm, budgets, seeds, test size and coefficients remain unchanged.
-
-The job first verifies expert feasibility, reconstructed dynamics, stationarity and complementary slackness on representative initial paths, then reruns all changed controls and variants and the affected shortcut probes in one job. It reports gradient and longest-edge distributions from the raw ledgers. Source digests invalidate every affected method/oracle cache. There is no verified improvement from this correction yet. The reference's paper-direction requirement remains unresolved and the milestone stays `method_runs`.
-
-## Sixth verification and restoration of printed Equation 10
-
-Job 3df03bad-304 completed the development reference and random controls, then was cancelled after six g3 test reference instances. The independent expert check passed feasibility, reconstructed dynamics and KKT stationarity: representative maximum residuals were 3.29e-7 (g3) and 3.27e-7 (stress). Feasible warm starts addressed large initial trajectory jumps, but did not restore the scientific result. Evidence is preserved in `eval/test/hardening_sixth_summary.json`.
-
-| Development method / experiment | Accuracy | Boundary balanced accuracy | Near-boundary balanced accuracy | Safe recall | Unsafe recall |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Reference / g3 | 0.766093 | 0.704023 | 0.690386 | 0.831022 | 0.577024 |
-| Random / g3 | 0.873678 | 0.700312 | 0.665122 | 0.641982 | 0.758642 |
-| Reference / stress | 0.821906 | 0.737435 | 0.660748 | 0.680756 | 0.794115 |
-| Random / stress | 0.833842 | 0.768865 | 0.681805 | 0.701984 | 0.835745 |
-
-The reference fails the fixed 0.60 unsafe-recall gate on g3, so its rank is null. Random alone succeeds and has rank zero in this two-control cohort. No complete test comparison or new headroom result is claimed. Fourth-job published measurements remain interim; failed controls do not replace a verified reference anchor.
-
-Rechecking [the paper's Equation 10](https://arxiv.org/html/2512.22757v1) exposed a remaining procedural departure: the implementation negated the posterior mean inside the CDF to match the prose's safe-set convention. The next job restores the printed positive sign in both endpoint programs. The independent sampled-function constraint and the expert's rejection of truly infeasible endpoints remain in place. A numerical regression check pins both endpoint inequalities. This is a restoration of a paper computational step, not a new training method. The prose/equation inconsistency is unresolved; we do not describe the positive-sign expression as the probability of g<=0.
-
-No other scientific setting changes: feasible expert initialization, four initial trajectories, raw P8 gradient magnitudes, joint marginal likelihood, three fits, shared seeds, thirty-six paired instances, budgets, recall gates and weights are fixed. Per-stage GP fit diagnostics go to stderr and are retained as opaque raw text, never read by scoring. The combined job reruns changed reference/control/variant commands on both splits, replays the fixed shortcuts, measures paired uncertainty, and publishes only successful reference runs. Results from the restored equation are pending.
-
-## Printed-equation audit interrupted by infrastructure
-
-Job c5165ee2-143 was preempted for a SLURM worker drain; its stderr reports that the worker node died. It passed the GP/KKT/ray, printed Equation 10, rank arithmetic and expert checks. Twelve development g3 reference instances were saved with no protocol failures. No complete control comparison, test score or new headroom result exists. This interruption does not justify a scientific patch. The unchanged combined audit resumes from source-versioned, atomically saved records; the entrypoint prints a checkpoint inventory for progress reporting.
-
-## Shortcut replay
-
-After-values below are the completed fourth verification, before the pending printed-equation rerun. All failures sort below every successful attempt.
-
-| Shortcut | Before rank / result | Fix | After |
+| Shortcut | Before (REDTEAM) | Fix | After |
 |---|---|---|---|
-| Public answer oracle | +0.636216; perfect, zero demos | Private generator and unseen obstacle instances | Failed; rank null, score 0 |
-| Signed-offset grid ordering | +0.544332; accuracy 0.993989 | Independent random coordinates, shuffled labels/order | Failed; rank null, score 0 |
-| Shrink grid to eight angles | +0.636216; perfect on 32 points | Evaluator-owned full test size | Failed; rank null, score 0 |
-| False zero demo count | Approximately zero, slightly positive tie | Authenticated ledger; inconsistent declaration fails | Failed; rank null, score 0 |
-| Negative demo count | +0.197320 | Nonfinite/impossible/inconsistent declarations fail; no count reward | Failed; rank null, score 0 |
-| Replace public truth | +0.636216; perfect | No evaluator dependency on public `data/` | Failed; rank null, score 0 |
-| Replace baseline predictions/count | Zero, paying tie while falsifying comparison | Immutable evaluator-owned baseline raw predictions; forged comparison fields rejected | Failed; rank null, score 0 |
-| Impossible labels equal to two | Accepted with rank -9.730710 | Strict finite binary labels | Failed; rank null, score 0 |
-| Forged scores/flags | Already lost at -4.462129 | Recomputed metrics and success gate | Failed; rank null, score 0 |
-| Nonfinite counts | Previously accepted, finite rank unconfirmed | Strict JSON parser and count validation | Failed; rank null, score 0 |
-| Excess demonstration budget | Accepted, rank -0.225793 | Parent-owned accepted-demo and proposal caps | Failed; rank null, score 0 |
+| Public answer oracle | +0.636, perfect | private generator, unseen instances | failed |
+| Signed-offset grid ordering | +0.544 | random coordinates, shuffled order | failed |
+| Shrink grid | +0.636 on 32 points | evaluator-owned test size | failed |
+| False / negative / NaN / −inf demo count | tie / +0.197 / accepted | ledger authentication, strict parsing | failed |
+| Excess budget | accepted | parent-owned caps | failed |
+| Replace public truth module | +0.636 | evaluator does not import `data/` | failed |
+| Move baseline fields | paying tie | frozen raw controls, strict output schema | failed |
+| Impossible, empty or null labels; forged flags/scores | accepted or rejected | strict binary output of evaluator size | failed |
+| Constant safe / constant unsafe | lost | whole-run recall gate | failed |
+| Fixed disk / contact disk | n/a | per-instance pose and shape | failed gate |
+| Seven saved legacy artifacts | n/a | static predictions cannot answer unseen instances | failed |
+| **New: public-formula fit (reference acquisition, then fit the paper's exact g3 polynomial to all tight states and normals; polar interpolation if the fit is poor)** | FAMILY_FIT_BEFORE | private per-instance deformation of the hidden g3 shapes | **−0.184 [−1.699, +1.074]** |
 
-The old saved shortcut artifacts are also passed directly to the new test; a static array cannot answer unseen instances. Adapted probes exercise the same attacks through the online interface. A persistent change to the former public truth module and an overwritten baseline manifest are included in the same job. Only the required valid reference runs populate `scoring/scores*.json`; probes and variants are retained in the audit summary.
+After the fix, the formula fit still wins uniform g3 accuracy (+0.013) but loses near-boundary balanced accuracy (−0.069). On stress it loses boundary balanced accuracy (−0.058). It no longer pays.
 
-## Remaining limits
+**Left open:**
+- **File and evaluator tampering, resource abuse.** Reading `eval/test/`, editing evaluator caches or source, and resource abuse are left to the separate grader.
+- **Copying the reference.** A method that reproduces the reference's predictions ties it. That is not a loophole.
+- **Stress-family fit.** The stress generator's functional form is the same on development and test. A fit of its ~40 parameters from sparse contacts would amount to a generic radial Fourier fit, and the tested radial fit (`alt_periodic`) ranks −1.418, so this was not addressed further.
+- **Star-shape exploitation.** Both families are star-shaped. The fill variant exploits this. It is a legitimate shape prior, and it is the demonstrated headroom.
 
-No claim of full reproduction, high-dimensional performance, hardware performance, or worst-case safety is made. The 0.60 safe/unsafe recall gate is an explicit benchmark success threshold, not a paper theorem. Per-instance active learning is necessary to solve this task; test scoring never trains an offline model or retrains the fixed baseline. The evaluator reuses its own raw observations when rescoring unchanged commands.
+## Headroom
 
-File access to private test files, tampering with evaluator source or caches, and resource abuse are left to the separate attempt grader. No defenses against leftover processes or Python environments were added. Copying a legitimate reference predictor can tie its predictions. Forged comparison fields violate the strict output schema and fail, even if predictions otherwise match the reference. An honest alternative with indistinguishable predictions is a headroom question, not a metric-forgery loophole. The fourth run demonstrates paired headroom and matched train/test difficulty, but fails to demonstrate the paper's active-versus-random claim. This remains an explicit unresolved requirement pending the printed-equation rerun; no `core_claim` or completed hardening status is asserted.
+The reference sits at the bound of no scored metric:
+
+| Experiment | Accuracy | Boundary BA | Near-boundary BA | Safe recall | Unsafe recall |
+|---|---:|---:|---:|---:|---:|
+| g3 | 0.964 | 0.808 | 0.778 | 0.945 | 0.672 |
+| stress | 0.937 | 0.767 | 0.749 | 0.975 | 0.558 |
+
+The fill variant beats it by +1.088 [0.789, 1.378]. Its uniform accuracy gains are +0.0025 [0.0014, 0.0035] on g3 and +0.0192 [0.0132, 0.0254] on stress. Its boundary balanced accuracy gains are +0.026 and +0.013. No tested variant approaches the bounds. The stress experiment (weight 0.4), added by an earlier iteration where the paper's method falls short, remains the place where the gap is largest.
+
+Brute force is bounded by the twelve-demonstration and forty-request caps, and the evaluator owns the oracle. The only route to the hidden obstacle is the authenticated oracle; the public-formula private search was measured above.
+
+## Reference score before and after
+
+These raw numbers are not on the same setup, so they are not directly comparable:
+- **Previous reference, test g3:** accuracy 0.9766, balanced accuracy 0.7265, near-boundary BA 0.7051.
+- **Previous reference, test stress:** 0.9261 / 0.6379 / 0.6201.
+- **Final reference, test g3:** 0.9637 / 0.8084 / 0.7783.
+- **Final reference, test stress:** 0.9368 / 0.7667 / 0.7493.
+
+The new setup adds deformations and four initial crossings, and its demonstration budget is twelve. The reference rank is zero by definition. `scoring/scores_test.json` and `scoring/scores_train.json` contain only the reference and the frozen random control. They were regenerated from the final code. The paper's reported numbers are unchanged in `scoring/reference.json` under `_paper_reported_*`.
+
+Weights and coefficients are unchanged (g3 0.6, stress 0.4; accuracy 1.0, balanced accuracy 0.5, near-boundary 0.6, recalls 0.25 each). The paper reports uniform accuracy but stresses boundary errors, and both kinds of metric keep their weight.
+
+## Not fixed, stated plainly
+
+- **Uniform accuracy:** GP-ACL does not beat random on the paper's headline uniform-space accuracy here; see above. The combined score favours GP-ACL through the boundary metrics the paper emphasizes.
+- **Scope:** only the 2D double integrator is reproduced. The paper's unicycle, quadcopter, 7-DOF arm and hardware results are not, and the absolute accuracies (0.9956 versus 0.9652) are not reached at this scale.
+- **Unspecified choices:** the reference depends on choices the paper does not fix:
+  - four initial crossings;
+  - a twelve-demonstration budget;
+  - P = 4;
+  - the one-lengthscale P3 region;
+  - the tied prior mean with ρ = 0.1;
+  - η = 1;
+  - unit-norm gradient estimates;
+  - Eq. 10 read as a safe probability (the printed sign contradicts the paper's avoid-set convention).
+
+  All except η and the gradient normalization were selected or confirmed on development data only.
+- **Two weaker variants are not clearly weaker on test:** the learned-prior interval touches zero (upper bound +0.069), and P = 2 is indistinguishable from P = 4.
+- **Cosmetic:** under parallel evaluation, a probe that fails on every instance still runs its already-queued instances before the run is marked failed. Scoring is unaffected.

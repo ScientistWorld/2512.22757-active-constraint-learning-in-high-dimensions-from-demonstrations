@@ -1,5 +1,4 @@
 #!/bin/bash
-# Combined final hardening verification; source-versioned records resume jobs.
 set -euo pipefail
 cd /home/user
-bash scripts/harden.sh
+bash tmp/nodeform.sh

@@ -1,16 +1,16 @@
 # Progress
 
-Final hardening iteration (11). Job 34886e68-1b3 (printed-Equation-10 audit) was cancelled at the iteration boundary after 20 development reference instances. Under the printed sign, acquisition largely failed: one instance spent all 80 requests and accepted no demonstration. The partial run gives no complete comparison.
+Final hardening iteration (12). Jobs:
+- `c4a8d3c2-15e`: failed on an over-strict unit check.
+- `c9eb8251-27a`: cancelled. Learned prior plus new Problem 3: most requests were rejected.
+- `fcaa3a0a-3f9`: development-only exploration of unspecified settings (prior mean, Problem 3 radius, posterior draws P).
+- `c7324ec1-f1e`: final combined audit, exit 0, validation passed.
+- A last small job measures the public-formula shortcut on undeformed hidden shapes, for the "before" score.
 
-Restorations applied together, from the paper and the work it cites for GP training:
-- Eq. 10 reads as the prose's safe probability, Phi(-mean/sd) >= beta, consistent with the paper's avoid set {g>0}.
-- GP training uses the cited Chou et al. (2022) Sec. IV-B loss: negative marginal log likelihood plus the demonstration-feasibility hinge on mean + rho*sd (rho=1), with a learned constant prior mean. The previous zero-mean fit predicted large unsafe regions far from any data (reference uniform accuracy 0.63, versus the paper's clean far field).
-- The paper's [-15,15]^2 workspace for g3 and a sparse budget: two shared initial demonstrations, ten in total, forty requests; Alg. 1 batches of P=2 posterior draws.
+Outcome:
+- The reference beats random beyond paired noise in combined score.
+- A genuinely better variant (interior fill) beats the reference beyond noise.
+- The previous method and the ablations score below the reference.
+- All shortcut probes fail or no longer pay.
 
-Gym fixes: per-instance obstacle translation (a fixed origin-centred shape no longer answers the task), a new centred-disk shortcut probe, and a chance-level (0.50) recall gate. The combined job checks numerics and the oracle, runs both controls on both splits and publishes them, then runs test variants and fixed shortcuts.
-
-Job 3cf4651f-8a8 (cancelled after 20 minutes, 54 development reference instances): numerical, Eq. 10, rank and expert checks passed, but the reference was unusable. Mean boundary unsafe recall was about 0.15 with safe recall about 1.0, so nearly everything was predicted safe. Most instances accepted no queried demonstration out of 40 requests. Fitted diagnostics show the learned prior mean pinned at exactly -rho*signal by demonstrated states far from data. With rho=1, unexplored states, including the unobserved obstacle interior, had prior safety probability Phi(1)=0.84. Eq. 10's beta=0.55 endpoints therefore landed inside the true obstacle and the demonstrator rejected them. Neither paper reports rho; it is now 0.1, so unexplored states sit at Phi(0.1)=0.54, just below beta. Endpoints then need evidence of safety, while the far field keeps a definite safe default. Initial crossings in the larger workspace touch the obstacle at only 2-4 knots each. The next job starts with an interleaved six-instance development pilot of the reference and random control for early progress evidence.
-
-Job f6dec27c-16d (cancelled after 20 minutes): with rho=0.1, acquisition worked; most instances collected all ten demonstrations. In the six-instance paired pilot the reference edged random on g3 accuracy (0.9515 vs 0.9476) and unsafe recall (0.349 vs 0.330). Both still predicted only a thin obstacle (mean unsafe recall 0.2-0.35) and would fail the chance gate. Raw ledgers explain it. Long initial crossings give KKT gradient estimates with |w| about 0.2-1, while short queried demonstrations give 0.001-0.1, because w absorbs the unknown multiplier (App. A.1: estimates are correct only up to a positive per-state scale). Fitting these as exact derivatives of one g collapsed the GP signal and made Eq. 7's offset nearly zero. Second-stage queries became 0.5-2 unit straight lines without contacts. The reference now uses unit-norm gradient directions; the literal raw-magnitude version is retained as the weaker_raw_gradients ablation.
-
-Job aa642914-b02 (cancelled after 20 minutes): unit-norm gradient estimates fixed the thin-obstacle failure on g3. The development reference reached mean accuracy of about 0.97 and mean unsafe recall 0.53 over 36 instances. In the six-instance pilot it tied random (accuracy 0.9829 vs 0.9863; unsafe recall 0.650 vs 0.646). On stress both methods recalled only about 0.25-0.30 of the boundary's unsafe side and would fail a 0.50 recall gate. Ledgers show the reference's g3 queries touch the obstacle every time (24 contacts per demonstration vs 1.6 for random) but cluster in already-resolved arcs. The P3 multi-starts were drawn from random contacts, mostly in the densest arc. P3 starts are now spread over all contacts by farthest-point order, a better approximation of P3's global objective. The success gate becomes a degeneracy check: boundary balanced accuracy at least 0.55 and each class recall at least 0.10. A fitted contact-disk probe tests whether a simple no-acquisition learner outranks the reference.
+Details and numbers are in HARDENING.md.

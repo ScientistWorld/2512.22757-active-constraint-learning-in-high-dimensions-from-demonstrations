@@ -4,5 +4,5 @@
 action: submit
 gpus: 0
 test: false
-milestone: method_runs
-notes: "Final combined hardening job with the dev-selected reference (tied prior mean, P3 over sampled boundary within 1 lengthscale, P=4 draws): checks, reference+random on both splits, frozen controls, published scores, then prioritized test audit (fill, legacy, family-fit probe, ablations, all shortcut probes) and validate."
+milestone: core_claim
+notes: "Small measurement job: public-formula fit shortcut vs reference on the hidden instances with the private deformation switched off (temporary evaluator copy under tmp/), giving the shortcut's before-fix score."

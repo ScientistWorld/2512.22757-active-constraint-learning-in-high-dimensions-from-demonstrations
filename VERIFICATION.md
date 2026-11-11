@@ -1,11 +1,26 @@
 # Verification
 
-Job f6c52544-4c0 exited 0 and passed `python validate.py --post-design`, finite-difference checks of analytic likelihood hypergradients, posterior/RFF derivative checks, reduced KKT checks, continuous scalar feasibility checks, and rank direction/sign/scale/failure checks. All twelve adapted shortcuts and seven saved legacy artifacts failed. The fourth audit is eval/test/hardening_fourth_summary.json.
+Job `c7324ec1-f1e` exited 0 and passed `python validate.py --post-design`. It ran these checks:
+- task-generator gradient and boundary checks for both splits;
+- GP likelihood, hinge and tied-prior gradient checks;
+- posterior and random-Fourier-feature derivative checks;
+- reduced KKT checks;
+- Problem 3 crossing-enumeration and trust-region checks;
+- rank arithmetic checks;
+- expert feasibility and KKT checks.
 
-On thirty-six paired instances per experiment, the order-12 contact/normal fit ranks +1.988915 [1.597440, 2.406720], the normalized-gradient fit +3.457279 [3.059205, 3.893139], and the order-6 fit +0.578652 [0.168987, 0.997900]. Both no-acquisition and no-gradient ablations fail the test quality gate. No scored reference metric is saturated, and tested alternatives retain errors on the stress task. Rank intervals use the same audit cohort scales.
+Hidden test, 36 paired instances per experiment (audit-cohort ranks):
 
-The scientific requirement remains unmet: random acquisition ranked +0.603014 [-0.059525, 1.300636] on test and +0.519918 on train in the fourth audit. It improved boundary balanced accuracy on both splits and both tasks. The fifth, sparse-initialization run failed the reference quality gates on development and was cancelled before completing test comparisons; its evidence is preserved in eval/test/hardening_fifth_summary.json. These failures do not justify relaxing the gates or claiming core_claim.
+| Method | Rank [95% paired interval] |
+|---|---|
+| Random | −0.906 [−1.586, −0.230] |
+| Fill (better) | +1.088 [0.789, 1.378] |
+| Previous reference | −0.683 [−1.332, −0.038] |
+| Learned prior | −0.759 [−1.579, +0.069] |
+| No acquisition | −2.156 |
+| Raw gradients | −4.328 |
+| No gradients | fails the success gate |
+| P = 2 | +0.151 [−0.409, +0.681] (indistinguishable) |
+| Public-formula fit | −0.184 [−1.699, +1.074] |
 
-The sixth setup's expert feasibility, dynamics and KKT checks passed, but the development reference failed g3 unsafe recall (0.577024 < 0.60). Its rank is null. Random alone passed; only six test reference instances completed before cancellation. Full development diagnostics are preserved in eval/test/hardening_sixth_summary.json. These results do not replace the fourth published scores.
-
-The next combined job restores the literal positive posterior mean in the CDF printed in Equation 10, with a direct numerical regression check. Earlier negative-sign interpretation matched the prose but departed from the printed procedure. The expert, observations, training objective, instances, seeds, budgets, gates and weights remain fixed. All affected reference/control/variant runs and fixed shortcuts are checked together. Per-stage fit diagnostics are stored as unscored text. No improvement is claimed before verification.
+All 17 adapted interface probes and seven legacy artifacts fail the run. The full audit is in `eval/test/hardening_summary.json`.

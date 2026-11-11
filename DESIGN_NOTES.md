@@ -1,7 +1,9 @@
 # Train and test design
 
-The current design supersedes the historical angular-sector split. It uses independent implementations in eval/train/ and eval/test/ with different obstacle instances and coordinates from matching distributions. Only the private side contains its parameters, answer generator and raw fixed comparisons. Neither side imports the method or the other split.
+`eval/train/` and `eval/test/` are independent implementations with different seeds and instances. g3 shapes carry a smooth per-instance deformation. The two splits use different private families of matching size: RMS 4.06% of the radius on development (24 instances per experiment) and 3.99% on the hidden test (36 per experiment). An exact public formula therefore does not answer hidden instances.
 
-Methods are commands implementing the same online protocol in both splits. They acquire expert trajectories from an evaluator-owned oracle, then classify a shuffled held-out batch. All methods see identical instances and initial observations within a split. The evaluator owns the test size, truth, budgets, recall gate, weights and baseline/reference records. It recomputes metrics from raw predictions and reconstructs the budget from its own ledger.
+Methods are commands that speak the same online protocol on both splits. They acquire demonstrations from the evaluator's oracle within twelve demonstrations (four shared initial crossings) and forty requests. They then classify a shuffled batch of points revealed only after acquisition ends.
 
-The paper constraint retains 60% weight. An additional complex-boundary stress task receives 40% to measure the sparse-data and fine-geometry limitation. Fixed seeds remove acquisition seed variability; thirty-six independent obstacles per task and dense boundary samples support paired estimates. After the combined job, HARDENING.md records whether actual improvements exceed paired uncertainty, whether the reference beats random queries, and any limits that remain.
+The evaluator owns truth, budgets, gates, weights and frozen raw reference/control records. It recomputes every metric from raw predictions. Independent instances may run in parallel; records are kept in index order.
+
+The paper's g3 constraint keeps 60% weight. A complex-boundary stress task (40%) measures where the method falls short.
