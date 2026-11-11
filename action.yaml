@@ -1,8 +1,8 @@
 # Once you set action to 'submit' or 'done', STOP immediately.
 # Do NOT sleep, poll, or wait for jobs. The system reads this file
 # only after your turn ends.
-action: pending
+action: submit
 gpus: 0
 test: false
 milestone: core_claim
-notes: ""
+notes: "Hardening job: dev-only choice of the paper's zero-mean GP prior vs the previous tied mean; controls on both splits from final code (frozen); dev + hidden-test audit (family-fit shortcut before/after, top-up/fill better variants, ablations, previous reference)."

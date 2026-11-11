@@ -147,11 +147,11 @@
         },
         "gp_acl": {
           "type": "proposed",
-          "accuracy": 0.9368082682291666,
-          "balanced_accuracy": 0.7666831059556909,
-          "near_boundary_balanced_accuracy": 0.7492903791953404,
-          "safe_recall": 0.9751216628895407,
-          "unsafe_recall": 0.5582445490218411
+          "accuracy": 0.9371270073784722,
+          "balanced_accuracy": 0.7653627613082798,
+          "near_boundary_balanced_accuracy": 0.7462700226189976,
+          "safe_recall": 0.9724069764105524,
+          "unsafe_recall": 0.5583185462060072
         }
       }
     }
@@ -222,18 +222,18 @@
         "complex_boundary_stress": {
           "results": {
             "gp_acl": {
-              "accuracy": 0.9368082682291666,
-              "balanced_accuracy": 0.7666831059556909,
-              "near_boundary_balanced_accuracy": 0.7492903791953404,
-              "safe_recall": 0.9751216628895407,
-              "unsafe_recall": 0.5582445490218411
+              "accuracy": 0.9371270073784722,
+              "balanced_accuracy": 0.7653627613082798,
+              "near_boundary_balanced_accuracy": 0.7462700226189976,
+              "safe_recall": 0.9724069764105524,
+              "unsafe_recall": 0.5583185462060072
             },
             "random_baseline": {
-              "accuracy": 0.9446682400173612,
-              "balanced_accuracy": 0.7377813510547474,
-              "near_boundary_balanced_accuracy": 0.7029037396708002,
-              "safe_recall": 0.9224070201271696,
-              "unsafe_recall": 0.5531556819823251
+              "accuracy": 0.9449259440104166,
+              "balanced_accuracy": 0.7335860032473976,
+              "near_boundary_balanced_accuracy": 0.7008494950356378,
+              "safe_recall": 0.925622721073695,
+              "unsafe_recall": 0.5415492854211004
             }
           }
         }
