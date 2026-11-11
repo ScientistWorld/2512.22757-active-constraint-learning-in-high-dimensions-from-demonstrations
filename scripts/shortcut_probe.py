@@ -10,8 +10,45 @@ import subprocess
 import sys
 import numpy as np
 
-p=argparse.ArgumentParser();p.add_argument('--attack',required=True);args=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('--attack',required=True)
+p.add_argument('--prior',default=None,help='prior flag passed to the relayed reference')
+args=p.parse_args()
 attack=args.attack
+RELAY=[sys.executable,'method/gp_acl.py']+(['--prior',args.prior] if args.prior else [])
+
+
+def fit_stress_family(contacts):
+    """MAP fit of the *visible development* complex-boundary generator.
+
+    r(theta)=R*(1.03+.16 sin(3 theta+a)+.10 cos(5 theta+b)+sum_h b_h sin(h theta)
+    +c_h cos(h theta)), h=6..20, with the generator's own Gaussian prior on the
+    high harmonics and its scale range, fitted to every tight state. Returns
+    (parameters, RMS radial residual in position units, radius function).
+    """
+    from scipy.optimize import least_squares
+    H=np.arange(6,21);sigma=.035*(6/H)**1.3/np.sqrt(2)
+    def radius(theta,z):
+        theta=np.asarray(theta,float)
+        r=1.03+.16*np.sin(3*theta+z[3])+.10*np.cos(5*theta+z[4])
+        if len(z)>5:
+            r=r+np.sin(np.outer(theta,H))@z[5:20]+np.cos(np.outer(theta,H))@z[20:35]
+        return np.exp(z[2])*r
+    def residual(z):
+        rel=contacts-z[:2];theta=np.arctan2(rel[:,1],rel[:,0])
+        out=(np.linalg.norm(rel,axis=1)-radius(theta,z))/.02
+        out=np.r_[out,(z[2]-np.log(4.9))/.1]
+        if len(z)>5: out=np.r_[out,z[5:20]/sigma,z[20:35]/sigma]
+        return out
+    best=None
+    for centre in (contacts.mean(axis=0),.5*(contacts.min(axis=0)+contacts.max(axis=0))):
+        for a in np.linspace(0,2*np.pi,6,endpoint=False):
+            for b in np.linspace(0,2*np.pi,5,endpoint=False):
+                fit=least_squares(residual,np.r_[centre,np.log(4.9),a,b],method='trf',max_nfev=300)
+                if best is None or fit.cost<best.cost: best=fit
+    full=least_squares(residual,np.r_[best.x,np.zeros(30)],method='trf',max_nfev=600)
+    z=full.x;rel=contacts-z[:2]
+    rms=float(np.sqrt(np.mean((np.linalg.norm(rel,axis=1)-radius(np.arctan2(rel[:,1],rel[:,0]),z))**2)))
+    return z,rms,radius
 initial=sys.stdin.readline();task=json.loads(initial)
 if attack=='over_budget':
     # Repeated valid, safe endpoint requests must consume the authenticated
@@ -22,11 +59,12 @@ if attack=='over_budget':
         if not sys.stdin.readline():sys.exit(0)
     raise RuntimeError('evaluator incorrectly allowed too many demonstrations')
 elif attack=='family_fit':
-    # Private search with public code: relay the reference acquisition, then
-    # fit the paper's exact g3 polynomial (rotation, scale, centre) to every
-    # tight state and KKT normal and classify with the fitted formula.
+    # Writing down the generating process: relay the reference acquisition,
+    # then fit (a) the paper's exact g3 polynomial (rotation, scale, centre)
+    # and (b) the visible development complex-boundary generator to every
+    # tight state, and classify with whichever public family fits better.
     from scipy.optimize import least_squares
-    child=subprocess.Popen([sys.executable,'method/gp_acl.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True,bufsize=1)
+    child=subprocess.Popen(RELAY,stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True,bufsize=1)
     child.stdin.write(initial);child.stdin.flush()
     demos=list(task['initial_demos'])
     while True:
@@ -60,7 +98,15 @@ elif attack=='family_fit':
             fit=least_squares(residuals,[theta,log_scale,*centre],method='trf',max_nfev=400)
             if best is None or fit.cost<best.cost: best=fit
     rms=float(np.sqrt(np.mean(residuals(best.x)[:len(contacts)]**2)))
-    if rms<.3:
+    try:
+        stress,stress_rms,stress_radius=fit_stress_family(contacts)
+    except (ValueError,np.linalg.LinAlgError):
+        stress_rms=float('inf')
+    print(json.dumps({'g3_fit_rms':rms,'stress_fit_rms':min(stress_rms,1e9)}),file=sys.stderr,flush=True)
+    if stress_rms<min(rms,.3):
+        rel=q-stress[:2]
+        pred=(np.linalg.norm(rel,axis=1)>=stress_radius(np.arctan2(rel[:,1],rel[:,0]),stress)).astype(int)
+    elif rms<.3:
         pred=(g3(q,best.x)[0]<=0).astype(int)
     else:
         # Not this public family: polar interpolation of the tight states.
@@ -72,7 +118,7 @@ elif attack=='family_fit':
         pred=(np.linalg.norm(rq,axis=1)>=(1-weight)*radius[right-1]+weight*radius[right]).astype(int)
     print(json.dumps({'predictions':pred.tolist()}),flush=True)
 elif attack in ('false_count','negative_count','nan_count','negative_inf_count','move_baseline'):
-    child=subprocess.Popen([sys.executable,'method/gp_acl.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True,bufsize=1)
+    child=subprocess.Popen(RELAY,stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True,bufsize=1)
     child.stdin.write(initial);child.stdin.flush()
     while True:
         line=child.stdout.readline();message=json.loads(line)

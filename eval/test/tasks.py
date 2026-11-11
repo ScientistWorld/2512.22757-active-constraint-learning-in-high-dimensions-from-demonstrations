@@ -36,6 +36,13 @@ INITIAL_PAIRS = (([-13.5,-11.5],[13.5,11.5]),([-13.5,11.5],[13.5,-11.5]),
 DEFORM_BUMPS = 3
 DEFORM_AMPLITUDE = .10
 DEFORM_CONCENTRATION = 3.
+# Private complex-boundary family: two distinct dominant low harmonics per
+# instance from this set, with slope-matched amplitudes 0.5*s/h, s~U(.75,1.25),
+# plus the random high-harmonic spectrum. (The development family fixes
+# harmonics 3 and 5 at 0.16 and 0.10, the same 0.5/h slope envelope, so a
+# hand-written development generator does not answer hidden instances.)
+STRESS_LOW_HARMONICS = (3, 4, 5)
+STRESS_SLOPE = .5
 
 
 def g3_root(t):
@@ -57,6 +64,11 @@ class Task:
         self.center=rng.uniform(-CENTER_RANGE,CENTER_RANGE,2)
         self.deform=rng.uniform(-DEFORM_AMPLITUDE,DEFORM_AMPLITUDE,DEFORM_BUMPS)
         self.deform_phase=rng.uniform(-np.pi,np.pi,DEFORM_BUMPS)
+        # Separate stream: leaves every other parameter and all evaluation
+        # coordinates of the main stream unchanged.
+        extra=np.random.default_rng(np.random.SeedSequence([TASK_SEED,EXPERIMENTS.index(experiment),index,1]))
+        harmonics=extra.choice(STRESS_LOW_HARMONICS,2,replace=False)
+        self.low=[(int(h),STRESS_SLOPE*extra.uniform(.75,1.25)/h) for h in harmonics]
         self.rng=rng
 
     def warp(self, t):
@@ -73,7 +85,7 @@ class Task:
         t=theta-self.rotation
         if self.experiment==EXPERIMENTS[0]:
             return self.warp(t)[0]*g3_root(t)
-        r=1.03+.16*np.sin(3*t+self.phase[3])+.10*np.cos(5*t+self.phase[5])
+        r=1.03+sum(a*np.sin(h*t+self.phase[h]) for h,a in self.low)
         for j,h in enumerate(range(6,21)):
             r=r+self.coefficients[j]*np.sin(h*t+self.phase[h])
         return 5*self.scale*r
@@ -104,7 +116,7 @@ class Task:
         theta=np.arctan2(p[:,1],p[:,0]); rr=np.maximum(np.linalg.norm(p,axis=1),1e-8)
         t=theta-self.rotation
         radius=self.radius(theta)
-        deriv=.48*np.cos(3*t+self.phase[3])-.5*np.sin(5*t+self.phase[5])
+        deriv=sum(a*h*np.cos(h*t+self.phase[h]) for h,a in self.low)
         for j,h in enumerate(range(6,21)):
             deriv+=h*self.coefficients[j]*np.cos(h*t+self.phase[h])
         deriv*=5*self.scale

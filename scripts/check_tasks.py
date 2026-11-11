@@ -48,6 +48,17 @@ for side in ('train','test'):
             for index in range(tasks.TASKS_PER_EXPERIMENT):
                 task=tasks.Task(experiment,index)
                 deform.append(np.sqrt(np.mean((task.warp(grid)[0]/task.scale-1)**2)))
+        else:
+            # Comparable difficulty of the two complex-boundary families:
+            # relative radius variation, slope and narrowest radius.
+            grid=np.linspace(-np.pi,np.pi,1441,endpoint=False);step=grid[1]-grid[0]
+            shape=[]
+            for index in range(tasks.TASKS_PER_EXPERIMENT):
+                task=tasks.Task(experiment,index)
+                r=task.radius(grid+task.rotation)/(5*task.scale)
+                slope=(np.roll(r,-1)-np.roll(r,1))/(2*step)
+                shape.append([np.sqrt(np.mean((r-r.mean())**2)),np.sqrt(np.mean(slope**2)),r.min()])
+            report[f'{side}.stress_radius_rms_slope_rms_min']=np.round(np.mean(shape,axis=0),4).tolist()
         assert worst_gradient<1e-4,(side,experiment,worst_gradient)
         assert worst_boundary<1e-6,(side,experiment,worst_boundary)
         report[f'{side}.{experiment}']={'max_relative_gradient_error':worst_gradient,'max_boundary_offset':worst_boundary}

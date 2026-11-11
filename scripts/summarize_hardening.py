@@ -1,25 +1,44 @@
 """Summarize paired evidence without exporting private answers or parameters.
 
-Inputs are evaluator score files only: the test audit cohort (reference,
-fixed random control, variants and shortcut probes) and the development
-control run. Every comparison pairs identical instances and initial data.
+Inputs are evaluator score files only: the hidden-test audit cohort
+(reference, frozen random control, variants, shortcut probes), the
+development audit cohort, and the development prior selection. Every
+comparison pairs identical instances, initial data and query coordinates.
 """
 import json
 from pathlib import Path
 import numpy as np
 
-test=json.loads(Path('eval/test/hardening_scores.json').read_text())
-train=json.loads(Path('eval/train/hardening_scores.json').read_text())
+def read(path):
+    p=Path(path)
+    return json.loads(p.read_text()) if p.exists() else None
+
+test=read('eval/test/hardening_scores.json')
+train=read('eval/train/hardening_scores.json')
 rng=np.random.default_rng(872)
-CANDIDATES=sorted(n for n in test['_paired_metrics'] if n!='gp_acl')
+
+# Previous final audit (iteration before this one), same rank convention.
+BEFORE={'test_ranks_audit_cohort':{'random_baseline':-.905851,'better_fill':1.087569,'weaker_legacy':-.682791,
+            'weaker_learned_prior':-.759296,'weaker_no_acquisition':-2.156079,'weaker_raw_gradients':-4.327973,
+            'weaker_no_gradients':None,'weaker_two_draws':.151170,'alt_periodic':-1.418192,
+            'shortcut_family_fit_g3_polynomial_only':-.184401},
+        'shortcut_family_fit_undeformed_g3_three_member_cohort':2.583663,
+        'reference_test':{'double_integrator_g3':{'accuracy':.963725,'balanced_accuracy':.808414,
+            'near_boundary_balanced_accuracy':.778346,'safe_recall':.945263,'unsafe_recall':.671564},
+            'complex_boundary_stress':{'accuracy':.936808,'balanced_accuracy':.766683,
+            'near_boundary_balanced_accuracy':.749290,'safe_recall':.975122,'unsafe_recall':.558245}},
+        'random_test':{'double_integrator_g3':{'accuracy':.967306,'balanced_accuracy':.760423,
+            'near_boundary_balanced_accuracy':.733713,'safe_recall':.778159,'unsafe_recall':.742688},
+            'complex_boundary_stress':{'accuracy':.944668,'balanced_accuracy':.737781,
+            'near_boundary_balanced_accuracy':.702904,'safe_recall':.922407,'unsafe_recall':.553156}}}
 
 
-def paired_metrics(scores,candidate):
+def paired_metrics(scores,candidate,anchor='gp_acl'):
     out={}
     for exp in scores['experiments']:
-        reference=scores['_paired_metrics']['gp_acl'][exp]
+        reference=scores['_paired_metrics'].get(anchor,{}).get(exp,[])
         values=scores['_paired_metrics'].get(candidate,{}).get(exp,[])
-        if len(values)!=len(reference):
+        if not reference or len(values)!=len(reference):
             continue
         out[exp]={}
         for metric in reference[0]:
@@ -31,8 +50,12 @@ def paired_metrics(scores,candidate):
     return out
 
 
-def paired_rank(scores,side,candidate):
-    """Rank change versus the reference with the cohort's own scales."""
+def paired_rank(scores,side,candidate,cohort=None):
+    """Rank change versus the reference, with paired bootstrap interval.
+
+    cohort=None uses the evaluator's scales (all passing audit members);
+    otherwise the population scales of the listed members' mean metrics.
+    """
     config=json.loads(Path(f'eval/{side}/scoring_config.json').read_text())
     total=0.;boot=np.zeros(10000)
     for exp,spec in config['experiments'].items():
@@ -42,7 +65,10 @@ def paired_rank(scores,side,candidate):
             return None
         per=np.zeros(len(ref))
         for metric,definition in spec['metrics'].items():
-            scale=scores['_rank']['population_std'][f'{exp}.{metric}']
+            if cohort is None:
+                scale=scores['_rank']['population_std'][f'{exp}.{metric}']
+            else:
+                scale=float(np.std([scores['experiments'][exp]['results'][n][metric] for n in cohort]))
             if scale==0:
                 continue
             sign=1 if definition['higher_is_better'] else -1
@@ -54,48 +80,24 @@ def paired_rank(scores,side,candidate):
             'passed_success_gate':candidate not in scores['_failures']}
 
 
-report={'before':{
-            'redteam_reference_accuracy':.9546448087431694,'redteam_random_accuracy':.9311475409836065,
-            'redteam_better_rank':.473367,'redteam_better_simplified_rank':.636216,
-            'redteam_weaker_no_gradients_rank':-4.462129,'redteam_seed_rank_spread':.579845,
-            'previous_iteration_final_audit_test_ranks':{'random_baseline':.565786,'better_boundary_fit':-4.045367,
-                'better_boundary_fit_12':-2.891025,'weaker_no_acquisition':-2.085307,
-                'weaker_raw_gradients':-4.438872,'weaker_no_gradients':None}},
-        'test_rank':test['_rank'],
-        'test_metrics':{e:v['results'] for e,v in test['experiments'].items()},
-        'test_failures':test['_failures'],
-        'test_raw_metrics_of_failed':test.get('_raw_metrics_of_failed',{}),
-        'train_rank':train['_rank'],
-        'train_metrics':{e:v['results'] for e,v in train['experiments'].items()},
-        'train_failures':train['_failures'],
-        'train_raw_metrics_of_failed':train.get('_raw_metrics_of_failed',{})}
-report['paired']={c:paired_metrics(test,c) for c in CANDIDATES if c in test['_paired_metrics']}
-report['paired_rank']={c:paired_rank(test,'test',c) for c in CANDIDATES if c in test['_paired_metrics']}
-report['train_paired']={'random_baseline':paired_metrics(train,'random_baseline')}
-report['train_paired_rank']={'random_baseline':paired_rank(train,'train','random_baseline')}
+def cells(demos):
+    found=set()
+    for demo in demos:
+        p=np.asarray(demo['positions'])
+        tight=np.sum(np.abs(2*(2*p[1:-1]-p[:-2]-p[2:])),axis=1)>1e-4
+        found|={tuple(c) for c in np.floor(p[1:-1][tight]).astype(int).tolist()}
+    return found
 
-# Acquisition diagnostics from raw ledgers: evidence about the setup, never a
-# scored reward. Contact-bearing demonstrations have a nonzero reduced
-# stationarity residual somewhere along the path.
-report['acquisition']={}
-for side in ('test','train'):
-    report['acquisition'][side]={}
-    names=['gp_acl','random_baseline']+([n for n in CANDIDATES if n.startswith(('better_','weaker_'))] if side=='test' else [])
+
+def acquisition(side,names):
+    out={}
     for name in names:
         path=Path(f'eval/{side}/runs/{name}.json')
         if not path.exists():
             continue
-        records=json.loads(path.read_text())['records']
-        report['acquisition'][side][name]={}
+        records=json.loads(path.read_text())['records'];out[name]={}
         for exp,instances in records.items():
             totals=[];requests=[];informative=[];gained=[]
-            def cells(demos):
-                found=set()
-                for demo in demos:
-                    p=np.asarray(demo['positions'])
-                    tight=np.sum(np.abs(2*(2*p[1:-1]-p[:-2]-p[2:])),axis=1)>1e-4
-                    found|={tuple(c) for c in np.floor(p[1:-1][tight]).astype(int).tolist()}
-                return found
             for record in instances:
                 added=[r['demo'] for r in record['ledger'] if r['demo'] is not None]
                 totals.append(len(record['initial_demos'])+len(added));requests.append(len(record['ledger']))
@@ -103,17 +105,40 @@ for side in ('test','train'):
                 for demo in added:
                     p=np.asarray(demo['positions'])
                     informative.append(bool(np.any(np.sum(np.abs(2*(2*p[1:-1]-p[:-2]-p[2:])),axis=1)>1e-4)))
-            report['acquisition'][side][name][exp]={
-                'demos_mean':float(np.mean(totals)),'demos_min':int(min(totals)),
-                'requests_mean':float(np.mean(requests)),
-                'added_contact_bearing_fraction':float(np.mean(informative)) if informative else None,
-                'new_unit_boundary_cells_mean':float(np.mean(gained))}
+            if totals:
+                out[name][exp]={'demos_mean':float(np.mean(totals)),'demos_min':int(min(totals)),
+                    'requests_mean':float(np.mean(requests)),
+                    'added_contact_bearing_fraction':float(np.mean(informative)) if informative else None,
+                    'new_unit_boundary_cells_mean':float(np.mean(gained))}
+    return out
+
+
+report={'before':BEFORE,'prior_selection':read('tmp/prior_selection.json')}
+SMALL=['gp_acl','random_baseline']
+for side,scores in (('test',test),('train',train)):
+    if scores is None:
+        continue
+    candidates=sorted(n for n in scores['_paired_metrics'] if n!='gp_acl')
+    passing=[n for n in scores['experiments'][next(iter(scores['experiments']))]['results'] if n not in scores['_failures']]
+    report[side]={'rank':scores['_rank'],
+        'metrics':{e:v['results'] for e,v in scores['experiments'].items()},
+        'failures':scores['_failures'],'raw_metrics_of_failed':scores.get('_raw_metrics_of_failed',{}),
+        'paired':{c:paired_metrics(scores,c) for c in candidates},
+        'paired_rank':{c:paired_rank(scores,side,c) for c in candidates},
+        # Shortcut before/after on the same small cohort: reference, frozen
+        # random control and the probe itself.
+        'three_member_cohort_rank':{c:paired_rank(scores,side,c,SMALL+[c]) for c in candidates
+                                    if c.startswith('shortcut_') and c in passing},
+        'acquisition':acquisition(side,['gp_acl','random_baseline']+[c for c in candidates if c.startswith(('better_','weaker_','alt_'))])}
 Path('eval/test/hardening_summary.json').write_text(json.dumps(report,indent=2,allow_nan=False)+'\n')
-print(json.dumps({'test_ranks':report['test_rank']['values'],'paired_rank':report['paired_rank'],
-                  'train_paired_rank':report['train_paired_rank'],
-                  'test_failures':report['test_failures'],'train_failures':report['train_failures'],
-                  'acquisition':report['acquisition']},indent=1),flush=True)
-for side,scores in (('train',train),('test',test)):
-    for exp,v in scores['experiments'].items():
-        for name in v['results']:
-            print(side,exp,name,{k:round(x,4) for k,x in v['results'][name].items()},flush=True)
+for side in ('test','train'):
+    if side not in report:
+        continue
+    print(json.dumps({side+'_ranks':report[side]['rank']['values'],'paired_rank':report[side]['paired_rank'],
+                      'three_member_cohort_rank':report[side]['three_member_cohort_rank'],
+                      'failures':{k:v[:2] for k,v in report[side]['failures'].items()}},indent=1),flush=True)
+    for exp,v in report[side]['metrics'].items():
+        for name,values in v.items():
+            print(side,exp,name,{k:round(x,4) for k,x in values.items()},flush=True)
+    for name,v in report[side]['acquisition'].items():
+        print(side,'acquisition',name,v,flush=True)

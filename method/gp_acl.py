@@ -164,13 +164,12 @@ def observations(demos, raw=False):
 # Chou et al. (2022), Sec. IV-B, which the paper's Sec. 2.3 says its GP
 # training parallels: minimize the negative marginal log likelihood plus the
 # demonstration-feasibility hinge mean_n max(mu(x_n)+rho*sd(x_n), 0) over all
-# demonstrated states. Neither paper reports rho. Demonstrated states far from
-# any contact pin the learned prior mean at -rho*signal, so unexplored states
-# have prior safety probability Phi(rho). rho=0.1 keeps that (0.54) just below
-# the paper's endpoint safety level beta=0.55: Eq. 10 endpoints then need
-# evidence of safety, while states far from all data still default to safe.
-# (rho=1 made unexplored obstacle interiors 84% "safe", so queried endpoints
-# fell inside the obstacle and were rejected by the demonstrator.)
+# demonstrated states. Neither paper reports rho; rho=0.1 is a mild safety
+# margin. With a freely learned constant prior mean, demonstrated states far
+# from any contact pin that constant at -rho*signal (prior='learned'; rho=1
+# made unexplored obstacle interiors 84% "safe", so queried endpoints fell
+# inside the obstacle and were rejected). The reference keeps the paper's
+# zero prior mean (see CONFIG below).
 RHO = .1
 
 
@@ -252,13 +251,16 @@ def marginal_likelihood(logp, points, gradients, values_only=False):
     return value,gradient[:3]
 
 
-# Run configuration (command-line flags). prior='tied' fixes the constant
-# prior mean at -RHO*signal, the hinge boundary for states far from data, so
-# unexplored states keep prior safety probability Phi(RHO)=0.54, just below
-# the paper's endpoint level beta=0.55 (the paper's own posterior, Eqs. 15-16,
-# has zero prior mean, the regime in which beta>0.5 demands evidence of
-# safety). prior='learned' optimizes the constant freely (previous package).
-CONFIG={'prior':'tied','trust':1.0,'draws':4}
+# Run configuration (command-line flags). prior='zero' is the paper's own
+# posterior (Eqs. 15-16: zero prior mean). Unexplored states then have prior
+# safety probability Phi(0)=0.5 < beta=0.55, so Eq. 10 endpoints need evidence
+# of safety, and far from data the sign of the posterior mean follows the
+# gradient observations' tails (positive inside the observed boundary,
+# negative outside), as in the paper's Fig. 8. prior='tied' fixes the constant
+# at -RHO*signal (the previous package's choice: far-from-data states default
+# to safe, which leaves large obstacle interiors classified safe).
+# prior='learned' optimizes the constant freely (an earlier package).
+CONFIG={'prior':'zero','trust':1.0,'draws':4}
 
 
 def tied_objective(y, points, gradients, states=(), values_only=False):
@@ -267,6 +269,16 @@ def tied_objective(y, points, gradients, states=(), values_only=False):
     value,gradient=training_objective(np.r_[y,-RHO*signal],points,gradients,states,values_only)
     out=gradient[:3].copy();out[1]+=gradient[3]*(-RHO*signal)
     return value,out
+
+
+def zero_objective(y, points, gradients, states=(), values_only=False):
+    """Training loss in (log length, log signal, log noise), zero prior mean."""
+    value,gradient=training_objective(np.r_[y,0.],points,gradients,states,values_only)
+    return value,gradient[:3].copy()
+
+
+FIXED_MEAN={'tied':(tied_objective,lambda signal:-RHO*signal),
+            'zero':(zero_objective,lambda signal:0.)}
 
 
 def _fit_key(points, gradients, states, values_only, init, prior='learned'):
@@ -281,8 +293,9 @@ def _fit_key(points, gradients, states, values_only, init, prior='learned'):
 def train_gp(points, gradients, states=(), values_only=False, init=None, prior=None):
     """Minimize the training loss from deterministic starts (or warm start).
 
-    Starts are in the paper's physical position units; the prior mean starts
-    on the hinge boundary for states far from data (mean = -rho * signal).
+    Starts are in the paper's physical position units. The prior mean is
+    fixed for prior='zero' (the reference) and 'tied'; a learned constant
+    ('learned') starts on the hinge boundary far from data (-rho * signal).
     With `init` (the previous Alg. 1 iteration's optimum) the optimizer is
     warm-started from it plus one default start. The returned model carries
     its optimum in `model.z` for the next iteration's warm start.
@@ -310,16 +323,17 @@ def train_gp(points, gradients, states=(), values_only=False, init=None, prior=N
             signal=max(rms*length,.001)
             starts.append(np.r_[np.log([length,signal,max((.03*rms)**2,1e-8)]),-RHO*signal])
         fits=[]
-        tied=prior=='tied'
+        fixed=prior in FIXED_MEAN
+        objective=FIXED_MEAN[prior][0] if fixed else training_objective
         for start in starts:
-            fit=minimize(tied_objective if tied else training_objective,start[:3] if tied else start,
+            fit=minimize(objective,start[:3] if fixed else start,
                          args=(points,gradients,states,values_only),
-                         jac=True,method='L-BFGS-B',bounds=bounds[:3] if tied else bounds,
+                         jac=True,method='L-BFGS-B',bounds=bounds[:3] if fixed else bounds,
                          options={'maxiter':150,'ftol':1e-10,'gtol':1e-6})
             if np.isfinite(fit.fun) and fit.fun<1e29: fits.append(fit)
         if not fits: raise RuntimeError('GP training optimization failed')
         best=min(fits,key=lambda fit:fit.fun).x
-        if tied: best=np.r_[best,-RHO*np.exp(best[1])]
+        if fixed: best=np.r_[best,FIXED_MEAN[prior][1](np.exp(best[1]))]
         try:
             FIT_CACHE.mkdir(parents=True,exist_ok=True)
             temp=path.with_suffix(f'.{os.getpid()}.tmp')
@@ -759,13 +773,15 @@ def legacy_acquire(task, rng, demos, observe):
     return gp
 
 
-def gp_acl_acquire(task, rng, demos, observe):
+def gp_acl_acquire(task, rng, demos, observe, topup=False):
     """Alg. 1, iterated until the demonstration or request budget is spent.
 
     Every iteration refits the GP to all demonstrations (Probs. 7-8 and the
     training loss), draws P posterior samples, solves Probs. 3-6 for each
     and requests the resulting start/goal pairs. Rejected (infeasible)
     requests return no demonstration, as an infeasible Prob. 1 would.
+    topup=True (a variant, not the paper's method) spends demonstrations
+    that Alg. 1 leaves unused on coverage crossings, then refits.
     """
     bounds=task['bounds']; budget=task['budget']; requests_left=task['query_limit']
     requested=[]; warm=None; batch=0
@@ -775,7 +791,7 @@ def gp_acl_acquire(task, rng, demos, observe):
         warm=None if gp is None else gp.z
         diagnostic(batch,demos,points,gp,requests=len(requested))
         if len(demos)>=budget or requests_left<=0 or batch>=MAX_BATCHES:
-            return gp
+            break
         pairs=[]
         for _ in range(MAX_REDRAWS):
             if gp is None:
@@ -786,7 +802,7 @@ def gp_acl_acquire(task, rng, demos, observe):
             pairs=[pair for pair in candidates if not near_duplicate(pair,requested)]
             if pairs: break
         if not pairs:
-            return gp
+            break
         for pair in pairs:
             if len(demos)>=budget or requests_left<=0: break
             if near_duplicate(pair,requested): continue
@@ -796,6 +812,43 @@ def gp_acl_acquire(task, rng, demos, observe):
             if response.get('demo'):
                 demos.append(response['demo'])
         batch+=1
+    if topup and len(demos)<budget and requests_left>0:
+        coverage_topup(task,demos,observe,requested,requests_left)
+        points,gradients=observe(demos)
+        gp=train_gp(points,gradients,demonstrated_states(demos),init=warm)
+        diagnostic('topup',demos,points,gp,requests=len(requested))
+    return gp
+
+
+def coverage_topup(task, demos, observe, requested, requests_left):
+    """Variant: spend unused demonstrations on crossings of uncovered arcs.
+
+    About the tight-state centroid, the direction psi farthest in angle from
+    every observed tight state (and earlier targets) is chosen. A straight
+    start/goal chord perpendicular to psi, offset 0.6 median contact radii
+    toward psi, cuts the obstacle near that arc, so the shortest feasible
+    detour wraps around it there. No oracle labels or task parameters.
+    """
+    lo,hi=np.asarray(task['bounds'],float).T
+    targeted=[]
+    candidates=np.linspace(-np.pi,np.pi,72,endpoint=False)
+    while len(demos)<task['budget'] and requests_left>0 and len(targeted)<len(candidates):
+        points,_=observe(demos)
+        if not len(points): return
+        centre=points.mean(axis=0); rel=points-centre
+        used=np.r_[np.arctan2(rel[:,1],rel[:,0]),np.asarray(targeted,float)]
+        gap=np.min(np.abs((candidates[:,None]-used[None,:]+np.pi)%(2*np.pi)-np.pi),axis=1)
+        psi=float(candidates[int(np.argmax(gap))]); targeted.append(psi)
+        radius=float(np.median(np.linalg.norm(rel,axis=1)))
+        u=np.array([np.cos(psi),np.sin(psi)]); v=np.array([-u[1],u[0]])
+        foot=centre+.6*radius*u
+        pair=(np.clip(foot-13*v,lo+.5,hi-.5),np.clip(foot+13*v,lo+.5,hi-.5))
+        if near_duplicate(pair,requested): continue
+        response=send({'op':'query','start':pair[0].tolist(),'goal':pair[1].tolist()})
+        requested.append(pair)
+        requests_left=response.get('requests_remaining',0)
+        if response.get('demo'):
+            demos.append(response['demo'])
 
 
 def random_acquire(task, rng, demos):
@@ -811,13 +864,13 @@ def random_acquire(task, rng, demos):
 
 
 VARIANTS=['reference','random','legacy','no_acquisition','no_gradients','raw_gradients',
-          'fill','periodic','periodic6']
+          'fill','periodic','periodic6','topup','fill_topup']
 
 
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--variant',default='reference',choices=VARIANTS)
-    parser.add_argument('--prior',default=CONFIG['prior'],choices=['tied','learned'])
+    parser.add_argument('--prior',default=CONFIG['prior'],choices=['zero','tied','learned'])
     parser.add_argument('--trust',type=float,default=CONFIG['trust'])
     parser.add_argument('--draws',type=int,default=CONFIG['draws'])
     args=parser.parse_args()
@@ -837,7 +890,7 @@ def main():
     else:
         # The reference acquisition; the remaining variants change only the
         # gradient observations or the final classifier.
-        gp=gp_acl_acquire(task,rng,demos,observe)
+        gp=gp_acl_acquire(task,rng,demos,observe,topup=args.variant in ('topup','fill_topup'))
     points,gradients=observe(demos)
     response=send({'op':'finish'})
     query=np.asarray(response['points'],float)
@@ -847,7 +900,7 @@ def main():
     elif args.variant=='no_gradients':
         ablation=train_gp(points,gradients,demonstrated_states(demos),True)
         pred=(ablation.mean_var(query)[0]<=0).astype(int) if ablation else np.ones(len(query),int)
-    elif args.variant=='fill':
+    elif args.variant in ('fill','fill_topup'):
         pred=(~star_fill(points,query,unsafe)).astype(int)
     else:
         pred=(~unsafe).astype(int)

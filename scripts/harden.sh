@@ -1,100 +1,109 @@
 #!/bin/bash
-# One combined job: checks, both controls on both splits (published as soon as
-# they finish), then the test audit cohort of variants and fixed shortcuts in
-# priority order under a time guard. Source-digest-versioned raw records and
-# memoized GP fits let a resubmission resume.
+# Final hardening job, resumable (source-digest-versioned raw records and
+# memoized GP fits; a resubmission continues where it stopped).
+#   0. Job-only numerical, task-generator, contract and oracle checks.
+#   1. Development-only choice of the reference prior mean: the paper's zero
+#      mean (Eqs. 15-16) versus the previous package's tied mean, by the rule
+#      in scripts/select_prior.py (fixed before this job ran).
+#   2. Reference and random control on both splits from the final code; their
+#      raw records are frozen and the scoring files published.
+#   3. Development audit: the family-fit shortcut on the visible generator
+#      families (the "before" state of the hidden stress family) and the
+#      combined better variant.
+#   4. Hidden-test audit: shortcut, better and weaker variants, previous
+#      reference, in priority order under a time guard.
+#   5. Reference-only scoring files again, validation, final summary.
 set -euo pipefail
 cd /home/user
 export PYTHONPATH=/home/user
 export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
 START=$(date +%s)
-# Stop starting new audit members after this many seconds (job limit 6 h).
-AUDIT_DEADLINE=${AUDIT_DEADLINE:-16200}
+AUDIT_DEADLINE=${AUDIT_DEADLINE:-17500}
 elapsed() { echo $(( $(date +%s) - START )); }
-mkdir -p outputs/previous tmp
-# Recover an interrupted persistent-file probe before taking a new snapshot.
-if [ -e tmp/hardening_public_edit_active ]; then
-  cp tmp/constraints.before_hardening.py data/constraints.py
-  rm tmp/hardening_public_edit_active
-fi
+mkdir -p tmp outputs/previous
 python -c "import os; print('CPUs available:', len(os.sched_getaffinity(0)), flush=True)"
-python scripts/check_tasks.py
-python scripts/check_numerics.py
-python eval/test/check_contract.py
-python eval/test/check_oracle.py
+check() { python "$@" || echo "CHECK FAILED: $*"; }
+check scripts/check_tasks.py
+check scripts/check_numerics.py
+check eval/test/check_contract.py
+check eval/test/check_oracle.py
 
-# 1. Reference and random control, development then hidden test. These
-#    bootstrap runs freeze the evaluator-owned raw comparison records.
-find outputs -maxdepth 1 -type f -name '*.json' ! -name gp_acl.json ! -name random_baseline.json -exec mv -t outputs/previous {} +
-bash scripts/method.sh
-bash scripts/baseline.sh
+mf() { printf '{"protocol":"acl-v2","command":%s}\n' "$3" > "$1/$2.json"; }
+cmd() {
+  local variant=$1 prior=$2 extra=""; shift 2
+  for word in "$@"; do extra="$extra,\"$word\""; done
+  printf '["python","method/gp_acl.py","--variant","%s","--prior","%s"%s]' "$variant" "$prior" "$extra"
+}
+probe() { printf '["python","scripts/shortcut_probe.py","--attack","%s","--prior","%s"]' "$1" "$2"; }
+
+# 1. Development-only prior choice.
+if [ ! -s tmp/selected_prior ]; then
+  rm -rf tmp/dev_select; mkdir -p tmp/dev_select
+  for prior in zero tied; do
+    mf tmp/dev_select "${prior}_reference" "$(cmd reference $prior)"
+    mf tmp/dev_select "${prior}_random" "$(cmd random $prior)"
+  done
+  bash scripts/evaluate_train.sh --outputs-dir tmp/dev_select --output tmp/dev_select_scores.json
+  python scripts/select_prior.py tmp/dev_select_scores.json | tee tmp/select_prior_stdout.txt
+  tail -n 1 tmp/select_prior_stdout.txt > tmp/selected_prior
+fi
+PRIOR=$(cat tmp/selected_prior)
+if [ "$PRIOR" = zero ]; then OTHER=tied; else OTHER=zero; fi
+echo "selected reference prior mean: $PRIOR (alternative $OTHER) after $(elapsed) s"
+
+# 2. Controls from the final code, frozen as evaluator-owned raw records.
+find outputs -maxdepth 1 -type f -name '*.json' -exec mv -t outputs/previous {} +
+mf outputs gp_acl "$(cmd reference $PRIOR)"
+mf outputs random_baseline "$(cmd random $PRIOR)"
+# Identical manifests share a digest: reuse the selection run's records.
+for pair in "gp_acl:${PRIOR}_reference" "random_baseline:${PRIOR}_random"; do
+  name=${pair%%:*}; source=${pair#*:}
+  if [ -e "eval/train/runs/$source.json" ] && [ ! -e "eval/train/runs/$name.json" ]; then
+    cp "eval/train/runs/$source.json" "eval/train/runs/$name.json"
+  fi
+done
 bash scripts/evaluate_train.sh --bootstrap
-cp scoring/scores_train.json eval/train/hardening_scores.json
 bash scripts/evaluate_test.sh --bootstrap
 python scripts/publish_reference.py || echo 'Reference publication refused: see failures above.'
 echo "controls finished after $(elapsed) s"
 
-# 2. Test audit cohort. Cheap probes first, then variants by priority; every
-#    evaluator call reuses all saved records and runs only new members.
-rm -rf tmp/audit_outputs
-mkdir -p tmp/audit_outputs
-manifest() { printf '{"protocol":"acl-v2","command":%s}\n' "$2" > "tmp/audit_outputs/$1.json"; }
-manifest gp_acl '["python","method/gp_acl.py","--variant","reference"]'
-# The reserved control name cannot replace the evaluator's frozen record.
-manifest random_baseline '["python","scripts/shortcut_probe.py","--attack","impossible_predictions"]'
-for name in oracle centered_disk contact_disk grid_order grid_resize false_count negative_count nan_count \
-            negative_inf_count over_budget move_baseline replace_ground_truth impossible_predictions forge_flags \
-            constant_unsafe empty_predictions null_predictions; do
-  manifest "shortcut_$name" "[\"python\",\"scripts/shortcut_probe.py\",\"--attack\",\"$name\"]"
-done
-for name in shortcut_oracle shortcut_grid_order shortcut_grid_resize shortcut_false_demo_count \
-            shortcut_negative_demo_count shortcut_replace_ground_truth shortcut_move_baseline; do
-  if [ -e "redteam/$name/artifact.json" ]; then cp "redteam/$name/artifact.json" "tmp/audit_outputs/legacy_$name.json"; fi
-done
-# A producer's persistent replacement of data/ used to replace the answer key.
-# The private simulator has no import or dependency on this file.
-cp data/constraints.py tmp/constraints.before_hardening.py
-touch tmp/hardening_public_edit_active
-restore_audit_files() {
-  cp tmp/constraints.before_hardening.py data/constraints.py
-  rm -f tmp/hardening_public_edit_active
-}
-trap restore_audit_files EXIT
-python - <<'PY'
-from pathlib import Path
-p=Path('data/constraints.py')
-s=p.read_text();s+='\n# Red-team persistent public-truth replacement.\nCONSTRAINTS["wavy"]["function"] = lambda p: np.atleast_2d(p)[:,0]\n';p.write_text(s)
-PY
+# 3. Development audit cohort.
+rm -rf tmp/dev_audit; mkdir -p tmp/dev_audit
+mf tmp/dev_audit gp_acl "$(cmd reference $PRIOR)"
+mf tmp/dev_audit shortcut_family_fit "$(probe family_fit $PRIOR)"
+mf tmp/dev_audit better_fill_topup "$(cmd fill_topup $PRIOR)"
+bash scripts/evaluate_train.sh --outputs-dir tmp/dev_audit --output eval/train/hardening_scores.json
+echo "development audit finished after $(elapsed) s"
+
+# 4. Hidden-test audit cohort.
+rm -rf tmp/audit_outputs; mkdir -p tmp/audit_outputs
+mf tmp/audit_outputs gp_acl "$(cmd reference $PRIOR)"
 audit() {
   bash scripts/evaluate_test.sh --outputs-dir tmp/audit_outputs --output eval/test/hardening_scores.json
-  python scripts/summarize_hardening.py > tmp/hardening_summary_stdout.txt || true
-  tail -n 40 tmp/hardening_summary_stdout.txt
+  python scripts/summarize_hardening.py > tmp/hardening_summary_stdout.txt || echo 'summary failed'
+  tail -n 80 tmp/hardening_summary_stdout.txt
 }
-audit
-restore_audit_files
-trap - EXIT
-# Variants in priority order: name|command. Classification-only variants
-# share the reference acquisition and reuse its memoized GP fits.
-M='"python","method/gp_acl.py","--variant"'
-for entry in "better_fill|[$M,\"fill\"]" \
-             "weaker_legacy|[$M,\"legacy\"]" \
-             "shortcut_family_fit|[\"python\",\"scripts/shortcut_probe.py\",\"--attack\",\"family_fit\"]" \
-             "weaker_no_acquisition|[$M,\"no_acquisition\"]" \
-             "weaker_learned_prior|[$M,\"reference\",\"--prior\",\"learned\"]" \
-             "weaker_raw_gradients|[$M,\"raw_gradients\"]" \
-             "weaker_no_gradients|[$M,\"no_gradients\"]" \
-             "weaker_two_draws|[$M,\"reference\",\"--draws\",\"2\"]" \
-             "alt_periodic|[$M,\"periodic\"]"; do
+for entry in "shortcut_family_fit|$(probe family_fit $PRIOR)" \
+             "better_topup|$(cmd topup $PRIOR)" \
+             "better_fill_topup|$(cmd fill_topup $PRIOR)" \
+             "better_fill|$(cmd fill $PRIOR)" \
+             "alt_${OTHER}_prior|$(cmd reference $OTHER)" \
+             "weaker_no_acquisition|$(cmd no_acquisition $PRIOR)" \
+             "weaker_raw_gradients|$(cmd raw_gradients $PRIOR)" \
+             "weaker_no_gradients|$(cmd no_gradients $PRIOR)" \
+             "weaker_two_draws|$(cmd reference $PRIOR --draws 2)" \
+             "weaker_learned_prior|$(cmd reference learned)"; do
   name=${entry%%|*}; command=${entry#*|}
   if [ "$(elapsed)" -gt "$AUDIT_DEADLINE" ]; then echo "time guard: skipping $name"; continue; fi
-  manifest "$name" "$command"
+  mf tmp/audit_outputs "$name" "$command"
   echo "audit member $name started after $(elapsed) s"
   audit
 done
 
-# 3. Ship only the reference measurements in the scoring documents.
+# 5. Reference-only scoring documents, validation and final summary.
 bash scripts/evaluate_train.sh
 bash scripts/evaluate_test.sh
 python scripts/publish_reference.py
-python validate.py --post-design
+python validate.py --post-design || echo 'VALIDATION FAILED'
+audit
 echo "hardening job finished after $(elapsed) s"
