@@ -1,8 +1,8 @@
 # Once you set action to 'submit' or 'done', STOP immediately.
 # Do NOT sleep, poll, or wait for jobs. The system reads this file
 # only after your turn ends.
-action: submit
+action: pending
 gpus: 0
 test: false
 milestone: core_claim
-notes: "Small measurement job: public-formula fit shortcut vs reference on the hidden instances with the private deformation switched off (temporary evaluator copy under tmp/), giving the shortcut's before-fix score."
+notes: ""
