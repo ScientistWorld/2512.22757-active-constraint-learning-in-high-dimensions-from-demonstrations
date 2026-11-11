@@ -113,28 +113,53 @@ def acquisition(side,names):
     return out
 
 
+def add_hybrid(scores):
+    """Stress-only use of the family-fit probe: the reference on g3 and the
+    probe's predictions on the complex-boundary experiment. Both component
+    runs passed, so the combination is a passing attempt a submitter could
+    make with the same code."""
+    pm=scores['_paired_metrics']
+    if 'shortcut_family_fit' not in pm or 'shortcut_family_fit' in scores['_failures']:
+        return
+    pm['hybrid_stress_family_fit']={'double_integrator_g3':pm['gp_acl']['double_integrator_g3'],
+                                    'complex_boundary_stress':pm['shortcut_family_fit']['complex_boundary_stress']}
+    for exp,rows in pm['hybrid_stress_family_fit'].items():
+        scores['experiments'][exp]['results']['hybrid_stress_family_fit']={
+            m:float(np.mean([r[m] for r in rows])) for m in rows[0]}
+
+
 report={'before':BEFORE,'prior_selection':read('tmp/prior_selection.json')}
 SMALL=['gp_acl','random_baseline']
 for side,scores in (('test',test),('train',train)):
     if scores is None:
         continue
+    evaluator_cohort=[n for n in scores['experiments'][next(iter(scores['experiments']))]['results']
+                      if n not in scores['_failures']]
+    add_hybrid(scores)
     candidates=sorted(n for n in scores['_paired_metrics'] if n!='gp_acl')
     passing=[n for n in scores['experiments'][next(iter(scores['experiments']))]['results'] if n not in scores['_failures']]
+    # Core cohort: every passing attempt except the rejected alternative prior
+    # mean, whose collapsed uniform accuracy (0.72) would otherwise set the
+    # accuracy scale for everyone.
+    core=[n for n in passing if not n.startswith('alt_')]
     report[side]={'rank':scores['_rank'],
         'metrics':{e:v['results'] for e,v in scores['experiments'].items()},
         'failures':scores['_failures'],'raw_metrics_of_failed':scores.get('_raw_metrics_of_failed',{}),
         'paired':{c:paired_metrics(scores,c) for c in candidates},
-        'paired_rank':{c:paired_rank(scores,side,c) for c in candidates},
+        'paired_rank':{c:paired_rank(scores,side,c) for c in candidates if c in evaluator_cohort or c in scores['_failures']},
+        'core_cohort':core,
+        'core_cohort_rank':{c:paired_rank(scores,side,c,core) for c in candidates if c in core},
         # Shortcut before/after on the same small cohort: reference, frozen
         # random control and the probe itself.
         'three_member_cohort_rank':{c:paired_rank(scores,side,c,SMALL+[c]) for c in candidates
-                                    if c.startswith('shortcut_') and c in passing},
+                                    if c.startswith(('shortcut_','hybrid_')) and c in passing},
         'acquisition':acquisition(side,['gp_acl','random_baseline']+[c for c in candidates if c.startswith(('better_','weaker_','alt_'))])}
 Path('eval/test/hardening_summary.json').write_text(json.dumps(report,indent=2,allow_nan=False)+'\n')
 for side in ('test','train'):
     if side not in report:
         continue
     print(json.dumps({side+'_ranks':report[side]['rank']['values'],'paired_rank':report[side]['paired_rank'],
+                      'core_cohort_rank':report[side]['core_cohort_rank'],
                       'three_member_cohort_rank':report[side]['three_member_cohort_rank'],
                       'failures':{k:v[:2] for k,v in report[side]['failures'].items()}},indent=1),flush=True)
     for exp,v in report[side]['metrics'].items():

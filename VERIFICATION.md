@@ -1,26 +1,28 @@
 # Verification
 
-Job `c7324ec1-f1e` exited 0 and passed `python validate.py --post-design`. It ran these checks:
+Job `3b3ba72f-7f9` exited 0 and passed `python validate.py --post-design`. It ran these checks:
 - task-generator gradient and boundary checks for both splits;
-- GP likelihood, hinge and tied-prior gradient checks;
+- matched difficulty of the development and hidden stress families (radius RMS 0.1398 vs 0.1410, slope RMS 0.655 vs 0.692, narrowest radius 0.7465 vs 0.7466);
+- GP likelihood, hinge and tied/zero prior-mean gradient checks;
 - posterior and random-Fourier-feature derivative checks;
 - reduced KKT checks;
-- Problem 3 crossing-enumeration and trust-region checks;
+- Problem 3 checks;
 - rank arithmetic checks;
 - expert feasibility and KKT checks.
 
-Hidden test, 36 paired instances per experiment (audit-cohort ranks):
+Hidden test, 36 paired instances per experiment (core cohort; evaluator audit cohort in HARDENING.md):
 
 | Method | Rank [95% paired interval] |
 |---|---|
-| Random | −0.906 [−1.586, −0.230] |
-| Fill (better) | +1.088 [0.789, 1.378] |
-| Previous reference | −0.683 [−1.332, −0.038] |
-| Learned prior | −0.759 [−1.579, +0.069] |
-| No acquisition | −2.156 |
-| Raw gradients | −4.328 |
+| Fill + top-up (better) | +1.331 [1.005, 1.680] |
+| Fill (better) | +0.887 [0.623, 1.149] |
+| Top-up (better) | +0.314 [0.131, 0.528] |
+| P = 2 | +0.194 [−0.290, 0.653] (indistinguishable) |
+| Random | −0.777 [−1.347, −0.195] |
+| Learned prior | −0.780 [−1.518, −0.051] |
+| No acquisition | −1.837 |
+| Raw gradients | −4.281 |
 | No gradients | fails the success gate |
-| P = 2 | +0.151 [−0.409, +0.681] (indistinguishable) |
-| Public-formula fit | −0.184 [−1.699, +1.074] |
+| Stress-generator fit on stress (shortcut) | +0.539 [0.223, 0.864]; was +1.572 before the private family (three-member cohort) |
 
-All 17 adapted interface probes and seven legacy artifacts fail the run. The full audit is in `eval/test/hardening_summary.json`.
+`VERIFY_JOB` reran both controls from the final code with no caches and compared them with the frozen records (see HARDENING.md).

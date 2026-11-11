@@ -251,16 +251,19 @@ def marginal_likelihood(logp, points, gradients, values_only=False):
     return value,gradient[:3]
 
 
-# Run configuration (command-line flags). prior='zero' is the paper's own
-# posterior (Eqs. 15-16: zero prior mean). Unexplored states then have prior
-# safety probability Phi(0)=0.5 < beta=0.55, so Eq. 10 endpoints need evidence
-# of safety, and far from data the sign of the posterior mean follows the
-# gradient observations' tails (positive inside the observed boundary,
-# negative outside), as in the paper's Fig. 8. prior='tied' fixes the constant
-# at -RHO*signal (the previous package's choice: far-from-data states default
-# to safe, which leaves large obstacle interiors classified safe).
+# Run configuration (command-line flags). prior='tied' (the reference) fixes
+# the constant prior mean at -RHO*signal, the hinge boundary for states far
+# from data, so unexplored states keep prior safety probability Phi(0.1)=0.54,
+# just below the paper's endpoint level beta=0.55 (Eq. 10 endpoints need
+# evidence of safety). Far-from-data states default to safe, which leaves
+# poorly observed obstacle interiors classified safe.
+# prior='zero' is the paper's own posterior (Eqs. 15-16, zero prior mean).
+# It was tested as the reference and rejected on the development split by a
+# rule fixed in advance (scripts/select_prior.py): the hinge drives the
+# lengthscale to its upper bound and gradient tails extrapolate as half-plane
+# "unsafe" regions, so uniform accuracy fell to 0.73 (0.97 with 'tied').
 # prior='learned' optimizes the constant freely (an earlier package).
-CONFIG={'prior':'zero','trust':1.0,'draws':4}
+CONFIG={'prior':'tied','trust':1.0,'draws':4}
 
 
 def tied_objective(y, points, gradients, states=(), values_only=False):

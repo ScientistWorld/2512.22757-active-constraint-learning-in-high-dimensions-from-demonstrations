@@ -1,16 +1,16 @@
 # Progress
 
-Final hardening iteration (12). Jobs:
-- `c4a8d3c2-15e`: failed on an over-strict unit check.
-- `c9eb8251-27a`: cancelled. Learned prior plus new Problem 3: most requests were rejected.
-- `fcaa3a0a-3f9`: development-only exploration of unspecified settings (prior mean, Problem 3 radius, posterior draws P).
-- `c7324ec1-f1e`: final combined audit, exit 0, validation passed.
-- A last small job measures the public-formula shortcut on undeformed hidden shapes, for the "before" score.
+Final hardening iteration. Jobs:
+- `3b3ba72f-7f9` (exit 0): the combined audit.
+  - Development-only test of the paper's zero-mean prior: rejected by the pre-fixed rule.
+  - Controls on both splits from final code, frozen.
+  - Development and hidden-test audits: stress-family shortcut before/after; fill, top-up and fill+top-up variants; ablations; the zero-mean alternative.
+- `VERIFY_JOB`: fresh-clone end-to-end reproduction of the reference and random control from the final code, compared with the frozen records.
 
 Outcome:
-- The reference beats random beyond paired noise in combined score.
-- A genuinely better variant (interior fill) beats the reference beyond noise.
-- The previous method and the ablations score below the reference.
-- All shortcut probes fail or no longer pay.
+- The reference (unchanged method, tied prior) beats random beyond paired noise.
+- Three better variants beat the reference beyond noise; the best is fill + top-up, +1.33 [1.01, 1.68] in the core cohort.
+- The ablations, learned prior and random control score below it.
+- Hand-coding the visible stress generator fell from +1.57 to +0.34 [−0.25, 0.95]. It now loses near-boundary accuracy.
 
 Details and numbers are in HARDENING.md.
