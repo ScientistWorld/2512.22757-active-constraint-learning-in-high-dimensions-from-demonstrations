@@ -93,3 +93,6 @@ def default_initial_pairs() -> list[tuple[list[float], list[float]]]:
         ([-1.75, 0.25], [1.75, 0.25]),
         ([0.25, -1.75], [0.25, 1.75]),
     ]
+
+# Red-team persistent public-truth replacement.
+CONSTRAINTS["wavy"]["function"] = lambda p: np.atleast_2d(p)[:,0]
