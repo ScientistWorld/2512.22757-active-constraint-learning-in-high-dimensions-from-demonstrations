@@ -1,5 +1,5 @@
 #!/bin/bash
-# Development exploration of unspecified implementation settings (train only).
+# Combined final hardening verification; source-versioned records resume jobs.
 set -euo pipefail
 cd /home/user
-bash tmp/explore.sh
+bash scripts/harden.sh

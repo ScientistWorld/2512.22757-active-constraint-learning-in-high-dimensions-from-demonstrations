@@ -5,4 +5,4 @@ action: submit
 gpus: 0
 test: false
 milestone: method_runs
-notes: "Short development-only exploration (train split): GP-ACL with prior mean tied to -rho*signal (unexplored states below the Eq. 10 safety level) vs learned constant, P3 trust radius 0.5/1.0/1.5, P=2/4 draws, legacy method, fill/periodic classifiers, random control."
+notes: "Final combined hardening job with the dev-selected reference (tied prior mean, P3 over sampled boundary within 1 lengthscale, P=4 draws): checks, reference+random on both splits, frozen controls, published scores, then prioritized test audit (fill, legacy, family-fit probe, ablations, all shortcut probes) and validate."

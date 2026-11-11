@@ -258,7 +258,7 @@ def marginal_likelihood(logp, points, gradients, values_only=False):
 # the paper's endpoint level beta=0.55 (the paper's own posterior, Eqs. 15-16,
 # has zero prior mean, the regime in which beta>0.5 demands evidence of
 # safety). prior='learned' optimizes the constant freely (previous package).
-CONFIG={'prior':'tied','trust':1.0,'draws':2}
+CONFIG={'prior':'tied','trust':1.0,'draws':4}
 
 
 def tied_objective(y, points, gradients, states=(), values_only=False):
@@ -481,8 +481,9 @@ def legacy_sample_queries(gp, f, rng, bounds):
 # back side of a sampled obstacle beyond the observed constraint, carry no
 # information about where demonstrations can touch the constraint).
 TRUST_LENGTHSCALES=1.0  # default of CONFIG['trust']
-# Posterior draws per Alg. 1 batch (P); each yields a P4-5 and a P6 pair.
-POSTERIOR_DRAWS=2
+# Posterior draws per Alg. 1 batch (P, unspecified in the paper; chosen on the
+# development split); each yields a P4-5 and a P6 pair.
+POSTERIOR_DRAWS=4  # default of CONFIG['draws']
 # A deterministic expert returns the same demonstration for (nearly) the same
 # start/goal pair, so such repeated requests are skipped.
 DUPLICATE_TOLERANCE=.25

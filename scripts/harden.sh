@@ -73,17 +73,21 @@ audit() {
 audit
 restore_audit_files
 trap - EXIT
-# Variants in priority order: name, then method variant or probe attack.
-for entry in better_fill:fill weaker_legacy:legacy shortcut_family_fit:@family_fit \
-             weaker_no_acquisition:no_acquisition weaker_raw_gradients:raw_gradients \
-             better_periodic:periodic weaker_no_gradients:no_gradients better_periodic6:periodic6; do
-  name=${entry%%:*}; variant=${entry#*:}
+# Variants in priority order: name|command. Classification-only variants
+# share the reference acquisition and reuse its memoized GP fits.
+M='"python","method/gp_acl.py","--variant"'
+for entry in "better_fill|[$M,\"fill\"]" \
+             "weaker_legacy|[$M,\"legacy\"]" \
+             "shortcut_family_fit|[\"python\",\"scripts/shortcut_probe.py\",\"--attack\",\"family_fit\"]" \
+             "weaker_no_acquisition|[$M,\"no_acquisition\"]" \
+             "weaker_learned_prior|[$M,\"reference\",\"--prior\",\"learned\"]" \
+             "weaker_raw_gradients|[$M,\"raw_gradients\"]" \
+             "weaker_no_gradients|[$M,\"no_gradients\"]" \
+             "weaker_two_draws|[$M,\"reference\",\"--draws\",\"2\"]" \
+             "alt_periodic|[$M,\"periodic\"]"; do
+  name=${entry%%|*}; command=${entry#*|}
   if [ "$(elapsed)" -gt "$AUDIT_DEADLINE" ]; then echo "time guard: skipping $name"; continue; fi
-  if [ "${variant:0:1}" = "@" ]; then
-    manifest "$name" "[\"python\",\"scripts/shortcut_probe.py\",\"--attack\",\"${variant:1}\"]"
-  else
-    manifest "$name" "[\"python\",\"method/gp_acl.py\",\"--variant\",\"$variant\"]"
-  fi
+  manifest "$name" "$command"
   echo "audit member $name started after $(elapsed) s"
   audit
 done
