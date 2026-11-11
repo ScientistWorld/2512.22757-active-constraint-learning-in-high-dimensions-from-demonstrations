@@ -23,6 +23,15 @@ for values_only in (False,True):
         numeric=np.array([(training_objective(z+s,p,g,states,values_only)[0]
                           -training_objective(z-s,p,g,states,values_only)[0])/2e-6 for s in step])
         assert np.allclose(analytic,numeric,rtol=1e-4,atol=1e-6),(values_only,z,analytic,numeric)
+# The tied prior mean (-RHO*signal) enters the signal derivative.
+from method.gp_acl import tied_objective
+for values_only in (False,True):
+    for y in (np.log([.6,.7,.003]),np.log([.9,.4,.01])):
+        value,analytic=tied_objective(y,p,g,states,values_only)
+        step=np.eye(3)*1e-6
+        numeric=np.array([(tied_objective(y+e,p,g,states,values_only)[0]
+                          -tied_objective(y-e,p,g,states,values_only)[0])/2e-6 for e in step])
+        assert np.allclose(analytic,numeric,rtol=1e-4,atol=1e-6),(values_only,y,analytic,numeric)
 # A constant prior mean leaves the observed zero values and gradients intact.
 shifted=GPModel(p,g,(.6,.7,1e-9),constant=-.8)
 assert np.max(np.abs(gp.mean_var(p)[0]))<1e-6

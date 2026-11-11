@@ -5,4 +5,4 @@ action: submit
 gpus: 0
 test: false
 milestone: method_runs
-notes: "Resubmit final hardening job: fixed over-strict P3 unit check (relative variance test), parallel instance evaluation across available CPUs; then controls on both splits, publish, prioritized audit of variants and shortcut probes under a time guard."
+notes: "Short development-only exploration (train split): GP-ACL with prior mean tied to -rho*signal (unexplored states below the Eq. 10 safety level) vs learned constant, P3 trust radius 0.5/1.0/1.5, P=2/4 draws, legacy method, fill/periodic classifiers, random control."

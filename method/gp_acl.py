@@ -252,8 +252,25 @@ def marginal_likelihood(logp, points, gradients, values_only=False):
     return value,gradient[:3]
 
 
-def _fit_key(points, gradients, states, values_only, init):
-    digest=hashlib.sha256(SOURCE_DIGEST.encode())
+# Run configuration (command-line flags). prior='tied' fixes the constant
+# prior mean at -RHO*signal, the hinge boundary for states far from data, so
+# unexplored states keep prior safety probability Phi(RHO)=0.54, just below
+# the paper's endpoint level beta=0.55 (the paper's own posterior, Eqs. 15-16,
+# has zero prior mean, the regime in which beta>0.5 demands evidence of
+# safety). prior='learned' optimizes the constant freely (previous package).
+CONFIG={'prior':'tied','trust':1.0,'draws':2}
+
+
+def tied_objective(y, points, gradients, states=(), values_only=False):
+    """Training loss in (log length, log signal, log noise), mean -RHO*signal."""
+    signal=np.exp(y[1])
+    value,gradient=training_objective(np.r_[y,-RHO*signal],points,gradients,states,values_only)
+    out=gradient[:3].copy();out[1]+=gradient[3]*(-RHO*signal)
+    return value,out
+
+
+def _fit_key(points, gradients, states, values_only, init, prior='learned'):
+    digest=hashlib.sha256(SOURCE_DIGEST.encode());digest.update(prior.encode())
     for array in (points,gradients,states):
         digest.update(np.ascontiguousarray(array,float).tobytes()); digest.update(b'|')
     digest.update(b'values' if values_only else b'joint')
@@ -261,7 +278,7 @@ def _fit_key(points, gradients, states, values_only, init):
     return digest.hexdigest()
 
 
-def train_gp(points, gradients, states=(), values_only=False, init=None):
+def train_gp(points, gradients, states=(), values_only=False, init=None, prior=None):
     """Minimize the training loss from deterministic starts (or warm start).
 
     Starts are in the paper's physical position units; the prior mean starts
@@ -272,10 +289,11 @@ def train_gp(points, gradients, states=(), values_only=False, init=None):
     """
     if not len(points):
         return None
+    prior=prior or CONFIG['prior']
     points=np.asarray(points,float).reshape(-1,2); gradients=np.asarray(gradients,float).reshape(-1,2)
     states=np.asarray(states,float).reshape(-1,2)
     bounds=[tuple(b) for b in np.log([[.35,12.5],[1e-5,100],[1e-10,1.]])]+[(-1e3,1e3)]
-    key=_fit_key(points,gradients,states,values_only,init)
+    key=_fit_key(points,gradients,states,values_only,init,prior)
     path=FIT_CACHE/f'{key}.json'
     best=None
     try:
@@ -292,13 +310,16 @@ def train_gp(points, gradients, states=(), values_only=False, init=None):
             signal=max(rms*length,.001)
             starts.append(np.r_[np.log([length,signal,max((.03*rms)**2,1e-8)]),-RHO*signal])
         fits=[]
+        tied=prior=='tied'
         for start in starts:
-            fit=minimize(training_objective,start,args=(points,gradients,states,values_only),
-                         jac=True,method='L-BFGS-B',bounds=bounds,
+            fit=minimize(tied_objective if tied else training_objective,start[:3] if tied else start,
+                         args=(points,gradients,states,values_only),
+                         jac=True,method='L-BFGS-B',bounds=bounds[:3] if tied else bounds,
                          options={'maxiter':150,'ftol':1e-10,'gtol':1e-6})
             if np.isfinite(fit.fun) and fit.fun<1e29: fits.append(fit)
         if not fits: raise RuntimeError('GP training optimization failed')
         best=min(fits,key=lambda fit:fit.fun).x
+        if tied: best=np.r_[best,-RHO*np.exp(best[1])]
         try:
             FIT_CACHE.mkdir(parents=True,exist_ok=True)
             temp=path.with_suffix(f'.{os.getpid()}.tmp')
@@ -459,7 +480,7 @@ def legacy_sample_queries(gp, f, rng, bounds):
 # observations (spurious zero contours of a draw far from all data, and the
 # back side of a sampled obstacle beyond the observed constraint, carry no
 # information about where demonstrations can touch the constraint).
-TRUST_LENGTHSCALES=1.5
+TRUST_LENGTHSCALES=1.0  # default of CONFIG['trust']
 # Posterior draws per Alg. 1 batch (P); each yields a P4-5 and a P6 pair.
 POSTERIOR_DRAWS=2
 # A deterministic expert returns the same demonstration for (nearly) the same
@@ -524,7 +545,7 @@ def solve_p3(gp, f, lo, hi):
     """
     signal=max(gp.signal,1e-10)
     contacts=gp.points
-    reach=TRUST_LENGTHSCALES*gp.ls
+    reach=CONFIG['trust']*gp.ls
     box_lo=np.maximum(lo,contacts.min(axis=0)-reach); box_hi=np.minimum(hi,contacts.max(axis=0)+reach)
     if np.any(box_hi-box_lo<=0): return None
     step=float(np.clip(gp.ls/4,.05,.5)); step=max(step,float(np.max(box_hi-box_lo))/160)
@@ -593,10 +614,10 @@ def sample_queries(gp, f, rng, bounds):
     return pairs
 
 
-def solve_queries(gp, rng, bounds, n_samples=POSTERIOR_DRAWS):
+def solve_queries(gp, rng, bounds, n_samples=None):
     """One Alg. 1 batch: P posterior draws, each giving Probs. 3--6 pairs."""
     pairs=[]
-    for _ in range(n_samples):
+    for _ in range(n_samples or CONFIG['draws']):
         f=gp.sample_function(rng,1000,.3)
         try:
             pairs.extend(sample_queries(gp,f,rng,bounds))
@@ -709,7 +730,7 @@ def legacy_acquire(task, rng, demos, observe):
     gp=None
     for iteration in range(3):
         points,gradients=observe(demos)
-        gp=train_gp(points,gradients,demonstrated_states(demos))
+        gp=train_gp(points,gradients,demonstrated_states(demos),prior='learned')
         diagnostic(iteration,demos,points,gp)
         if iteration==2 or available_requests<=0:
             if iteration==2: break
@@ -758,7 +779,7 @@ def gp_acl_acquire(task, rng, demos, observe):
         for _ in range(MAX_REDRAWS):
             if gp is None:
                 lo,hi=np.asarray(bounds,float).T
-                candidates=[rng.uniform(lo,hi,(2,2)) for _ in range(2*POSTERIOR_DRAWS)]
+                candidates=[rng.uniform(lo,hi,(2,2)) for _ in range(2*CONFIG['draws'])]
             else:
                 candidates=solve_queries(gp,rng,bounds)
             pairs=[pair for pair in candidates if not near_duplicate(pair,requested)]
@@ -795,7 +816,11 @@ VARIANTS=['reference','random','legacy','no_acquisition','no_gradients','raw_gra
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--variant',default='reference',choices=VARIANTS)
+    parser.add_argument('--prior',default=CONFIG['prior'],choices=['tied','learned'])
+    parser.add_argument('--trust',type=float,default=CONFIG['trust'])
+    parser.add_argument('--draws',type=int,default=CONFIG['draws'])
     args=parser.parse_args()
+    CONFIG.update(prior='learned' if args.variant=='legacy' else args.prior,trust=args.trust,draws=args.draws)
     task=json.loads(sys.stdin.readline())
     rng=np.random.default_rng(task['seed'])
     demos=list(task['initial_demos'])
