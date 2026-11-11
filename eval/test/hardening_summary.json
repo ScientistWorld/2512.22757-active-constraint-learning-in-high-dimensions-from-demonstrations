@@ -6,21 +6,26 @@
     "redteam_better_simplified_rank": 0.636216,
     "redteam_weaker_no_gradients_rank": -4.462129,
     "redteam_seed_rank_spread": 0.579845,
-    "fourth_audit_test_ranks": {
-      "random_baseline": 0.603014,
-      "better_boundary_fit_12": 1.988915,
-      "better_normalized_gradients": 3.457279,
-      "better_boundary_fit": 0.578652
+    "previous_iteration_final_audit_test_ranks": {
+      "random_baseline": 0.565786,
+      "better_boundary_fit": -4.045367,
+      "better_boundary_fit_12": -2.891025,
+      "weaker_no_acquisition": -2.085307,
+      "weaker_raw_gradients": -4.438872,
+      "weaker_no_gradients": null
     }
   },
   "test_rank": {
     "values": {
-      "better_boundary_fit": -4.04536703195282,
-      "better_boundary_fit_12": -2.891024880146063,
+      "alt_periodic": -1.4181918931466047,
+      "better_fill": 1.0875692692341208,
       "gp_acl": 0.0,
       "shortcut_centered_disk": null,
+      "shortcut_constant_unsafe": null,
       "shortcut_contact_disk": null,
+      "shortcut_empty_predictions": null,
       "shortcut_false_count": null,
+      "shortcut_family_fit": -0.1844012399285105,
       "shortcut_forge_flags": null,
       "shortcut_grid_order": null,
       "shortcut_grid_resize": null,
@@ -29,27 +34,35 @@
       "shortcut_nan_count": null,
       "shortcut_negative_count": null,
       "shortcut_negative_inf_count": null,
+      "shortcut_null_predictions": null,
       "shortcut_oracle": null,
       "shortcut_over_budget": null,
       "shortcut_replace_ground_truth": null,
-      "weaker_no_acquisition": -2.085306781609676,
+      "weaker_learned_prior": -0.7592957744798465,
+      "weaker_legacy": -0.6827908207538116,
+      "weaker_no_acquisition": -2.156078634502602,
       "weaker_no_gradients": null,
-      "weaker_raw_gradients": -4.438872381622155,
-      "random_baseline": 0.5657861147743726,
+      "weaker_raw_gradients": -4.327972531588188,
+      "weaker_two_draws": 0.1511702291318002,
+      "random_baseline": -0.9058510796043973,
       "legacy_shortcut_replace_ground_truth": null,
+      "legacy_shortcut_negative_demo_count": null,
       "legacy_shortcut_grid_resize": null,
-      "legacy_shortcut_move_baseline": null,
-      "legacy_shortcut_oracle": null,
-      "legacy_shortcut_false_demo_count": null,
       "legacy_shortcut_grid_order": null,
-      "legacy_shortcut_negative_demo_count": null
+      "legacy_shortcut_false_demo_count": null,
+      "legacy_shortcut_move_baseline": null,
+      "legacy_shortcut_oracle": null
     },
     "order": [
-      "random_baseline",
+      "better_fill",
+      "weaker_two_draws",
       "gp_acl",
+      "shortcut_family_fit",
+      "weaker_legacy",
+      "weaker_learned_prior",
+      "random_baseline",
+      "alt_periodic",
       "weaker_no_acquisition",
-      "better_boundary_fit_12",
-      "better_boundary_fit",
       "weaker_raw_gradients",
       "legacy_shortcut_false_demo_count",
       "legacy_shortcut_grid_order",
@@ -59,7 +72,9 @@
       "legacy_shortcut_oracle",
       "legacy_shortcut_replace_ground_truth",
       "shortcut_centered_disk",
+      "shortcut_constant_unsafe",
       "shortcut_contact_disk",
+      "shortcut_empty_predictions",
       "shortcut_false_count",
       "shortcut_forge_flags",
       "shortcut_grid_order",
@@ -69,22 +84,23 @@
       "shortcut_nan_count",
       "shortcut_negative_count",
       "shortcut_negative_inf_count",
+      "shortcut_null_predictions",
       "shortcut_oracle",
       "shortcut_over_budget",
       "shortcut_replace_ground_truth",
       "weaker_no_gradients"
     ],
     "population_std": {
-      "double_integrator_g3.accuracy": 0.015394331955192067,
-      "double_integrator_g3.balanced_accuracy": 0.041498630955041395,
-      "double_integrator_g3.near_boundary_balanced_accuracy": 0.041626209425057965,
-      "double_integrator_g3.safe_recall": 0.08954460111587768,
-      "double_integrator_g3.unsafe_recall": 0.12541720436442738,
-      "complex_boundary_stress.accuracy": 0.02574947873761287,
-      "complex_boundary_stress.balanced_accuracy": 0.02067877585049506,
-      "complex_boundary_stress.near_boundary_balanced_accuracy": 0.02369405561919816,
-      "complex_boundary_stress.safe_recall": 0.12512471616021079,
-      "complex_boundary_stress.unsafe_recall": 0.11386598078785777
+      "double_integrator_g3.accuracy": 0.009005970194648818,
+      "double_integrator_g3.balanced_accuracy": 0.04744817769047166,
+      "double_integrator_g3.near_boundary_balanced_accuracy": 0.04234654953629154,
+      "double_integrator_g3.safe_recall": 0.0876991429087952,
+      "double_integrator_g3.unsafe_recall": 0.11971198176511884,
+      "complex_boundary_stress.accuracy": 0.013928241230087391,
+      "complex_boundary_stress.balanced_accuracy": 0.03532152677790634,
+      "complex_boundary_stress.near_boundary_balanced_accuracy": 0.040312068460404686,
+      "complex_boundary_stress.safe_recall": 0.11239798564533714,
+      "complex_boundary_stress.unsafe_recall": 0.13169345873054947
     },
     "failed": {
       "legacy_shortcut_false_demo_count": [
@@ -111,17 +127,125 @@
       "shortcut_centered_disk": [
         "boundary balanced accuracy below 0.55 or a class recall below 0.10"
       ],
+      "shortcut_constant_unsafe": [
+        "boundary balanced accuracy below 0.55 or a class recall below 0.10",
+        "boundary balanced accuracy below 0.55 or a class recall below 0.10"
+      ],
       "shortcut_contact_disk": [
         "boundary balanced accuracy below 0.55 or a class recall below 0.10",
         "boundary balanced accuracy below 0.55 or a class recall below 0.10"
       ],
+      "shortcut_empty_predictions": [
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size"
+      ],
       "shortcut_false_count": [
-        "wrong number of instances",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
         "declared demonstration count disagrees with oracle ledger",
         "declared demonstration count disagrees with oracle ledger"
       ],
       "shortcut_forge_flags": [
-        "wrong number of instances",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
         "final output may contain only predictions and optional authenticated n_demos",
         "final output may contain only predictions and optional authenticated n_demos"
       ],
@@ -130,40 +254,309 @@
         "boundary balanced accuracy below 0.55 or a class recall below 0.10"
       ],
       "shortcut_grid_resize": [
-        "wrong number of instances",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
         "final output may contain only predictions and optional authenticated n_demos",
         "final output may contain only predictions and optional authenticated n_demos"
       ],
       "shortcut_impossible_predictions": [
-        "wrong number of instances",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
         "predictions must be finite binary labels of evaluator-owned size",
         "predictions must be finite binary labels of evaluator-owned size"
       ],
       "shortcut_move_baseline": [
-        "wrong number of instances",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
+        "final output may contain only predictions and optional authenticated n_demos",
         "final output may contain only predictions and optional authenticated n_demos",
         "final output may contain only predictions and optional authenticated n_demos"
       ],
       "shortcut_nan_count": [
-        "wrong number of instances",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
         "nonfinite response",
         "nonfinite response"
       ],
       "shortcut_negative_count": [
-        "wrong number of instances",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
+        "declared demonstration count disagrees with oracle ledger",
         "declared demonstration count disagrees with oracle ledger",
         "declared demonstration count disagrees with oracle ledger"
       ],
       "shortcut_negative_inf_count": [
-        "wrong number of instances",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
+        "nonfinite response",
         "nonfinite response",
         "nonfinite response"
+      ],
+      "shortcut_null_predictions": [
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size",
+        "predictions must be finite binary labels of evaluator-owned size"
       ],
       "shortcut_oracle": [
         "boundary balanced accuracy below 0.55 or a class recall below 0.10"
       ],
       "shortcut_over_budget": [
-        "wrong number of instances",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
+        "demonstration budget exceeded",
         "demonstration budget exceeded",
         "demonstration budget exceeded"
       ],
@@ -172,7 +565,6 @@
         "boundary balanced accuracy below 0.55 or a class recall below 0.10"
       ],
       "weaker_no_gradients": [
-        "boundary balanced accuracy below 0.55 or a class recall below 0.10",
         "boundary balanced accuracy below 0.55 or a class recall below 0.10"
       ]
     },
@@ -180,28 +572,35 @@
   },
   "test_metrics": {
     "double_integrator_g3": {
-      "better_boundary_fit": {
-        "accuracy": 0.9423353407118056,
-        "balanced_accuracy": 0.6843463110442465,
-        "near_boundary_balanced_accuracy": 0.6434694904004151,
-        "safe_recall": 0.7211663200570883,
-        "unsafe_recall": 0.6475263020314045
+      "alt_periodic": {
+        "accuracy": 0.9818454318576388,
+        "balanced_accuracy": 0.7649593736465643,
+        "near_boundary_balanced_accuracy": 0.7175603617294631,
+        "safe_recall": 0.7018318184184552,
+        "unsafe_recall": 0.8280869288746733
       },
-      "better_boundary_fit_12": {
-        "accuracy": 0.9609171549479166,
-        "balanced_accuracy": 0.6882604036715692,
-        "near_boundary_balanced_accuracy": 0.6650214704323376,
-        "safe_recall": 0.8097036435010909,
-        "unsafe_recall": 0.5668171638420471
+      "better_fill": {
+        "accuracy": 0.9661865234375,
+        "balanced_accuracy": 0.8345025293981385,
+        "near_boundary_balanced_accuracy": 0.7858102824037188,
+        "safe_recall": 0.8673899580081789,
+        "unsafe_recall": 0.801615100788098
       },
       "gp_acl": {
-        "accuracy": 0.9766303168402778,
-        "balanced_accuracy": 0.7265392695531075,
-        "near_boundary_balanced_accuracy": 0.7051481659951854,
-        "safe_recall": 0.924286875612264,
-        "unsafe_recall": 0.5287916634939511
+        "accuracy": 0.9637247721354166,
+        "balanced_accuracy": 0.8084138186188872,
+        "near_boundary_balanced_accuracy": 0.7783456815775184,
+        "safe_recall": 0.9452634963605728,
+        "unsafe_recall": 0.6715641408772015
       },
       "shortcut_centered_disk": {
+        "accuracy": 0.0,
+        "balanced_accuracy": 0.0,
+        "near_boundary_balanced_accuracy": 0.0,
+        "safe_recall": 0.0,
+        "unsafe_recall": 0.0
+      },
+      "shortcut_constant_unsafe": {
         "accuracy": 0.0,
         "balanced_accuracy": 0.0,
         "near_boundary_balanced_accuracy": 0.0,
@@ -215,12 +614,26 @@
         "safe_recall": 0.0,
         "unsafe_recall": 0.0
       },
+      "shortcut_empty_predictions": {
+        "accuracy": 0.0,
+        "balanced_accuracy": 0.0,
+        "near_boundary_balanced_accuracy": 0.0,
+        "safe_recall": 0.0,
+        "unsafe_recall": 0.0
+      },
       "shortcut_false_count": {
         "accuracy": 0.0,
         "balanced_accuracy": 0.0,
         "near_boundary_balanced_accuracy": 0.0,
         "safe_recall": 0.0,
         "unsafe_recall": 0.0
+      },
+      "shortcut_family_fit": {
+        "accuracy": 0.9769422743055556,
+        "balanced_accuracy": 0.8083659748343703,
+        "near_boundary_balanced_accuracy": 0.7092633467044999,
+        "safe_recall": 0.787173472754243,
+        "unsafe_recall": 0.8295584769144975
       },
       "shortcut_forge_flags": {
         "accuracy": 0.0,
@@ -278,6 +691,13 @@
         "safe_recall": 0.0,
         "unsafe_recall": 0.0
       },
+      "shortcut_null_predictions": {
+        "accuracy": 0.0,
+        "balanced_accuracy": 0.0,
+        "near_boundary_balanced_accuracy": 0.0,
+        "safe_recall": 0.0,
+        "unsafe_recall": 0.0
+      },
       "shortcut_oracle": {
         "accuracy": 0.0,
         "balanced_accuracy": 0.0,
@@ -299,12 +719,26 @@
         "safe_recall": 0.0,
         "unsafe_recall": 0.0
       },
+      "weaker_learned_prior": {
+        "accuracy": 0.9819607204861112,
+        "balanced_accuracy": 0.7619120329733514,
+        "near_boundary_balanced_accuracy": 0.7374611358933768,
+        "safe_recall": 0.9683309488457869,
+        "unsafe_recall": 0.5554931171009162
+      },
+      "weaker_legacy": {
+        "accuracy": 0.9836357964409722,
+        "balanced_accuracy": 0.7625681501398249,
+        "near_boundary_balanced_accuracy": 0.7298803866337216,
+        "safe_recall": 0.9101254895733931,
+        "unsafe_recall": 0.615010810706257
+      },
       "weaker_no_acquisition": {
-        "accuracy": 0.9671698676215278,
-        "balanced_accuracy": 0.6708256234322388,
-        "near_boundary_balanced_accuracy": 0.6405658926117529,
-        "safe_recall": 0.7263462283194798,
-        "unsafe_recall": 0.6153050185449979
+        "accuracy": 0.9665188259548612,
+        "balanced_accuracy": 0.7238842733138959,
+        "near_boundary_balanced_accuracy": 0.6917341183494294,
+        "safe_recall": 0.763794318496448,
+        "unsafe_recall": 0.6839742281313441
       },
       "weaker_no_gradients": {
         "accuracy": 0.0,
@@ -314,18 +748,25 @@
         "unsafe_recall": 0.0
       },
       "weaker_raw_gradients": {
-        "accuracy": 0.9384901258680556,
-        "balanced_accuracy": 0.6036460094586446,
-        "near_boundary_balanced_accuracy": 0.584267527845053,
-        "safe_recall": 0.9432537936721282,
-        "unsafe_recall": 0.26403822524516085
+        "accuracy": 0.9573025173611112,
+        "balanced_accuracy": 0.6753711713651109,
+        "near_boundary_balanced_accuracy": 0.6512476507376073,
+        "safe_recall": 0.9133299828026674,
+        "unsafe_recall": 0.4374123599275543
+      },
+      "weaker_two_draws": {
+        "accuracy": 0.9619683159722222,
+        "balanced_accuracy": 0.8348894835732025,
+        "near_boundary_balanced_accuracy": 0.795200298305875,
+        "safe_recall": 0.9392746668814872,
+        "unsafe_recall": 0.7305043002649176
       },
       "random_baseline": {
-        "accuracy": 0.9778984917534722,
-        "balanced_accuracy": 0.727315099514194,
-        "near_boundary_balanced_accuracy": 0.7046539864185953,
-        "safe_recall": 0.8899400206983602,
-        "unsafe_recall": 0.5646901783300281
+        "accuracy": 0.9673055013020834,
+        "balanced_accuracy": 0.760423307125006,
+        "near_boundary_balanced_accuracy": 0.7337133981448389,
+        "safe_recall": 0.7781590751947319,
+        "unsafe_recall": 0.7426875390552798
       },
       "legacy_shortcut_replace_ground_truth": {
         "accuracy": 0.0,
@@ -334,7 +775,28 @@
         "safe_recall": 0.0,
         "unsafe_recall": 0.0
       },
+      "legacy_shortcut_negative_demo_count": {
+        "accuracy": 0.0,
+        "balanced_accuracy": 0.0,
+        "near_boundary_balanced_accuracy": 0.0,
+        "safe_recall": 0.0,
+        "unsafe_recall": 0.0
+      },
       "legacy_shortcut_grid_resize": {
+        "accuracy": 0.0,
+        "balanced_accuracy": 0.0,
+        "near_boundary_balanced_accuracy": 0.0,
+        "safe_recall": 0.0,
+        "unsafe_recall": 0.0
+      },
+      "legacy_shortcut_grid_order": {
+        "accuracy": 0.0,
+        "balanced_accuracy": 0.0,
+        "near_boundary_balanced_accuracy": 0.0,
+        "safe_recall": 0.0,
+        "unsafe_recall": 0.0
+      },
+      "legacy_shortcut_false_demo_count": {
         "accuracy": 0.0,
         "balanced_accuracy": 0.0,
         "near_boundary_balanced_accuracy": 0.0,
@@ -349,27 +811,6 @@
         "unsafe_recall": 0.0
       },
       "legacy_shortcut_oracle": {
-        "accuracy": 0.0,
-        "balanced_accuracy": 0.0,
-        "near_boundary_balanced_accuracy": 0.0,
-        "safe_recall": 0.0,
-        "unsafe_recall": 0.0
-      },
-      "legacy_shortcut_false_demo_count": {
-        "accuracy": 0.0,
-        "balanced_accuracy": 0.0,
-        "near_boundary_balanced_accuracy": 0.0,
-        "safe_recall": 0.0,
-        "unsafe_recall": 0.0
-      },
-      "legacy_shortcut_grid_order": {
-        "accuracy": 0.0,
-        "balanced_accuracy": 0.0,
-        "near_boundary_balanced_accuracy": 0.0,
-        "safe_recall": 0.0,
-        "unsafe_recall": 0.0
-      },
-      "legacy_shortcut_negative_demo_count": {
         "accuracy": 0.0,
         "balanced_accuracy": 0.0,
         "near_boundary_balanced_accuracy": 0.0,
@@ -378,28 +819,35 @@
       }
     },
     "complex_boundary_stress": {
-      "better_boundary_fit": {
-        "accuracy": 0.87518310546875,
-        "balanced_accuracy": 0.6049723174390457,
-        "near_boundary_balanced_accuracy": 0.568441879166514,
-        "safe_recall": 0.7435490785235788,
-        "unsafe_recall": 0.46639555635451263
+      "alt_periodic": {
+        "accuracy": 0.9085828993055556,
+        "balanced_accuracy": 0.7320470073999313,
+        "near_boundary_balanced_accuracy": 0.6615700802969899,
+        "safe_recall": 0.7286280668191761,
+        "unsafe_recall": 0.7354659479806861
       },
-      "better_boundary_fit_12": {
-        "accuracy": 0.8687201605902778,
-        "balanced_accuracy": 0.6188858939082866,
-        "near_boundary_balanced_accuracy": 0.5782485370716154,
-        "safe_recall": 0.6714619068888716,
-        "unsafe_recall": 0.5663098809277014
+      "better_fill": {
+        "accuracy": 0.9559597439236112,
+        "balanced_accuracy": 0.7795886398524254,
+        "near_boundary_balanced_accuracy": 0.7541015648931607,
+        "safe_recall": 0.9296283901454976,
+        "unsafe_recall": 0.6295488895593534
       },
       "gp_acl": {
-        "accuracy": 0.9261474609375,
-        "balanced_accuracy": 0.6378891559687682,
-        "near_boundary_balanced_accuracy": 0.6200572968868308,
-        "safe_recall": 0.9798965853941842,
-        "unsafe_recall": 0.29588172654335243
+        "accuracy": 0.9368082682291666,
+        "balanced_accuracy": 0.7666831059556909,
+        "near_boundary_balanced_accuracy": 0.7492903791953404,
+        "safe_recall": 0.9751216628895407,
+        "unsafe_recall": 0.5582445490218411
       },
       "shortcut_centered_disk": {
+        "accuracy": 0.0,
+        "balanced_accuracy": 0.0,
+        "near_boundary_balanced_accuracy": 0.0,
+        "safe_recall": 0.0,
+        "unsafe_recall": 0.0
+      },
+      "shortcut_constant_unsafe": {
         "accuracy": 0.0,
         "balanced_accuracy": 0.0,
         "near_boundary_balanced_accuracy": 0.0,
@@ -413,12 +861,26 @@
         "safe_recall": 0.0,
         "unsafe_recall": 0.0
       },
+      "shortcut_empty_predictions": {
+        "accuracy": 0.0,
+        "balanced_accuracy": 0.0,
+        "near_boundary_balanced_accuracy": 0.0,
+        "safe_recall": 0.0,
+        "unsafe_recall": 0.0
+      },
       "shortcut_false_count": {
         "accuracy": 0.0,
         "balanced_accuracy": 0.0,
         "near_boundary_balanced_accuracy": 0.0,
         "safe_recall": 0.0,
         "unsafe_recall": 0.0
+      },
+      "shortcut_family_fit": {
+        "accuracy": 0.9591064453125,
+        "balanced_accuracy": 0.7086803860515402,
+        "near_boundary_balanced_accuracy": 0.6509890312882218,
+        "safe_recall": 0.6407974841918933,
+        "unsafe_recall": 0.7765632879111868
       },
       "shortcut_forge_flags": {
         "accuracy": 0.0,
@@ -476,6 +938,13 @@
         "safe_recall": 0.0,
         "unsafe_recall": 0.0
       },
+      "shortcut_null_predictions": {
+        "accuracy": 0.0,
+        "balanced_accuracy": 0.0,
+        "near_boundary_balanced_accuracy": 0.0,
+        "safe_recall": 0.0,
+        "unsafe_recall": 0.0
+      },
       "shortcut_oracle": {
         "accuracy": 0.0,
         "balanced_accuracy": 0.0,
@@ -497,12 +966,26 @@
         "safe_recall": 0.0,
         "unsafe_recall": 0.0
       },
+      "weaker_learned_prior": {
+        "accuracy": 0.9300401475694444,
+        "balanced_accuracy": 0.6878974137172554,
+        "near_boundary_balanced_accuracy": 0.670671288843105,
+        "safe_recall": 0.9869430292577722,
+        "unsafe_recall": 0.3888517981767388
+      },
+      "weaker_legacy": {
+        "accuracy": 0.9294704861111112,
+        "balanced_accuracy": 0.6931929518305503,
+        "near_boundary_balanced_accuracy": 0.6755555381325329,
+        "safe_recall": 0.9826264319029617,
+        "unsafe_recall": 0.40375947175813875
+      },
       "weaker_no_acquisition": {
-        "accuracy": 0.9260932074652778,
-        "balanced_accuracy": 0.6163928942102604,
-        "near_boundary_balanced_accuracy": 0.5922907435844371,
-        "safe_recall": 0.9725694438889767,
-        "unsafe_recall": 0.26021634453154446
+        "accuracy": 0.9430745442708334,
+        "balanced_accuracy": 0.7016361106257074,
+        "near_boundary_balanced_accuracy": 0.6682290216671285,
+        "safe_recall": 0.9223034758553736,
+        "unsafe_recall": 0.4809687453960411
       },
       "weaker_no_gradients": {
         "accuracy": 0.0,
@@ -512,18 +995,25 @@
         "unsafe_recall": 0.0
       },
       "weaker_raw_gradients": {
-        "accuracy": 0.9230685763888888,
-        "balanced_accuracy": 0.608226680836932,
-        "near_boundary_balanced_accuracy": 0.5856457904652812,
-        "safe_recall": 0.9578172732332904,
-        "unsafe_recall": 0.25863608844057373
+        "accuracy": 0.9278293185763888,
+        "balanced_accuracy": 0.6678586712222536,
+        "near_boundary_balanced_accuracy": 0.6383396402000316,
+        "safe_recall": 0.957150734407937,
+        "unsafe_recall": 0.3785666080365703
+      },
+      "weaker_two_draws": {
+        "accuracy": 0.9373508029513888,
+        "balanced_accuracy": 0.7582691677760499,
+        "near_boundary_balanced_accuracy": 0.7391560192715609,
+        "safe_recall": 0.968001889721262,
+        "unsafe_recall": 0.5485364458308379
       },
       "random_baseline": {
-        "accuracy": 0.9297892252604166,
-        "balanced_accuracy": 0.6650745521787874,
-        "near_boundary_balanced_accuracy": 0.6359722047913555,
-        "safe_recall": 0.9651132923856226,
-        "unsafe_recall": 0.3650358119719525
+        "accuracy": 0.9446682400173612,
+        "balanced_accuracy": 0.7377813510547474,
+        "near_boundary_balanced_accuracy": 0.7029037396708002,
+        "safe_recall": 0.9224070201271696,
+        "unsafe_recall": 0.5531556819823251
       },
       "legacy_shortcut_replace_ground_truth": {
         "accuracy": 0.0,
@@ -532,7 +1022,28 @@
         "safe_recall": 0.0,
         "unsafe_recall": 0.0
       },
+      "legacy_shortcut_negative_demo_count": {
+        "accuracy": 0.0,
+        "balanced_accuracy": 0.0,
+        "near_boundary_balanced_accuracy": 0.0,
+        "safe_recall": 0.0,
+        "unsafe_recall": 0.0
+      },
       "legacy_shortcut_grid_resize": {
+        "accuracy": 0.0,
+        "balanced_accuracy": 0.0,
+        "near_boundary_balanced_accuracy": 0.0,
+        "safe_recall": 0.0,
+        "unsafe_recall": 0.0
+      },
+      "legacy_shortcut_grid_order": {
+        "accuracy": 0.0,
+        "balanced_accuracy": 0.0,
+        "near_boundary_balanced_accuracy": 0.0,
+        "safe_recall": 0.0,
+        "unsafe_recall": 0.0
+      },
+      "legacy_shortcut_false_demo_count": {
         "accuracy": 0.0,
         "balanced_accuracy": 0.0,
         "near_boundary_balanced_accuracy": 0.0,
@@ -547,27 +1058,6 @@
         "unsafe_recall": 0.0
       },
       "legacy_shortcut_oracle": {
-        "accuracy": 0.0,
-        "balanced_accuracy": 0.0,
-        "near_boundary_balanced_accuracy": 0.0,
-        "safe_recall": 0.0,
-        "unsafe_recall": 0.0
-      },
-      "legacy_shortcut_false_demo_count": {
-        "accuracy": 0.0,
-        "balanced_accuracy": 0.0,
-        "near_boundary_balanced_accuracy": 0.0,
-        "safe_recall": 0.0,
-        "unsafe_recall": 0.0
-      },
-      "legacy_shortcut_grid_order": {
-        "accuracy": 0.0,
-        "balanced_accuracy": 0.0,
-        "near_boundary_balanced_accuracy": 0.0,
-        "safe_recall": 0.0,
-        "unsafe_recall": 0.0
-      },
-      "legacy_shortcut_negative_demo_count": {
         "accuracy": 0.0,
         "balanced_accuracy": 0.0,
         "near_boundary_balanced_accuracy": 0.0,
@@ -601,17 +1091,125 @@
     "shortcut_centered_disk": [
       "boundary balanced accuracy below 0.55 or a class recall below 0.10"
     ],
+    "shortcut_constant_unsafe": [
+      "boundary balanced accuracy below 0.55 or a class recall below 0.10",
+      "boundary balanced accuracy below 0.55 or a class recall below 0.10"
+    ],
     "shortcut_contact_disk": [
       "boundary balanced accuracy below 0.55 or a class recall below 0.10",
       "boundary balanced accuracy below 0.55 or a class recall below 0.10"
     ],
+    "shortcut_empty_predictions": [
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size"
+    ],
     "shortcut_false_count": [
-      "wrong number of instances",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
       "declared demonstration count disagrees with oracle ledger",
       "declared demonstration count disagrees with oracle ledger"
     ],
     "shortcut_forge_flags": [
-      "wrong number of instances",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
       "final output may contain only predictions and optional authenticated n_demos",
       "final output may contain only predictions and optional authenticated n_demos"
     ],
@@ -620,40 +1218,309 @@
       "boundary balanced accuracy below 0.55 or a class recall below 0.10"
     ],
     "shortcut_grid_resize": [
-      "wrong number of instances",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
       "final output may contain only predictions and optional authenticated n_demos",
       "final output may contain only predictions and optional authenticated n_demos"
     ],
     "shortcut_impossible_predictions": [
-      "wrong number of instances",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
       "predictions must be finite binary labels of evaluator-owned size",
       "predictions must be finite binary labels of evaluator-owned size"
     ],
     "shortcut_move_baseline": [
-      "wrong number of instances",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
+      "final output may contain only predictions and optional authenticated n_demos",
       "final output may contain only predictions and optional authenticated n_demos",
       "final output may contain only predictions and optional authenticated n_demos"
     ],
     "shortcut_nan_count": [
-      "wrong number of instances",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
       "nonfinite response",
       "nonfinite response"
     ],
     "shortcut_negative_count": [
-      "wrong number of instances",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
+      "declared demonstration count disagrees with oracle ledger",
       "declared demonstration count disagrees with oracle ledger",
       "declared demonstration count disagrees with oracle ledger"
     ],
     "shortcut_negative_inf_count": [
-      "wrong number of instances",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
+      "nonfinite response",
       "nonfinite response",
       "nonfinite response"
+    ],
+    "shortcut_null_predictions": [
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size",
+      "predictions must be finite binary labels of evaluator-owned size"
     ],
     "shortcut_oracle": [
       "boundary balanced accuracy below 0.55 or a class recall below 0.10"
     ],
     "shortcut_over_budget": [
-      "wrong number of instances",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
+      "demonstration budget exceeded",
       "demonstration budget exceeded",
       "demonstration budget exceeded"
     ],
@@ -662,162 +1529,183 @@
       "boundary balanced accuracy below 0.55 or a class recall below 0.10"
     ],
     "weaker_no_gradients": [
-      "boundary balanced accuracy below 0.55 or a class recall below 0.10",
       "boundary balanced accuracy below 0.55 or a class recall below 0.10"
     ]
   },
   "test_raw_metrics_of_failed": {
-    "shortcut_over_budget": {
+    "legacy_shortcut_replace_ground_truth": {},
+    "legacy_shortcut_negative_demo_count": {},
+    "shortcut_negative_count": {
       "double_integrator_g3": null
     },
-    "shortcut_nan_count": {
+    "legacy_shortcut_grid_resize": {},
+    "shortcut_grid_order": {
+      "double_integrator_g3": {
+        "accuracy": 0.5016140407986112,
+        "balanced_accuracy": 0.4999731047992011,
+        "near_boundary_balanced_accuracy": 0.4988536455807362,
+        "safe_recall": 0.4996291880030723,
+        "unsafe_recall": 0.5003170215953298
+      },
+      "complex_boundary_stress": {
+        "accuracy": 0.4988335503472222,
+        "balanced_accuracy": 0.500547773794658,
+        "near_boundary_balanced_accuracy": 0.5012191927262064,
+        "safe_recall": 0.5011216063978633,
+        "unsafe_recall": 0.49997394119145283
+      }
+    },
+    "shortcut_move_baseline": {
       "double_integrator_g3": null
+    },
+    "legacy_shortcut_grid_order": {},
+    "shortcut_replace_ground_truth": {
+      "double_integrator_g3": {
+        "accuracy": 0.4977688259548611,
+        "balanced_accuracy": 0.5002754034617529,
+        "near_boundary_balanced_accuracy": 0.5024831400211545,
+        "safe_recall": 0.49805554220351245,
+        "unsafe_recall": 0.5024952647199935
+      },
+      "complex_boundary_stress": {
+        "accuracy": 0.4994981553819444,
+        "balanced_accuracy": 0.4997396741496682,
+        "near_boundary_balanced_accuracy": 0.49854639497830344,
+        "safe_recall": 0.49899154821933295,
+        "unsafe_recall": 0.5004878000800033
+      }
+    },
+    "shortcut_centered_disk": {
+      "double_integrator_g3": {
+        "accuracy": 0.9291517469618056,
+        "balanced_accuracy": 0.5222917131032987,
+        "near_boundary_balanced_accuracy": 0.5045618673635084,
+        "safe_recall": 0.4822587648265471,
+        "unsafe_recall": 0.5623246613800504
+      },
+      "complex_boundary_stress": {
+        "accuracy": 0.9653659396701388,
+        "balanced_accuracy": 0.5765197377861175,
+        "near_boundary_balanced_accuracy": 0.5273853258199072,
+        "safe_recall": 0.633997211367356,
+        "unsafe_recall": 0.5190422642048792
+      }
     },
     "shortcut_negative_inf_count": {
       "double_integrator_g3": null
     },
-    "legacy_shortcut_replace_ground_truth": {},
-    "shortcut_negative_count": {
+    "legacy_shortcut_false_demo_count": {},
+    "shortcut_null_predictions": {
+      "double_integrator_g3": null
+    },
+    "shortcut_impossible_predictions": {
       "double_integrator_g3": null
     },
     "shortcut_grid_resize": {
       "double_integrator_g3": null
     },
-    "legacy_shortcut_grid_resize": {},
-    "shortcut_move_baseline": {
-      "double_integrator_g3": null
-    },
-    "weaker_no_gradients": {
-      "double_integrator_g3": {
-        "accuracy": 0.94024658203125,
-        "balanced_accuracy": 0.5451631769825604,
-        "near_boundary_balanced_accuracy": 0.5111211110569226,
-        "safe_recall": 0.6439895048252953,
-        "unsafe_recall": 0.44633684913982574
-      },
-      "complex_boundary_stress": {
-        "accuracy": 0.9145982530381944,
-        "balanced_accuracy": 0.5079332884976435,
-        "near_boundary_balanced_accuracy": 0.5031630182312343,
-        "safe_recall": 0.9755875656705645,
-        "unsafe_recall": 0.04027901132472253
-      }
-    },
-    "legacy_shortcut_move_baseline": {},
-    "shortcut_oracle": {
-      "double_integrator_g3": {
-        "accuracy": 0.9242960611979166,
-        "balanced_accuracy": 0.5245354959806294,
-        "near_boundary_balanced_accuracy": 0.5044521214813735,
-        "safe_recall": 0.4437647973360304,
-        "unsafe_recall": 0.6053061946252283
-      },
-      "complex_boundary_stress": {
-        "accuracy": 0.9563259548611112,
-        "balanced_accuracy": 0.5638344299786291,
-        "near_boundary_balanced_accuracy": 0.5234731849742338,
-        "safe_recall": 0.5445757045008411,
-        "unsafe_recall": 0.5830931554564168
-      }
-    },
-    "legacy_shortcut_oracle": {},
-    "shortcut_centered_disk": {
-      "double_integrator_g3": {
-        "accuracy": 0.9301418728298612,
-        "balanced_accuracy": 0.5237235917237639,
-        "near_boundary_balanced_accuracy": 0.505491129904787,
-        "safe_recall": 0.4835961272539247,
-        "unsafe_recall": 0.5638510561936031
-      },
-      "complex_boundary_stress": {
-        "accuracy": 0.9653727213541666,
-        "balanced_accuracy": 0.5764575709839638,
-        "near_boundary_balanced_accuracy": 0.5273762235376349,
-        "safe_recall": 0.6338975476771037,
-        "unsafe_recall": 0.5190175942908235
-      }
-    },
-    "legacy_shortcut_false_demo_count": {},
-    "shortcut_impossible_predictions": {
-      "double_integrator_g3": null
-    },
     "shortcut_forge_flags": {
       "double_integrator_g3": null
     },
-    "shortcut_contact_disk": {
-      "double_integrator_g3": {
-        "accuracy": 0.91705322265625,
-        "balanced_accuracy": 0.519727119599456,
-        "near_boundary_balanced_accuracy": 0.5055913097059421,
-        "safe_recall": 0.6017889532118033,
-        "unsafe_recall": 0.43766528598710874
-      },
-      "complex_boundary_stress": {
-        "accuracy": 0.9207763671875,
-        "balanced_accuracy": 0.5139376799944834,
-        "near_boundary_balanced_accuracy": 0.5036074842281849,
-        "safe_recall": 0.7690942288543244,
-        "unsafe_recall": 0.2587811311346422
-      }
-    },
+    "legacy_shortcut_move_baseline": {},
     "shortcut_false_count": {
       "double_integrator_g3": null
     },
-    "legacy_shortcut_grid_order": {},
-    "shortcut_grid_order": {
+    "shortcut_nan_count": {
+      "double_integrator_g3": null
+    },
+    "shortcut_empty_predictions": {
+      "double_integrator_g3": null
+    },
+    "shortcut_constant_unsafe": {
       "double_integrator_g3": {
-        "accuracy": 0.5002305772569444,
-        "balanced_accuracy": 0.49902027520663267,
-        "near_boundary_balanced_accuracy": 0.5004258596906672,
-        "safe_recall": 0.4986524195721094,
-        "unsafe_recall": 0.4993881308411561
+        "accuracy": 0.08528645833333333,
+        "balanced_accuracy": 0.5,
+        "near_boundary_balanced_accuracy": 0.5,
+        "safe_recall": 0.0,
+        "unsafe_recall": 1.0
       },
       "complex_boundary_stress": {
-        "accuracy": 0.4999457465277778,
-        "balanced_accuracy": 0.500428115114895,
-        "near_boundary_balanced_accuracy": 0.5008157774693841,
-        "safe_recall": 0.5009641556252044,
-        "unsafe_recall": 0.49989207460458573
+        "accuracy": 0.0911593967013889,
+        "balanced_accuracy": 0.5,
+        "near_boundary_balanced_accuracy": 0.5,
+        "safe_recall": 0.0,
+        "unsafe_recall": 1.0
       }
     },
-    "legacy_shortcut_negative_demo_count": {},
-    "shortcut_replace_ground_truth": {
+    "shortcut_contact_disk": {
       "double_integrator_g3": {
-        "accuracy": 0.49810791015625,
-        "balanced_accuracy": 0.5008769644250373,
-        "near_boundary_balanced_accuracy": 0.5026698685905792,
-        "safe_recall": 0.5004758895958168,
-        "unsafe_recall": 0.5012780392542577
+        "accuracy": 0.9223700629340278,
+        "balanced_accuracy": 0.5210087182020919,
+        "near_boundary_balanced_accuracy": 0.5053977191170087,
+        "safe_recall": 0.5505765148668923,
+        "unsafe_recall": 0.4914409215372918
       },
       "complex_boundary_stress": {
-        "accuracy": 0.4995049370659722,
-        "balanced_accuracy": 0.4996692933791835,
-        "near_boundary_balanced_accuracy": 0.49849573998633,
-        "safe_recall": 0.4989847599710321,
-        "unsafe_recall": 0.5003538267873351
+        "accuracy": 0.9264933268229166,
+        "balanced_accuracy": 0.5184983623785433,
+        "near_boundary_balanced_accuracy": 0.5059635082138422,
+        "safe_recall": 0.7104680429257915,
+        "unsafe_recall": 0.3265286818312951
       }
+    },
+    "shortcut_oracle": {
+      "double_integrator_g3": {
+        "accuracy": 0.9236246744791666,
+        "balanced_accuracy": 0.5236290705750608,
+        "near_boundary_balanced_accuracy": 0.5043816594553457,
+        "safe_recall": 0.44477969769949993,
+        "unsafe_recall": 0.6024784434506217
+      },
+      "complex_boundary_stress": {
+        "accuracy": 0.9563191731770834,
+        "balanced_accuracy": 0.5638743618368334,
+        "near_boundary_balanced_accuracy": 0.5234160537100915,
+        "safe_recall": 0.5446477211767813,
+        "unsafe_recall": 0.5831010024968852
+      }
+    },
+    "legacy_shortcut_oracle": {},
+    "weaker_no_gradients": {
+      "double_integrator_g3": {
+        "accuracy": 0.9422064887152778,
+        "balanced_accuracy": 0.5465910753703839,
+        "near_boundary_balanced_accuracy": 0.5101144486781704,
+        "safe_recall": 0.4864031470288125,
+        "unsafe_recall": 0.6067790037119555
+      },
+      "complex_boundary_stress": {
+        "accuracy": 0.9562852647569444,
+        "balanced_accuracy": 0.5665621547660101,
+        "near_boundary_balanced_accuracy": 0.5253660591134621,
+        "safe_recall": 0.7373678600769311,
+        "unsafe_recall": 0.3957564494550892
+      }
+    },
+    "shortcut_over_budget": {
+      "double_integrator_g3": null
     }
   },
   "train_rank": {
     "values": {
       "gp_acl": 0.0,
-      "random_baseline": 1.56
+      "random_baseline": -2.599999999999999
     },
     "order": [
-      "random_baseline",
-      "gp_acl"
+      "gp_acl",
+      "random_baseline"
     ],
     "population_std": {
-      "double_integrator_g3.accuracy": 0.00201416015625,
-      "double_integrator_g3.balanced_accuracy": 0.0016851786481552056,
-      "double_integrator_g3.near_boundary_balanced_accuracy": 0.0037536430668205223,
-      "double_integrator_g3.safe_recall": 0.03300617766059599,
-      "double_integrator_g3.unsafe_recall": 0.029635820364285748,
-      "complex_boundary_stress.accuracy": 0.002187093098958315,
-      "complex_boundary_stress.balanced_accuracy": 0.01577848372478613,
-      "complex_boundary_stress.near_boundary_balanced_accuracy": 0.011694726375707565,
-      "complex_boundary_stress.safe_recall": 0.0063624119309875216,
-      "complex_boundary_stress.unsafe_recall": 0.03791937938055978
+      "double_integrator_g3.accuracy": 0.0015716552734375,
+      "double_integrator_g3.balanced_accuracy": 0.021586826264701098,
+      "double_integrator_g3.near_boundary_balanced_accuracy": 0.017889035461555625,
+      "double_integrator_g3.safe_recall": 0.07477762720132347,
+      "double_integrator_g3.unsafe_recall": 0.03160397467192155,
+      "complex_boundary_stress.accuracy": 0.004948933919270815,
+      "complex_boundary_stress.balanced_accuracy": 0.014774182244633782,
+      "complex_boundary_stress.near_boundary_balanced_accuracy": 0.024771752188386342,
+      "complex_boundary_stress.safe_recall": 0.032711838075768884,
+      "complex_boundary_stress.unsafe_recall": 0.003163473586501153
     },
     "failed": {},
     "rule": "passed runs first; sum weight * abs(coefficient) * better-direction improvement / population std; zero-variance terms contribute zero"
@@ -825,139 +1713,139 @@
   "train_metrics": {
     "double_integrator_g3": {
       "gp_acl": {
-        "accuracy": 0.9745686848958334,
-        "balanced_accuracy": 0.7330779654007183,
-        "near_boundary_balanced_accuracy": 0.7122883911790865,
-        "safe_recall": 0.8805185236148734,
-        "unsafe_recall": 0.5856374071865632
+        "accuracy": 0.9688618977864584,
+        "balanced_accuracy": 0.8090125068022253,
+        "near_boundary_balanced_accuracy": 0.7755167277865288,
+        "safe_recall": 0.9260972209915463,
+        "unsafe_recall": 0.6919277926129038
       },
       "random_baseline": {
-        "accuracy": 0.9785970052083334,
-        "balanced_accuracy": 0.7297076081044079,
-        "near_boundary_balanced_accuracy": 0.7047811050454454,
-        "safe_recall": 0.8145061682936814,
-        "unsafe_recall": 0.6449090479151347
+        "accuracy": 0.9657185872395834,
+        "balanced_accuracy": 0.765838854272823,
+        "near_boundary_balanced_accuracy": 0.7397386568634176,
+        "safe_recall": 0.7765419665888994,
+        "unsafe_recall": 0.7551357419567469
       }
     },
     "complex_boundary_stress": {
       "gp_acl": {
-        "accuracy": 0.9243367513020834,
-        "balanced_accuracy": 0.6294941793052676,
-        "near_boundary_balanced_accuracy": 0.6122059073779881,
-        "safe_recall": 0.983203098264454,
-        "unsafe_recall": 0.2757852603460814
+        "accuracy": 0.9375813802083334,
+        "balanced_accuracy": 0.7665449561162859,
+        "near_boundary_balanced_accuracy": 0.7454488052403557,
+        "safe_recall": 0.9779931909377492,
+        "unsafe_recall": 0.555096721294823
       },
       "random_baseline": {
-        "accuracy": 0.9287109375,
-        "balanced_accuracy": 0.6610511467548399,
-        "near_boundary_balanced_accuracy": 0.6355953601294032,
-        "safe_recall": 0.9704782744024789,
-        "unsafe_recall": 0.351624019107201
+        "accuracy": 0.947479248046875,
+        "balanced_accuracy": 0.7369965916270184,
+        "near_boundary_balanced_accuracy": 0.695905300863583,
+        "safe_recall": 0.9125695147862114,
+        "unsafe_recall": 0.5614236684678253
       }
     }
   },
   "train_failures": {},
   "train_raw_metrics_of_failed": {},
   "paired": {
-    "random_baseline": {
+    "alt_periodic": {
       "double_integrator_g3": {
         "accuracy": {
-          "mean": 0.0012681749131944445,
+          "mean": 0.018120659722222224,
           "paired_95_interval": [
-            -0.0046795315212673615,
-            0.007439676920572914
+            0.013319227430555556,
+            0.022372775607638888
           ],
-          "wins": 12,
-          "losses": 24,
+          "wins": 34,
+          "losses": 2,
           "n": 36
         },
         "balanced_accuracy": {
-          "mean": 0.0007758299610865586,
+          "mean": -0.04345444497232293,
           "paired_95_interval": [
-            -0.02283555576551662,
-            0.02521213144361331
+            -0.06252388948689556,
+            -0.02519587410267362
           ],
-          "wins": 12,
-          "losses": 24,
+          "wins": 8,
+          "losses": 28,
           "n": 36
         },
         "near_boundary_balanced_accuracy": {
-          "mean": -0.000494179576589929,
+          "mean": -0.06078531984805516,
           "paired_95_interval": [
-            -0.019590263760949148,
-            0.019978080172443412
+            -0.07545649322821052,
+            -0.04714985130713557
           ],
-          "wins": 13,
-          "losses": 23,
+          "wins": 2,
+          "losses": 34,
           "n": 36
         },
         "safe_recall": {
-          "mean": -0.03434685491390362,
+          "mean": -0.24343167794211773,
           "paired_95_interval": [
-            -0.10230750958645417,
-            0.026198735969819375
+            -0.29228024822894355,
+            -0.19440588362226088
           ],
-          "wins": 17,
-          "losses": 17,
+          "wins": 1,
+          "losses": 33,
           "n": 36
         },
         "unsafe_recall": {
-          "mean": 0.03589851483607672,
+          "mean": 0.15652278799747185,
           "paired_95_interval": [
-            -0.052197315963488054,
-            0.12729144569675063
+            0.0913716141091824,
+            0.22058108965713466
           ],
-          "wins": 15,
-          "losses": 21,
+          "wins": 25,
+          "losses": 11,
           "n": 36
         }
       },
       "complex_boundary_stress": {
         "accuracy": {
-          "mean": 0.0036417643229166665,
+          "mean": -0.028225368923611112,
           "paired_95_interval": [
-            0.0009426540798611111,
-            0.006076558430989581
+            -0.06028289794921875,
+            0.0008694118923610913
           ],
-          "wins": 29,
-          "losses": 7,
+          "wins": 20,
+          "losses": 16,
           "n": 36
         },
         "balanced_accuracy": {
-          "mean": 0.027185396210019284,
+          "mean": -0.03463609855575969,
           "paired_95_interval": [
-            0.014106160989383724,
-            0.0402410858600719
+            -0.04368728029032317,
+            -0.02481760333887706
           ],
-          "wins": 26,
-          "losses": 10,
+          "wins": 3,
+          "losses": 33,
           "n": 36
         },
         "near_boundary_balanced_accuracy": {
-          "mean": 0.01591490790452458,
+          "mean": -0.08772029889835044,
           "paired_95_interval": [
-            0.0028683208546728266,
-            0.02859295266007999
+            -0.10137965158818144,
+            -0.0738103682091366
           ],
-          "wins": 22,
-          "losses": 14,
+          "wins": 1,
+          "losses": 35,
           "n": 36
         },
         "safe_recall": {
-          "mean": -0.014783293008561574,
+          "mean": -0.24649359607036445,
           "paired_95_interval": [
-            -0.028190980563711873,
-            0.00046774656194853616
+            -0.3180543021314609,
+            -0.17801300181682553
           ],
-          "wins": 8,
-          "losses": 26,
+          "wins": 2,
+          "losses": 34,
           "n": 36
         },
         "unsafe_recall": {
-          "mean": 0.06915408542860012,
+          "mean": 0.17722139895884506,
           "paired_95_interval": [
-            0.036067627382007375,
-            0.1014917440479174
+            0.10086524975938226,
+            0.25697369595135344
           ],
           "wins": 28,
           "losses": 8,
@@ -965,371 +1853,477 @@
         }
       }
     },
-    "better_boundary_fit": {
+    "better_fill": {
       "double_integrator_g3": {
         "accuracy": {
-          "mean": -0.034294976128472224,
+          "mean": 0.0024617513020833335,
           "paired_95_interval": [
-            -0.058831278483072916,
-            -0.014030965169270838
+            0.0014241536458333333,
+            0.003533257378472222
           ],
-          "wins": 9,
-          "losses": 26,
+          "wins": 21,
+          "losses": 5,
           "n": 36
         },
         "balanced_accuracy": {
-          "mean": -0.04219295850886117,
+          "mean": 0.026088710779251224,
           "paired_95_interval": [
-            -0.06129538471323457,
-            -0.023101914097288862
+            0.013688652561459841,
+            0.039173469487495644
+          ],
+          "wins": 23,
+          "losses": 9,
+          "n": 36
+        },
+        "near_boundary_balanced_accuracy": {
+          "mean": 0.0074646008262002845,
+          "paired_95_interval": [
+            0.00020782491396607148,
+            0.014450904898417381
+          ],
+          "wins": 23,
+          "losses": 8,
+          "n": 36
+        },
+        "safe_recall": {
+          "mean": -0.07787353835239405,
+          "paired_95_interval": [
+            -0.10720744992217925,
+            -0.05215010384949548
+          ],
+          "wins": 0,
+          "losses": 29,
+          "n": 36
+        },
+        "unsafe_recall": {
+          "mean": 0.13005095991089646,
+          "paired_95_interval": [
+            0.09124028649888072,
+            0.1707598397480621
+          ],
+          "wins": 28,
+          "losses": 0,
+          "n": 36
+        }
+      },
+      "complex_boundary_stress": {
+        "accuracy": {
+          "mean": 0.019151475694444444,
+          "paired_95_interval": [
+            0.013217502170138888,
+            0.025445048014322916
+          ],
+          "wins": 31,
+          "losses": 1,
+          "n": 36
+        },
+        "balanced_accuracy": {
+          "mean": 0.012905533896734649,
+          "paired_95_interval": [
+            0.008381963880071543,
+            0.017423697928351925
+          ],
+          "wins": 29,
+          "losses": 7,
+          "n": 36
+        },
+        "near_boundary_balanced_accuracy": {
+          "mean": 0.004811185697820482,
+          "paired_95_interval": [
+            0.0012565816259836554,
+            0.008316780932820116
+          ],
+          "wins": 24,
+          "losses": 10,
+          "n": 36
+        },
+        "safe_recall": {
+          "mean": -0.04549327274404304,
+          "paired_95_interval": [
+            -0.061839703182285405,
+            -0.03103301867611472
+          ],
+          "wins": 0,
+          "losses": 32,
+          "n": 36
+        },
+        "unsafe_recall": {
+          "mean": 0.07130434053751233,
+          "paired_95_interval": [
+            0.053713896374897444,
+            0.0917812109145425
+          ],
+          "wins": 35,
+          "losses": 0,
+          "n": 36
+        }
+      }
+    },
+    "random_baseline": {
+      "double_integrator_g3": {
+        "accuracy": {
+          "mean": 0.0035807291666666665,
+          "paired_95_interval": [
+            -0.0008275349934895831,
+            0.007798936631944444
+          ],
+          "wins": 24,
+          "losses": 12,
+          "n": 36
+        },
+        "balanced_accuracy": {
+          "mean": -0.047990511493881234,
+          "paired_95_interval": [
+            -0.07514055180363839,
+            -0.022022315258860004
           ],
           "wins": 9,
           "losses": 27,
           "n": 36
         },
         "near_boundary_balanced_accuracy": {
-          "mean": -0.061678675594770124,
+          "mean": -0.04463228343267964,
           "paired_95_interval": [
-            -0.07960242269640855,
-            -0.04423425053194591
+            -0.06468667634226764,
+            -0.02529923566037848
           ],
           "wins": 5,
           "losses": 31,
           "n": 36
         },
         "safe_recall": {
-          "mean": -0.20312055555517564,
+          "mean": -0.167104421165841,
           "paired_95_interval": [
-            -0.26753390310861713,
-            -0.1418647948060404
+            -0.22576814732225217,
+            -0.10650061880894228
           ],
-          "wins": 4,
-          "losses": 31,
+          "wins": 6,
+          "losses": 30,
           "n": 36
         },
         "unsafe_recall": {
-          "mean": 0.11873463853745322,
+          "mean": 0.0711233981780785,
           "paired_95_interval": [
-            0.04996181449050846,
-            0.18794454971032207
+            -0.012216208177514742,
+            0.15092461212134098
           ],
-          "wins": 23,
-          "losses": 13,
+          "wins": 22,
+          "losses": 14,
           "n": 36
         }
       },
       "complex_boundary_stress": {
         "accuracy": {
-          "mean": -0.05096435546875,
+          "mean": 0.007859971788194444,
           "paired_95_interval": [
-            -0.08439381917317708,
-            -0.021464029947916668
+            0.004713270399305556,
+            0.010904947916666666
           ],
-          "wins": 12,
-          "losses": 19,
+          "wins": 28,
+          "losses": 7,
           "n": 36
         },
         "balanced_accuracy": {
-          "mean": -0.032916838529722534,
+          "mean": -0.028901754900943488,
           "paired_95_interval": [
-            -0.041902724948041384,
-            -0.02403010465901867
+            -0.05237997142860957,
+            -0.005774332014544474
           ],
-          "wins": 1,
-          "losses": 30,
+          "wins": 11,
+          "losses": 25,
           "n": 36
         },
         "near_boundary_balanced_accuracy": {
-          "mean": -0.05161541772031688,
+          "mean": -0.04638663952454,
           "paired_95_interval": [
-            -0.062457547435176224,
-            -0.04063805598781876
-          ],
-          "wins": 0,
-          "losses": 31,
-          "n": 36
-        },
-        "safe_recall": {
-          "mean": -0.2363475068706054,
-          "paired_95_interval": [
-            -0.3143622774550149,
-            -0.15993744447010885
-          ],
-          "wins": 2,
-          "losses": 29,
-          "n": 36
-        },
-        "unsafe_recall": {
-          "mean": 0.17051382981116026,
-          "paired_95_interval": [
-            0.10158084554715423,
-            0.2456320344113273
-          ],
-          "wins": 24,
-          "losses": 7,
-          "n": 36
-        }
-      }
-    },
-    "better_boundary_fit_12": {
-      "double_integrator_g3": {
-        "accuracy": {
-          "mean": -0.015713161892361112,
-          "paired_95_interval": [
-            -0.0265167236328125,
-            -0.007236056857638889
+            -0.06790701616334927,
+            -0.02428226475865471
           ],
           "wins": 10,
           "losses": 26,
           "n": 36
         },
-        "balanced_accuracy": {
-          "mean": -0.038278865881538546,
-          "paired_95_interval": [
-            -0.05602004380170428,
-            -0.021551416811389
-          ],
-          "wins": 7,
-          "losses": 29,
-          "n": 36
-        },
-        "near_boundary_balanced_accuracy": {
-          "mean": -0.0401266955628475,
-          "paired_95_interval": [
-            -0.053920521907139425,
-            -0.027675478026175666
-          ],
-          "wins": 3,
-          "losses": 33,
-          "n": 36
-        },
         "safe_recall": {
-          "mean": -0.11458323211117295,
+          "mean": -0.052714642762370915,
           "paired_95_interval": [
-            -0.172719491335595,
-            -0.06365387053796656
+            -0.0761806947453129,
+            -0.03075105052110969
           ],
-          "wins": 10,
-          "losses": 23,
+          "wins": 6,
+          "losses": 30,
           "n": 36
         },
         "unsafe_recall": {
-          "mean": 0.03802550034809585,
+          "mean": -0.005088867039516092,
           "paired_95_interval": [
-            -0.017005707772345807,
-            0.09333498149505574
+            -0.05466802045981232,
+            0.04502774130133251
           ],
-          "wins": 18,
-          "losses": 18,
-          "n": 36
-        }
-      },
-      "complex_boundary_stress": {
-        "accuracy": {
-          "mean": -0.057427300347222224,
-          "paired_95_interval": [
-            -0.09134368896484375,
-            -0.026258511013454864
-          ],
-          "wins": 11,
+          "wins": 16,
           "losses": 20,
-          "n": 36
-        },
-        "balanced_accuracy": {
-          "mean": -0.01900326206048168,
-          "paired_95_interval": [
-            -0.028429202294794943,
-            -0.00900051566927383
-          ],
-          "wins": 7,
-          "losses": 24,
-          "n": 36
-        },
-        "near_boundary_balanced_accuracy": {
-          "mean": -0.041808759815215556,
-          "paired_95_interval": [
-            -0.05171055426278163,
-            -0.0316417791537658
-          ],
-          "wins": 1,
-          "losses": 30,
-          "n": 36
-        },
-        "safe_recall": {
-          "mean": -0.3084346785053124,
-          "paired_95_interval": [
-            -0.3939943453957707,
-            -0.22533013204309438
-          ],
-          "wins": 1,
-          "losses": 30,
-          "n": 36
-        },
-        "unsafe_recall": {
-          "mean": 0.27042815438434903,
-          "paired_95_interval": [
-            0.18727575919673786,
-            0.3534417122614542
-          ],
-          "wins": 25,
-          "losses": 6,
           "n": 36
         }
       }
     },
-    "weaker_no_acquisition": {
+    "shortcut_centered_disk": {
       "double_integrator_g3": {
         "accuracy": {
-          "mean": -0.00946044921875,
+          "mean": -0.03457302517361111,
           "paired_95_interval": [
-            -0.01258697509765625,
-            -0.006313747829861111
+            -0.038614908854166664,
+            -0.030314127604166668
           ],
-          "wins": 6,
-          "losses": 29,
+          "wins": 0,
+          "losses": 36,
           "n": 36
         },
         "balanced_accuracy": {
-          "mean": -0.05571364612086877,
+          "mean": -0.2861221055155885,
           "paired_95_interval": [
-            -0.0707397573899035,
-            -0.0403009687859818
+            -0.31304077593428953,
+            -0.26022989360749327
           ],
-          "wins": 2,
-          "losses": 33,
+          "wins": 0,
+          "losses": 36,
           "n": 36
         },
         "near_boundary_balanced_accuracy": {
-          "mean": -0.06458227338343231,
+          "mean": -0.27378381421401,
           "paired_95_interval": [
-            -0.07869766238253813,
-            -0.049825001518147755
+            -0.29056508903233197,
+            -0.25619085290016574
           ],
           "wins": 0,
-          "losses": 35,
+          "losses": 36,
           "n": 36
         },
         "safe_recall": {
-          "mean": -0.19794064729278407,
+          "mean": -0.46300473153402577,
           "paired_95_interval": [
-            -0.27559105642114506,
-            -0.12120869609285513
+            -0.49401442020131614,
+            -0.42848459628998514
           ],
-          "wins": 8,
-          "losses": 24,
+          "wins": 0,
+          "losses": 36,
           "n": 36
         },
         "unsafe_recall": {
-          "mean": 0.0865133550510465,
+          "mean": -0.10923947949715108,
           "paired_95_interval": [
-            0.012548979517405166,
-            0.16278542539151516
+            -0.17840074309348422,
+            -0.03883651160021608
           ],
-          "wins": 22,
-          "losses": 13,
+          "wins": 11,
+          "losses": 25,
           "n": 36
         }
       },
       "complex_boundary_stress": {
         "accuracy": {
-          "mean": -5.425347222222222e-05,
+          "mean": 0.028557671440972224,
           "paired_95_interval": [
-            -0.002536349826388889,
-            0.002678934733072914
+            0.023708767361111112,
+            0.03303358289930555
           ],
-          "wins": 12,
-          "losses": 13,
+          "wins": 35,
+          "losses": 1,
           "n": 36
         },
         "balanced_accuracy": {
-          "mean": -0.021496261758507725,
+          "mean": -0.1901633681695733,
           "paired_95_interval": [
-            -0.032049843668067686,
-            -0.012063928331055235
+            -0.22004990252614787,
+            -0.16066447969115272
           ],
-          "wins": 3,
-          "losses": 24,
+          "wins": 0,
+          "losses": 36,
           "n": 36
         },
         "near_boundary_balanced_accuracy": {
-          "mean": -0.027766553302393776,
+          "mean": -0.22190505337543315,
           "paired_95_interval": [
-            -0.037859157460026015,
-            -0.017975786528636545
+            -0.2504598023721725,
+            -0.19374200426749424
           ],
-          "wins": 3,
-          "losses": 23,
+          "wins": 0,
+          "losses": 36,
           "n": 36
         },
         "safe_recall": {
-          "mean": -0.0073271415052074745,
+          "mean": -0.34112445152218474,
           "paired_95_interval": [
-            -0.01528271926253254,
-            0.00046476416876154467
+            -0.373848302173325,
+            -0.30727245670640124
           ],
-          "wins": 10,
-          "losses": 16,
+          "wins": 0,
+          "losses": 36,
           "n": 36
         },
         "unsafe_recall": {
-          "mean": -0.035665382011807974,
+          "mean": -0.039202284816961884,
           "paired_95_interval": [
-            -0.05715371237785618,
-            -0.015651649493698395
+            -0.10392385239894583,
+            0.027101734903403583
           ],
-          "wins": 5,
+          "wins": 14,
           "losses": 22,
           "n": 36
         }
       }
     },
-    "weaker_no_gradients": {
+    "shortcut_constant_unsafe": {
       "double_integrator_g3": {
         "accuracy": {
-          "mean": -0.036383734809027776,
+          "mean": -0.8784383138020834,
           "paired_95_interval": [
-            -0.04165988498263889,
-            -0.031053161621093752
+            -0.8848539564344619,
+            -0.8719821506076388
           ],
           "wins": 0,
           "losses": 36,
           "n": 36
         },
         "balanced_accuracy": {
-          "mean": -0.1813760925705471,
+          "mean": -0.30841381861888717,
           "paired_95_interval": [
-            -0.19861943968126555,
-            -0.16386812843440504
+            -0.3335771717266659,
+            -0.28386846798308263
           ],
           "wins": 0,
           "losses": 36,
           "n": 36
         },
         "near_boundary_balanced_accuracy": {
-          "mean": -0.1940270549382626,
+          "mean": -0.27834568157751843,
           "paired_95_interval": [
-            -0.21183899588047098,
-            -0.17570304487857832
+            -0.29549365626129415,
+            -0.260669968678315
           ],
           "wins": 0,
           "losses": 36,
           "n": 36
         },
         "safe_recall": {
-          "mean": -0.2802973707869687,
+          "mean": -0.9452634963605728,
           "paired_95_interval": [
-            -0.35567639604942947,
-            -0.20547246741746567
+            -0.9721248362615069,
+            -0.9142097962699142
           ],
-          "wins": 2,
-          "losses": 33,
+          "wins": 0,
+          "losses": 36,
           "n": 36
         },
         "unsafe_recall": {
-          "mean": -0.08245481435412555,
+          "mean": 0.3284358591227986,
           "paired_95_interval": [
-            -0.13775850253524907,
-            -0.02585015733363189
+            0.2638618275112295,
+            0.3925814291748394
+          ],
+          "wins": 36,
+          "losses": 0,
+          "n": 36
+        }
+      },
+      "complex_boundary_stress": {
+        "accuracy": {
+          "mean": -0.8456488715277778,
+          "paired_95_interval": [
+            -0.8523766411675348,
+            -0.8390842013888888
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "balanced_accuracy": {
+          "mean": -0.26668310595569095,
+          "paired_95_interval": [
+            -0.2940706406217613,
+            -0.23844409966235586
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "near_boundary_balanced_accuracy": {
+          "mean": -0.24929037919534036,
+          "paired_95_interval": [
+            -0.27686118141915506,
+            -0.22212619766390476
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "safe_recall": {
+          "mean": -0.9751216628895407,
+          "paired_95_interval": [
+            -0.9843011672096255,
+            -0.9642646249399289
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "unsafe_recall": {
+          "mean": 0.4417554509781589,
+          "paired_95_interval": [
+            0.38389463659527867,
+            0.49866181840275287
+          ],
+          "wins": 36,
+          "losses": 0,
+          "n": 36
+        }
+      }
+    },
+    "shortcut_contact_disk": {
+      "double_integrator_g3": {
+        "accuracy": {
+          "mean": -0.04135470920138889,
+          "paired_95_interval": [
+            -0.046644592285156244,
+            -0.03646511501736111
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "balanced_accuracy": {
+          "mean": -0.2874051004167952,
+          "paired_95_interval": [
+            -0.3118838518165775,
+            -0.26298920278756405
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "near_boundary_balanced_accuracy": {
+          "mean": -0.27294796246050973,
+          "paired_95_interval": [
+            -0.2899890059933827,
+            -0.25597111162453035
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "safe_recall": {
+          "mean": -0.39468698149368053,
+          "paired_95_interval": [
+            -0.46263651345608425,
+            -0.3256268102752576
+          ],
+          "wins": 1,
+          "losses": 35,
+          "n": 36
+        },
+        "unsafe_recall": {
+          "mean": -0.1801232193399097,
+          "paired_95_interval": [
+            -0.2664645794945207,
+            -0.09388366114822139
           ],
           "wins": 14,
           "losses": 22,
@@ -1338,53 +2332,912 @@
       },
       "complex_boundary_stress": {
         "accuracy": {
-          "mean": -0.011549207899305556,
+          "mean": -0.01031494140625,
           "paired_95_interval": [
-            -0.01551666259765625,
-            -0.007412211100260419
+            -0.01352962917751736,
+            -0.007242838541666667
           ],
-          "wins": 5,
+          "wins": 4,
           "losses": 31,
           "n": 36
         },
         "balanced_accuracy": {
-          "mean": -0.12995586747112473,
+          "mean": -0.24818474357714748,
           "paired_95_interval": [
-            -0.14096471688794573,
-            -0.11869331900053635
+            -0.27622425259841216,
+            -0.220682780330625
           ],
           "wins": 0,
           "losses": 36,
           "n": 36
         },
         "near_boundary_balanced_accuracy": {
-          "mean": -0.11689427865559655,
+          "mean": -0.24332687098149824,
           "paired_95_interval": [
-            -0.1293171822827829,
-            -0.10456487948078055
+            -0.27066426051463,
+            -0.21538784907181785
           ],
           "wins": 0,
           "losses": 36,
           "n": 36
         },
         "safe_recall": {
-          "mean": -0.004309019723619535,
+          "mean": -0.26465361996374903,
           "paired_95_interval": [
-            -0.023656068467219966,
-            0.013981174303869347
-          ],
-          "wins": 22,
-          "losses": 9,
-          "n": 36
-        },
-        "unsafe_recall": {
-          "mean": -0.25560271521862993,
-          "paired_95_interval": [
-            -0.2832478347292943,
-            -0.22796836426777375
+            -0.28653678014733475,
+            -0.24377239129215839
           ],
           "wins": 0,
           "losses": 36,
+          "n": 36
+        },
+        "unsafe_recall": {
+          "mean": -0.23171586719054593,
+          "paired_95_interval": [
+            -0.28377913500595064,
+            -0.1809504506475667
+          ],
+          "wins": 1,
+          "losses": 35,
+          "n": 36
+        }
+      }
+    },
+    "shortcut_empty_predictions": {},
+    "shortcut_false_count": {},
+    "shortcut_family_fit": {
+      "double_integrator_g3": {
+        "accuracy": {
+          "mean": 0.013217502170138888,
+          "paired_95_interval": [
+            -0.0024890475802951386,
+            0.025865342881944444
+          ],
+          "wins": 31,
+          "losses": 5,
+          "n": 36
+        },
+        "balanced_accuracy": {
+          "mean": -4.784378451684458e-05,
+          "paired_95_interval": [
+            -0.02469175059181831,
+            0.023865091228661792
+          ],
+          "wins": 18,
+          "losses": 18,
+          "n": 36
+        },
+        "near_boundary_balanced_accuracy": {
+          "mean": -0.06908233487301853,
+          "paired_95_interval": [
+            -0.09111620414687154,
+            -0.04757911492528328
+          ],
+          "wins": 4,
+          "losses": 32,
+          "n": 36
+        },
+        "safe_recall": {
+          "mean": -0.15809002360632984,
+          "paired_95_interval": [
+            -0.2179110760797659,
+            -0.10398225001908433
+          ],
+          "wins": 3,
+          "losses": 31,
+          "n": 36
+        },
+        "unsafe_recall": {
+          "mean": 0.15799433603729615,
+          "paired_95_interval": [
+            0.10115034070782875,
+            0.21394150493952
+          ],
+          "wins": 24,
+          "losses": 12,
+          "n": 36
+        }
+      },
+      "complex_boundary_stress": {
+        "accuracy": {
+          "mean": 0.022298177083333332,
+          "paired_95_interval": [
+            0.0027255588107638895,
+            0.03668924967447916
+          ],
+          "wins": 32,
+          "losses": 4,
+          "n": 36
+        },
+        "balanced_accuracy": {
+          "mean": -0.05800271990415081,
+          "paired_95_interval": [
+            -0.07073256882669918,
+            -0.04478279635980324
+          ],
+          "wins": 5,
+          "losses": 31,
+          "n": 36
+        },
+        "near_boundary_balanced_accuracy": {
+          "mean": -0.09830134790711859,
+          "paired_95_interval": [
+            -0.11094182158639034,
+            -0.08559889691149271
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "safe_recall": {
+          "mean": -0.33432417869764725,
+          "paired_95_interval": [
+            -0.39635295254927144,
+            -0.27388186365821693
+          ],
+          "wins": 1,
+          "losses": 35,
+          "n": 36
+        },
+        "unsafe_recall": {
+          "mean": 0.2183187388893457,
+          "paired_95_interval": [
+            0.16415658996758328,
+            0.27235754644531546
+          ],
+          "wins": 31,
+          "losses": 5,
+          "n": 36
+        }
+      }
+    },
+    "shortcut_forge_flags": {},
+    "shortcut_grid_order": {
+      "double_integrator_g3": {
+        "accuracy": {
+          "mean": -0.4621107313368056,
+          "paired_95_interval": [
+            -0.4665866427951389,
+            -0.4576822916666667
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "balanced_accuracy": {
+          "mean": -0.3084407138196862,
+          "paired_95_interval": [
+            -0.33286205208907343,
+            -0.2839931703417656
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "near_boundary_balanced_accuracy": {
+          "mean": -0.27949203599678224,
+          "paired_95_interval": [
+            -0.2958459889064163,
+            -0.2618952195392908
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "safe_recall": {
+          "mean": -0.4456343083575006,
+          "paired_95_interval": [
+            -0.47198445271635037,
+            -0.4156588218750495
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "unsafe_recall": {
+          "mean": -0.17124711928187167,
+          "paired_95_interval": [
+            -0.23391049702184372,
+            -0.10882881903422521
+          ],
+          "wins": 3,
+          "losses": 33,
+          "n": 36
+        }
+      },
+      "complex_boundary_stress": {
+        "accuracy": {
+          "mean": -0.4379747178819444,
+          "paired_95_interval": [
+            -0.4422336154513889,
+            -0.4337493896484375
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "balanced_accuracy": {
+          "mean": -0.26613533216103286,
+          "paired_95_interval": [
+            -0.29345368405985023,
+            -0.2386154623357968
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "near_boundary_balanced_accuracy": {
+          "mean": -0.24807118646913404,
+          "paired_95_interval": [
+            -0.27477609850906,
+            -0.22107785147662887
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "safe_recall": {
+          "mean": -0.4740000564916773,
+          "paired_95_interval": [
+            -0.48417626725980245,
+            -0.4621551670239767
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "unsafe_recall": {
+          "mean": -0.05827060783038821,
+          "paired_95_interval": [
+            -0.11392918444903927,
+            -0.0008817953366090787
+          ],
+          "wins": 17,
+          "losses": 19,
+          "n": 36
+        }
+      }
+    },
+    "shortcut_grid_resize": {},
+    "shortcut_impossible_predictions": {},
+    "shortcut_move_baseline": {},
+    "shortcut_nan_count": {},
+    "shortcut_negative_count": {},
+    "shortcut_negative_inf_count": {},
+    "shortcut_null_predictions": {},
+    "shortcut_oracle": {
+      "double_integrator_g3": {
+        "accuracy": {
+          "mean": -0.04010009765625,
+          "paired_95_interval": [
+            -0.044854058159722224,
+            -0.03506808810763889
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "balanced_accuracy": {
+          "mean": -0.2847847480438263,
+          "paired_95_interval": [
+            -0.3087467486608254,
+            -0.2603516426129774
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "near_boundary_balanced_accuracy": {
+          "mean": -0.27396402212217236,
+          "paired_95_interval": [
+            -0.2896361777194124,
+            -0.2571150421356877
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "safe_recall": {
+          "mean": -0.5004837986610728,
+          "paired_95_interval": [
+            -0.5298076273269815,
+            -0.46844191087595427
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "unsafe_recall": {
+          "mean": -0.06908569742657972,
+          "paired_95_interval": [
+            -0.13395581385063207,
+            -0.0028119412685984006
+          ],
+          "wins": 16,
+          "losses": 20,
+          "n": 36
+        }
+      },
+      "complex_boundary_stress": {
+        "accuracy": {
+          "mean": 0.019510904947916668,
+          "paired_95_interval": [
+            0.01463470458984375,
+            0.024278428819444444
+          ],
+          "wins": 33,
+          "losses": 3,
+          "n": 36
+        },
+        "balanced_accuracy": {
+          "mean": -0.2028087441188577,
+          "paired_95_interval": [
+            -0.23316184394226344,
+            -0.1715094841843544
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "near_boundary_balanced_accuracy": {
+          "mean": -0.2258743254852488,
+          "paired_95_interval": [
+            -0.25369116124672714,
+            -0.197425642946315
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "safe_recall": {
+          "mean": -0.4304739417127594,
+          "paired_95_interval": [
+            -0.457980512512268,
+            -0.4042207607665855
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "unsafe_recall": {
+          "mean": 0.024856453475044164,
+          "paired_95_interval": [
+            -0.04021200812691378,
+            0.09028891631481296
+          ],
+          "wins": 20,
+          "losses": 16,
+          "n": 36
+        }
+      }
+    },
+    "shortcut_over_budget": {},
+    "shortcut_replace_ground_truth": {
+      "double_integrator_g3": {
+        "accuracy": {
+          "mean": -0.4659559461805556,
+          "paired_95_interval": [
+            -0.4747180514865451,
+            -0.4575737847222222
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "balanced_accuracy": {
+          "mean": -0.30813841515713425,
+          "paired_95_interval": [
+            -0.3362054580526721,
+            -0.2805434905742281
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "near_boundary_balanced_accuracy": {
+          "mean": -0.2758625415563639,
+          "paired_95_interval": [
+            -0.2939981233100817,
+            -0.2573140722316847
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "safe_recall": {
+          "mean": -0.4472079541570605,
+          "paired_95_interval": [
+            -0.503500343316506,
+            -0.39148448648612894
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "unsafe_recall": {
+          "mean": -0.16906887615720792,
+          "paired_95_interval": [
+            -0.25597318153424176,
+            -0.08147969761691294
+          ],
+          "wins": 11,
+          "losses": 25,
+          "n": 36
+        }
+      },
+      "complex_boundary_stress": {
+        "accuracy": {
+          "mean": -0.4373101128472222,
+          "paired_95_interval": [
+            -0.4457941691080729,
+            -0.4286905924479167
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "balanced_accuracy": {
+          "mean": -0.26694343180602265,
+          "paired_95_interval": [
+            -0.2943441879064342,
+            -0.23903020810086412
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "near_boundary_balanced_accuracy": {
+          "mean": -0.2507439842170369,
+          "paired_95_interval": [
+            -0.2792833534885864,
+            -0.22285748668627256
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "safe_recall": {
+          "mean": -0.47613011467020755,
+          "paired_95_interval": [
+            -0.4952882539342452,
+            -0.4574101463840584
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "unsafe_recall": {
+          "mean": -0.05775674894183775,
+          "paired_95_interval": [
+            -0.11958443830182362,
+            0.0029394191823718403
+          ],
+          "wins": 17,
+          "losses": 19,
+          "n": 36
+        }
+      }
+    },
+    "weaker_learned_prior": {
+      "double_integrator_g3": {
+        "accuracy": {
+          "mean": 0.018235948350694444,
+          "paired_95_interval": [
+            0.013570149739583334,
+            0.023084852430555556
+          ],
+          "wins": 32,
+          "losses": 4,
+          "n": 36
+        },
+        "balanced_accuracy": {
+          "mean": -0.046501785645535657,
+          "paired_95_interval": [
+            -0.07930888663210674,
+            -0.013336405450925204
+          ],
+          "wins": 10,
+          "losses": 26,
+          "n": 36
+        },
+        "near_boundary_balanced_accuracy": {
+          "mean": -0.04088454568414141,
+          "paired_95_interval": [
+            -0.06477644721158962,
+            -0.01739815737362714
+          ],
+          "wins": 13,
+          "losses": 23,
+          "n": 36
+        },
+        "safe_recall": {
+          "mean": 0.023067452485213944,
+          "paired_95_interval": [
+            -0.005689981972314619,
+            0.05538882147740452
+          ],
+          "wins": 17,
+          "losses": 15,
+          "n": 36
+        },
+        "unsafe_recall": {
+          "mean": -0.11607102377628527,
+          "paired_95_interval": [
+            -0.19459877837296088,
+            -0.03402881854255483
+          ],
+          "wins": 10,
+          "losses": 26,
+          "n": 36
+        }
+      },
+      "complex_boundary_stress": {
+        "accuracy": {
+          "mean": -0.006768120659722222,
+          "paired_95_interval": [
+            -0.009541998969184028,
+            -0.004252115885416667
+          ],
+          "wins": 11,
+          "losses": 25,
+          "n": 36
+        },
+        "balanced_accuracy": {
+          "mean": -0.0787856922384354,
+          "paired_95_interval": [
+            -0.10113009610436133,
+            -0.05657267204005474
+          ],
+          "wins": 4,
+          "losses": 32,
+          "n": 36
+        },
+        "near_boundary_balanced_accuracy": {
+          "mean": -0.07861909035223541,
+          "paired_95_interval": [
+            -0.10093094699699796,
+            -0.056422076603017894
+          ],
+          "wins": 3,
+          "losses": 33,
+          "n": 36
+        },
+        "safe_recall": {
+          "mean": 0.011821366368231521,
+          "paired_95_interval": [
+            0.0026065461371851425,
+            0.021806001057872754
+          ],
+          "wins": 25,
+          "losses": 10,
+          "n": 36
+        },
+        "unsafe_recall": {
+          "mean": -0.16939275084510233,
+          "paired_95_interval": [
+            -0.2152800299530022,
+            -0.1252071987234864
+          ],
+          "wins": 1,
+          "losses": 35,
+          "n": 36
+        }
+      }
+    },
+    "weaker_legacy": {
+      "double_integrator_g3": {
+        "accuracy": {
+          "mean": 0.019911024305555556,
+          "paired_95_interval": [
+            0.016086154513888888,
+            0.023715549045138888
+          ],
+          "wins": 35,
+          "losses": 1,
+          "n": 36
+        },
+        "balanced_accuracy": {
+          "mean": -0.04584566847906217,
+          "paired_95_interval": [
+            -0.0735179830434829,
+            -0.019615783111314265
+          ],
+          "wins": 10,
+          "losses": 26,
+          "n": 36
+        },
+        "near_boundary_balanced_accuracy": {
+          "mean": -0.048465294943796956,
+          "paired_95_interval": [
+            -0.06633916003789532,
+            -0.03128509334106038
+          ],
+          "wins": 5,
+          "losses": 31,
+          "n": 36
+        },
+        "safe_recall": {
+          "mean": -0.03513800678717979,
+          "paired_95_interval": [
+            -0.07799494989167471,
+            0.009373473640830967
+          ],
+          "wins": 10,
+          "losses": 24,
+          "n": 36
+        },
+        "unsafe_recall": {
+          "mean": -0.056553330170944535,
+          "paired_95_interval": [
+            -0.1364901901090318,
+            0.023531712843864423
+          ],
+          "wins": 14,
+          "losses": 22,
+          "n": 36
+        }
+      },
+      "complex_boundary_stress": {
+        "accuracy": {
+          "mean": -0.007337782118055556,
+          "paired_95_interval": [
+            -0.009921603732638888,
+            -0.004753960503472222
+          ],
+          "wins": 9,
+          "losses": 27,
+          "n": 36
+        },
+        "balanced_accuracy": {
+          "mean": -0.07349015412514062,
+          "paired_95_interval": [
+            -0.0963322732358133,
+            -0.050963965329390334
+          ],
+          "wins": 5,
+          "losses": 31,
+          "n": 36
+        },
+        "near_boundary_balanced_accuracy": {
+          "mean": -0.07373484106280735,
+          "paired_95_interval": [
+            -0.0965784246111617,
+            -0.05149373567269264
+          ],
+          "wins": 5,
+          "losses": 31,
+          "n": 36
+        },
+        "safe_recall": {
+          "mean": 0.007504769013421151,
+          "paired_95_interval": [
+            -0.0042973522687748,
+            0.019763774971562252
+          ],
+          "wins": 20,
+          "losses": 15,
+          "n": 36
+        },
+        "unsafe_recall": {
+          "mean": -0.15448507726370236,
+          "paired_95_interval": [
+            -0.20145594317876644,
+            -0.10872505521682532
+          ],
+          "wins": 5,
+          "losses": 31,
+          "n": 36
+        }
+      }
+    },
+    "weaker_no_acquisition": {
+      "double_integrator_g3": {
+        "accuracy": {
+          "mean": 0.0027940538194444445,
+          "paired_95_interval": [
+            -0.004014926486545139,
+            0.008904351128472222
+          ],
+          "wins": 23,
+          "losses": 12,
+          "n": 36
+        },
+        "balanced_accuracy": {
+          "mean": -0.08452954530499117,
+          "paired_95_interval": [
+            -0.11050347698342584,
+            -0.06059944732144069
+          ],
+          "wins": 4,
+          "losses": 32,
+          "n": 36
+        },
+        "near_boundary_balanced_accuracy": {
+          "mean": -0.08661156322808893,
+          "paired_95_interval": [
+            -0.10356365255448308,
+            -0.0708245314541609
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "safe_recall": {
+          "mean": -0.18146917786412506,
+          "paired_95_interval": [
+            -0.23319129333165195,
+            -0.1266653044967302
+          ],
+          "wins": 4,
+          "losses": 32,
+          "n": 36
+        },
+        "unsafe_recall": {
+          "mean": 0.012410087254142756,
+          "paired_95_interval": [
+            -0.060751394431174076,
+            0.08462880887711853
+          ],
+          "wins": 19,
+          "losses": 17,
+          "n": 36
+        }
+      },
+      "complex_boundary_stress": {
+        "accuracy": {
+          "mean": 0.006266276041666667,
+          "paired_95_interval": [
+            0.004095967610677083,
+            0.008436414930555556
+          ],
+          "wins": 26,
+          "losses": 9,
+          "n": 36
+        },
+        "balanced_accuracy": {
+          "mean": -0.06504699532998345,
+          "paired_95_interval": [
+            -0.08711253953990855,
+            -0.0429141373021493
+          ],
+          "wins": 9,
+          "losses": 26,
+          "n": 36
+        },
+        "near_boundary_balanced_accuracy": {
+          "mean": -0.08106135752821182,
+          "paired_95_interval": [
+            -0.10277914695368047,
+            -0.05915665833338174
+          ],
+          "wins": 2,
+          "losses": 33,
+          "n": 36
+        },
+        "safe_recall": {
+          "mean": -0.05281818703416687,
+          "paired_95_interval": [
+            -0.07244855887073638,
+            -0.03498580327122192
+          ],
+          "wins": 4,
+          "losses": 30,
+          "n": 36
+        },
+        "unsafe_recall": {
+          "mean": -0.07727580362580004,
+          "paired_95_interval": [
+            -0.12279622241440441,
+            -0.0325858838352419
+          ],
+          "wins": 13,
+          "losses": 22,
+          "n": 36
+        }
+      }
+    },
+    "weaker_no_gradients": {
+      "double_integrator_g3": {
+        "accuracy": {
+          "mean": -0.021518283420138888,
+          "paired_95_interval": [
+            -0.024590386284722224,
+            -0.018486870659722224
+          ],
+          "wins": 1,
+          "losses": 35,
+          "n": 36
+        },
+        "balanced_accuracy": {
+          "mean": -0.2618227432485033,
+          "paired_95_interval": [
+            -0.285382585614309,
+            -0.2388092182007277
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "near_boundary_balanced_accuracy": {
+          "mean": -0.268231232899348,
+          "paired_95_interval": [
+            -0.28417411439710316,
+            -0.25055300840656153
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "safe_recall": {
+          "mean": -0.45886034933176034,
+          "paired_95_interval": [
+            -0.5079682844881538,
+            -0.39971019406444486
+          ],
+          "wins": 1,
+          "losses": 34,
+          "n": 36
+        },
+        "unsafe_recall": {
+          "mean": -0.06478513716524611,
+          "paired_95_interval": [
+            -0.12062697528379071,
+            -0.008837348746522847
+          ],
+          "wins": 16,
+          "losses": 20,
+          "n": 36
+        }
+      },
+      "complex_boundary_stress": {
+        "accuracy": {
+          "mean": 0.019476996527777776,
+          "paired_95_interval": [
+            0.012064615885416666,
+            0.02642822265625
+          ],
+          "wins": 28,
+          "losses": 8,
+          "n": 36
+        },
+        "balanced_accuracy": {
+          "mean": -0.20012095118968076,
+          "paired_95_interval": [
+            -0.21449249983376467,
+            -0.18602605693122926
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "near_boundary_balanced_accuracy": {
+          "mean": -0.22392432008187826,
+          "paired_95_interval": [
+            -0.2450714891877147,
+            -0.2023758588595157
+          ],
+          "wins": 0,
+          "losses": 36,
+          "n": 36
+        },
+        "safe_recall": {
+          "mean": -0.23775380281260958,
+          "paired_95_interval": [
+            -0.2862744658076075,
+            -0.1856200539638662
+          ],
+          "wins": 5,
+          "losses": 31,
+          "n": 36
+        },
+        "unsafe_recall": {
+          "mean": -0.16248809956675192,
+          "paired_95_interval": [
+            -0.20924707913623572,
+            -0.12090562305769302
+          ],
+          "wins": 4,
+          "losses": 32,
           "n": 36
         }
       }
@@ -1392,50 +3245,50 @@
     "weaker_raw_gradients": {
       "double_integrator_g3": {
         "accuracy": {
-          "mean": -0.038140190972222224,
+          "mean": -0.006422254774305556,
           "paired_95_interval": [
-            -0.045817057291666664,
-            -0.03038838704427084
+            -0.014187282986111112,
+            0.0006308661566840253
           ],
-          "wins": 1,
-          "losses": 35,
+          "wins": 15,
+          "losses": 20,
           "n": 36
         },
         "balanced_accuracy": {
-          "mean": -0.12289326009446302,
+          "mean": -0.13304264725377626,
           "paired_95_interval": [
-            -0.14623283506519752,
-            -0.10022202582643684
+            -0.16067520735318097,
+            -0.10703716654331559
           ],
           "wins": 0,
           "losses": 36,
           "n": 36
         },
         "near_boundary_balanced_accuracy": {
-          "mean": -0.12088063815013211,
+          "mean": -0.12709803083991109,
           "paired_95_interval": [
-            -0.14019375101876233,
-            -0.10163565812163164
+            -0.14914246591356078,
+            -0.10542794065628885
           ],
           "wins": 0,
           "losses": 36,
           "n": 36
         },
         "safe_recall": {
-          "mean": 0.018966918059864363,
+          "mean": -0.031933513557905385,
           "paired_95_interval": [
-            -0.03183320814466203,
-            0.06672861092138739
+            -0.07675025358200076,
+            0.009572016186771793
           ],
-          "wins": 18,
-          "losses": 17,
+          "wins": 8,
+          "losses": 26,
           "n": 36
         },
         "unsafe_recall": {
-          "mean": -0.2647534382487904,
+          "mean": -0.2341517809496471,
           "paired_95_interval": [
-            -0.34538581092686155,
-            -0.1875151288002499
+            -0.30121835122696256,
+            -0.1698280998398189
           ],
           "wins": 4,
           "losses": 32,
@@ -1444,104 +3297,301 @@
       },
       "complex_boundary_stress": {
         "accuracy": {
-          "mean": -0.003078884548611111,
+          "mean": -0.008978949652777778,
           "paired_95_interval": [
-            -0.007948133680555556,
-            0.0025634765625
+            -0.013129679361979167,
+            -0.004686143663194444
           ],
           "wins": 10,
           "losses": 26,
           "n": 36
         },
         "balanced_accuracy": {
-          "mean": -0.029662475131836268,
+          "mean": -0.09882443473343724,
           "paired_95_interval": [
-            -0.04624383964623702,
-            -0.014669687550441221
+            -0.12668011845485178,
+            -0.07315141197634299
           ],
-          "wins": 9,
-          "losses": 27,
+          "wins": 2,
+          "losses": 34,
           "n": 36
         },
         "near_boundary_balanced_accuracy": {
-          "mean": -0.03441150642154973,
+          "mean": -0.11095073899530856,
           "paired_95_interval": [
-            -0.04944236628552516,
-            -0.02051394170213191
+            -0.13466408299211458,
+            -0.08789626485898522
           ],
-          "wins": 6,
-          "losses": 30,
+          "wins": 2,
+          "losses": 34,
           "n": 36
         },
         "safe_recall": {
-          "mean": -0.022079312160893774,
+          "mean": -0.01797092848160363,
           "paired_95_interval": [
-            -0.05457094711102751,
-            0.003550842379122251
+            -0.03441297505486147,
+            -0.0014162376620892175
           ],
-          "wins": 14,
-          "losses": 21,
+          "wins": 13,
+          "losses": 23,
           "n": 36
         },
         "unsafe_recall": {
-          "mean": -0.03724563810277876,
+          "mean": -0.17967794098527085,
           "paired_95_interval": [
-            -0.08299616686688434,
-            0.013485019233151018
+            -0.24138197303324394,
+            -0.12164323741385936
           ],
-          "wins": 12,
-          "losses": 24,
+          "wins": 4,
+          "losses": 32,
+          "n": 36
+        }
+      }
+    },
+    "weaker_two_draws": {
+      "double_integrator_g3": {
+        "accuracy": {
+          "mean": -0.0017564561631944445,
+          "paired_95_interval": [
+            -0.005662875705295139,
+            0.0017566257052951365
+          ],
+          "wins": 15,
+          "losses": 18,
+          "n": 36
+        },
+        "balanced_accuracy": {
+          "mean": 0.02647566495431526,
+          "paired_95_interval": [
+            0.0032840309591513376,
+            0.049220770760338685
+          ],
+          "wins": 22,
+          "losses": 13,
+          "n": 36
+        },
+        "near_boundary_balanced_accuracy": {
+          "mean": 0.016854616728356822,
+          "paired_95_interval": [
+            0.00025047419400265345,
+            0.03317202919102741
+          ],
+          "wins": 23,
+          "losses": 11,
+          "n": 36
+        },
+        "safe_recall": {
+          "mean": -0.005988829479085692,
+          "paired_95_interval": [
+            -0.04210372198756509,
+            0.028299619009873517
+          ],
+          "wins": 14,
+          "losses": 16,
+          "n": 36
+        },
+        "unsafe_recall": {
+          "mean": 0.058940159387716205,
+          "paired_95_interval": [
+            -0.005576576180127791,
+            0.1236606414978951
+          ],
+          "wins": 22,
+          "losses": 13,
+          "n": 36
+        }
+      },
+      "complex_boundary_stress": {
+        "accuracy": {
+          "mean": 0.0005425347222222222,
+          "paired_95_interval": [
+            -0.0009969075520833333,
+            0.0021226671006944445
+          ],
+          "wins": 14,
+          "losses": 16,
+          "n": 36
+        },
+        "balanced_accuracy": {
+          "mean": -0.00841393817964095,
+          "paired_95_interval": [
+            -0.019967099540051558,
+            0.0017004135028583596
+          ],
+          "wins": 15,
+          "losses": 16,
+          "n": 36
+        },
+        "near_boundary_balanced_accuracy": {
+          "mean": -0.010134359923779621,
+          "paired_95_interval": [
+            -0.02340010920765348,
+            0.0010765979826258282
+          ],
+          "wins": 11,
+          "losses": 20,
+          "n": 36
+        },
+        "safe_recall": {
+          "mean": -0.007119773168278665,
+          "paired_95_interval": [
+            -0.01725296305283523,
+            0.0029430260099167094
+          ],
+          "wins": 10,
+          "losses": 19,
+          "n": 36
+        },
+        "unsafe_recall": {
+          "mean": -0.009708103191003223,
+          "paired_95_interval": [
+            -0.03455469851939751,
+            0.013053639668673067
+          ],
+          "wins": 17,
+          "losses": 14,
           "n": 36
         }
       }
     }
   },
   "paired_rank": {
+    "alt_periodic": {
+      "mean": -1.4181918931466053,
+      "paired_95_interval": [
+        -2.4073662850867477,
+        -0.5093922222841172
+      ],
+      "passed_success_gate": true
+    },
+    "better_fill": {
+      "mean": 1.0875692692341157,
+      "paired_95_interval": [
+        0.788765373699328,
+        1.377524847866192
+      ],
+      "passed_success_gate": true
+    },
     "random_baseline": {
-      "mean": 0.5657861147743739,
+      "mean": -0.905851079604406,
       "paired_95_interval": [
-        -0.07097146442404809,
-        1.2617887854694698
+        -1.586017377786303,
+        -0.22959190202555568
       ],
       "passed_success_gate": true
     },
-    "better_boundary_fit": {
-      "mean": -4.045367031952822,
+    "shortcut_centered_disk": {
+      "mean": -9.279719779521253,
       "paired_95_interval": [
-        -5.360231532369151,
-        -2.8785068772629394
+        -9.986966511445711,
+        -8.543845355445015
+      ],
+      "passed_success_gate": false
+    },
+    "shortcut_constant_unsafe": {
+      "mean": -91.8574621523069,
+      "paired_95_interval": [
+        -92.64648191719827,
+        -91.07521151313452
+      ],
+      "passed_success_gate": false
+    },
+    "shortcut_contact_disk": {
+      "mean": -11.35509021674087,
+      "paired_95_interval": [
+        -12.06736537679473,
+        -10.623453346380916
+      ],
+      "passed_success_gate": false
+    },
+    "shortcut_empty_predictions": null,
+    "shortcut_false_count": null,
+    "shortcut_family_fit": {
+      "mean": -0.184401239928516,
+      "paired_95_interval": [
+        -1.6987671601790655,
+        1.0736544497729916
       ],
       "passed_success_gate": true
     },
-    "better_boundary_fit_12": {
-      "mean": -2.8910248801460634,
+    "shortcut_forge_flags": null,
+    "shortcut_grid_order": {
+      "mean": -52.117789542838196,
       "paired_95_interval": [
-        -3.79461625623119,
-        -2.0746780931230564
+        -52.82699346820257,
+        -51.401539112423066
+      ],
+      "passed_success_gate": false
+    },
+    "shortcut_grid_resize": null,
+    "shortcut_impossible_predictions": null,
+    "shortcut_move_baseline": null,
+    "shortcut_nan_count": null,
+    "shortcut_negative_count": null,
+    "shortcut_negative_inf_count": null,
+    "shortcut_null_predictions": null,
+    "shortcut_oracle": {
+      "mean": -10.040709339869974,
+      "paired_95_interval": [
+        -10.782881754989152,
+        -9.29048884357364
+      ],
+      "passed_success_gate": false
+    },
+    "shortcut_over_budget": null,
+    "shortcut_replace_ground_truth": {
+      "mean": -52.344069444198894,
+      "paired_95_interval": [
+        -53.32917261121458,
+        -51.357745491260346
+      ],
+      "passed_success_gate": false
+    },
+    "weaker_learned_prior": {
+      "mean": -0.7592957744798505,
+      "paired_95_interval": [
+        -1.5785655645605894,
+        0.06909261001281243
+      ],
+      "passed_success_gate": true
+    },
+    "weaker_legacy": {
+      "mean": -0.6827908207538156,
+      "paired_95_interval": [
+        -1.3321884070954182,
+        -0.03779610324416018
       ],
       "passed_success_gate": true
     },
     "weaker_no_acquisition": {
-      "mean": -2.085306781609677,
+      "mean": -2.1560786345026086,
       "paired_95_interval": [
-        -2.5332745431980057,
-        -1.6314048014571711
+        -2.8897090193290556,
+        -1.44509450509855
       ],
       "passed_success_gate": true
     },
     "weaker_no_gradients": {
-      "mean": -7.823710481258265,
+      "mean": -8.477185321952753,
       "paired_95_interval": [
-        -8.408800935995682,
-        -7.22461565835451
+        -9.015323582673933,
+        -7.92750296202559
       ],
       "passed_success_gate": false
     },
     "weaker_raw_gradients": {
-      "mean": -4.438872381622155,
+      "mean": -4.327972531588191,
       "paired_95_interval": [
-        -5.187087457104727,
-        -3.700797420775849
+        -5.240270115729346,
+        -3.432713302563577
+      ],
+      "passed_success_gate": true
+    },
+    "weaker_two_draws": {
+      "mean": 0.15117022913179912,
+      "paired_95_interval": [
+        -0.4092733655009204,
+        0.681159022554709
       ],
       "passed_success_gate": true
     }
@@ -1550,116 +3600,116 @@
     "random_baseline": {
       "double_integrator_g3": {
         "accuracy": {
-          "mean": 0.0040283203125,
+          "mean": -0.003143310546875,
           "paired_95_interval": [
-            -0.0017496744791666667,
-            0.009901258680555556
+            -0.010315450032552083,
+            0.0031944274902343714
           ],
-          "wins": 15,
-          "losses": 21,
-          "n": 36
+          "wins": 10,
+          "losses": 14,
+          "n": 24
         },
         "balanced_accuracy": {
-          "mean": -0.0033703572963102784,
+          "mean": -0.04317365252940202,
           "paired_95_interval": [
-            -0.02961948904881778,
-            0.02212568123055559
+            -0.07123424196807288,
+            -0.01610504438121981
           ],
-          "wins": 17,
-          "losses": 19,
-          "n": 36
+          "wins": 7,
+          "losses": 17,
+          "n": 24
         },
         "near_boundary_balanced_accuracy": {
-          "mean": -0.007507286133641106,
+          "mean": -0.03577807092311111,
           "paired_95_interval": [
-            -0.029315437674223746,
-            0.013934875472809813
+            -0.060586230455483496,
+            -0.010287506620309014
           ],
-          "wins": 13,
-          "losses": 23,
-          "n": 36
+          "wins": 4,
+          "losses": 20,
+          "n": 24
         },
         "safe_recall": {
-          "mean": -0.06601235532119207,
+          "mean": -0.14955525440264714,
           "paired_95_interval": [
-            -0.12665121005878432,
-            -0.005887982568827538
+            -0.22711443278297996,
+            -0.07139100305314519
           ],
-          "wins": 13,
-          "losses": 20,
-          "n": 36
+          "wins": 7,
+          "losses": 17,
+          "n": 24
         },
         "unsafe_recall": {
-          "mean": 0.05927164072857148,
+          "mean": 0.0632079493438431,
           "paired_95_interval": [
-            -0.01628814303462086,
-            0.13195323651812368
+            -0.03882047570497129,
+            0.1655415928932797
           ],
-          "wins": 23,
-          "losses": 13,
-          "n": 36
+          "wins": 14,
+          "losses": 10,
+          "n": 24
         }
       },
       "complex_boundary_stress": {
         "accuracy": {
-          "mean": 0.004374186197916667,
+          "mean": 0.009897867838541666,
           "paired_95_interval": [
-            0.00177001953125,
-            0.007005479600694444
+            0.005961100260416667,
+            0.013956960042317704
           ],
-          "wins": 28,
-          "losses": 8,
-          "n": 36
+          "wins": 21,
+          "losses": 2,
+          "n": 24
         },
         "balanced_accuracy": {
-          "mean": 0.03155696744957234,
+          "mean": -0.02954836448926762,
           "paired_95_interval": [
-            0.016900482902161663,
-            0.04735491998991205
+            -0.050932719867321785,
+            -0.008379151662446016
           ],
-          "wins": 27,
-          "losses": 9,
-          "n": 36
+          "wins": 10,
+          "losses": 14,
+          "n": 24
         },
         "near_boundary_balanced_accuracy": {
-          "mean": 0.02338945275141517,
+          "mean": -0.04954350437677274,
           "paired_95_interval": [
-            0.009807539641058124,
-            0.037224370261260915
+            -0.07222031183957323,
+            -0.027032206147771562
           ],
-          "wins": 24,
-          "losses": 12,
-          "n": 36
+          "wins": 5,
+          "losses": 19,
+          "n": 24
         },
         "safe_recall": {
-          "mean": -0.012724823861974845,
+          "mean": -0.06542367615153756,
           "paired_95_interval": [
-            -0.025711997076202336,
-            -0.00012518488013926892
+            -0.0922093121234471,
+            -0.041684646765790645
           ],
-          "wins": 9,
-          "losses": 25,
-          "n": 36
+          "wins": 3,
+          "losses": 21,
+          "n": 24
         },
         "unsafe_recall": {
-          "mean": 0.07583875876111953,
+          "mean": 0.0063269471730023384,
           "paired_95_interval": [
-            0.04192580757936409,
-            0.11203104744420098
+            -0.040663926527170935,
+            0.054262537955681124
           ],
-          "wins": 28,
-          "losses": 8,
-          "n": 36
+          "wins": 12,
+          "losses": 12,
+          "n": 24
         }
       }
     }
   },
   "train_paired_rank": {
     "random_baseline": {
-      "mean": 1.560000000000029,
+      "mean": -2.5999999999999917,
       "paired_95_interval": [
-        -6.950298632571748,
-        10.066126131608987
+        -6.509848787887817,
+        1.140483671968764
       ],
       "passed_success_gate": true
     }
@@ -1668,60 +3718,180 @@
     "test": {
       "gp_acl": {
         "double_integrator_g3": {
-          "demos_mean": 9.63888888888889,
-          "demos_min": 2,
-          "requests_mean": 19.72222222222222,
-          "added_contact_bearing_fraction": 1.0
+          "demos_mean": 11.166666666666666,
+          "demos_min": 6,
+          "requests_mean": 18.97222222222222,
+          "added_contact_bearing_fraction": 0.9961240310077519,
+          "new_unit_boundary_cells_mean": 15.25
         },
         "complex_boundary_stress": {
-          "demos_mean": 7.722222222222222,
-          "demos_min": 2,
-          "requests_mean": 27.77777777777778,
-          "added_contact_bearing_fraction": 0.2766990291262136
+          "demos_mean": 10.333333333333334,
+          "demos_min": 4,
+          "requests_mean": 20.583333333333332,
+          "added_contact_bearing_fraction": 0.9692982456140351,
+          "new_unit_boundary_cells_mean": 7.583333333333333
         }
       },
       "random_baseline": {
         "double_integrator_g3": {
-          "demos_mean": 10.0,
-          "demos_min": 10,
-          "requests_mean": 9.583333333333334,
-          "added_contact_bearing_fraction": 0.19791666666666666
+          "demos_mean": 12.0,
+          "demos_min": 12,
+          "requests_mean": 9.666666666666666,
+          "added_contact_bearing_fraction": 0.1840277777777778,
+          "new_unit_boundary_cells_mean": 4.027777777777778
         },
         "complex_boundary_stress": {
-          "demos_mean": 10.0,
-          "demos_min": 10,
+          "demos_mean": 12.0,
+          "demos_min": 12,
           "requests_mean": 9.833333333333334,
-          "added_contact_bearing_fraction": 0.1736111111111111
+          "added_contact_bearing_fraction": 0.1736111111111111,
+          "new_unit_boundary_cells_mean": 2.2777777777777777
+        }
+      },
+      "better_fill": {
+        "double_integrator_g3": {
+          "demos_mean": 11.166666666666666,
+          "demos_min": 6,
+          "requests_mean": 18.97222222222222,
+          "added_contact_bearing_fraction": 0.9961240310077519,
+          "new_unit_boundary_cells_mean": 15.25
+        },
+        "complex_boundary_stress": {
+          "demos_mean": 10.333333333333334,
+          "demos_min": 4,
+          "requests_mean": 20.583333333333332,
+          "added_contact_bearing_fraction": 0.9692982456140351,
+          "new_unit_boundary_cells_mean": 7.583333333333333
+        }
+      },
+      "weaker_learned_prior": {
+        "double_integrator_g3": {
+          "demos_mean": 7.444444444444445,
+          "demos_min": 4,
+          "requests_mean": 32.888888888888886,
+          "added_contact_bearing_fraction": 0.9919354838709677,
+          "new_unit_boundary_cells_mean": 8.444444444444445
+        },
+        "complex_boundary_stress": {
+          "demos_mean": 5.5,
+          "demos_min": 4,
+          "requests_mean": 39.861111111111114,
+          "added_contact_bearing_fraction": 0.9629629629629629,
+          "new_unit_boundary_cells_mean": 1.8888888888888888
+        }
+      },
+      "weaker_legacy": {
+        "double_integrator_g3": {
+          "demos_mean": 10.083333333333334,
+          "demos_min": 4,
+          "requests_mean": 28.61111111111111,
+          "added_contact_bearing_fraction": 1.0,
+          "new_unit_boundary_cells_mean": 8.86111111111111
+        },
+        "complex_boundary_stress": {
+          "demos_mean": 9.88888888888889,
+          "demos_min": 4,
+          "requests_mean": 31.52777777777778,
+          "added_contact_bearing_fraction": 0.37735849056603776,
+          "new_unit_boundary_cells_mean": 2.4166666666666665
+        }
+      },
+      "weaker_no_acquisition": {
+        "double_integrator_g3": {
+          "demos_mean": 4.0,
+          "demos_min": 4,
+          "requests_mean": 0.0,
+          "added_contact_bearing_fraction": null,
+          "new_unit_boundary_cells_mean": 0.0
+        },
+        "complex_boundary_stress": {
+          "demos_mean": 4.0,
+          "demos_min": 4,
+          "requests_mean": 0.0,
+          "added_contact_bearing_fraction": null,
+          "new_unit_boundary_cells_mean": 0.0
+        }
+      },
+      "weaker_no_gradients": {
+        "double_integrator_g3": {
+          "demos_mean": 11.166666666666666,
+          "demos_min": 6,
+          "requests_mean": 18.97222222222222,
+          "added_contact_bearing_fraction": 0.9961240310077519,
+          "new_unit_boundary_cells_mean": 15.25
+        },
+        "complex_boundary_stress": {
+          "demos_mean": 10.333333333333334,
+          "demos_min": 4,
+          "requests_mean": 20.583333333333332,
+          "added_contact_bearing_fraction": 0.9692982456140351,
+          "new_unit_boundary_cells_mean": 7.583333333333333
+        }
+      },
+      "weaker_raw_gradients": {
+        "double_integrator_g3": {
+          "demos_mean": 11.277777777777779,
+          "demos_min": 5,
+          "requests_mean": 12.444444444444445,
+          "added_contact_bearing_fraction": 0.6908396946564885,
+          "new_unit_boundary_cells_mean": 9.527777777777779
+        },
+        "complex_boundary_stress": {
+          "demos_mean": 11.027777777777779,
+          "demos_min": 5,
+          "requests_mean": 14.13888888888889,
+          "added_contact_bearing_fraction": 0.7154150197628458,
+          "new_unit_boundary_cells_mean": 5.638888888888889
+        }
+      },
+      "weaker_two_draws": {
+        "double_integrator_g3": {
+          "demos_mean": 10.055555555555555,
+          "demos_min": 4,
+          "requests_mean": 19.11111111111111,
+          "added_contact_bearing_fraction": 1.0,
+          "new_unit_boundary_cells_mean": 15.583333333333334
+        },
+        "complex_boundary_stress": {
+          "demos_mean": 8.63888888888889,
+          "demos_min": 4,
+          "requests_mean": 16.72222222222222,
+          "added_contact_bearing_fraction": 0.9760479041916168,
+          "new_unit_boundary_cells_mean": 6.416666666666667
         }
       }
     },
     "train": {
       "gp_acl": {
         "double_integrator_g3": {
-          "demos_mean": 9.88888888888889,
+          "demos_mean": 11.416666666666666,
           "demos_min": 6,
-          "requests_mean": 17.27777777777778,
-          "added_contact_bearing_fraction": 1.0
+          "requests_mean": 16.25,
+          "added_contact_bearing_fraction": 0.9887640449438202,
+          "new_unit_boundary_cells_mean": 15.5
         },
         "complex_boundary_stress": {
-          "demos_mean": 7.5,
-          "demos_min": 2,
-          "requests_mean": 29.0,
-          "added_contact_bearing_fraction": 0.2878787878787879
+          "demos_mean": 10.0,
+          "demos_min": 4,
+          "requests_mean": 21.166666666666668,
+          "added_contact_bearing_fraction": 0.9583333333333334,
+          "new_unit_boundary_cells_mean": 7.0
         }
       },
       "random_baseline": {
         "double_integrator_g3": {
-          "demos_mean": 10.0,
-          "demos_min": 10,
-          "requests_mean": 9.38888888888889,
-          "added_contact_bearing_fraction": 0.2326388888888889
+          "demos_mean": 12.0,
+          "demos_min": 12,
+          "requests_mean": 9.416666666666666,
+          "added_contact_bearing_fraction": 0.22916666666666666,
+          "new_unit_boundary_cells_mean": 4.75
         },
         "complex_boundary_stress": {
-          "demos_mean": 10.0,
-          "demos_min": 10,
-          "requests_mean": 9.722222222222221,
-          "added_contact_bearing_fraction": 0.1875
+          "demos_mean": 12.0,
+          "demos_min": 12,
+          "requests_mean": 9.791666666666666,
+          "added_contact_bearing_fraction": 0.18229166666666666,
+          "new_unit_boundary_cells_mean": 1.7083333333333333
         }
       }
     }
