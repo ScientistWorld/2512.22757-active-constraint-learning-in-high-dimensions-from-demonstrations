@@ -5,4 +5,4 @@ action: submit
 gpus: 0
 test: false
 milestone: core_claim
-notes: "Development-only diagnostic: classify rejected demonstration requests of the reference (endpoint inside obstacle vs expert solver failure) and retry solver failures with a more persistent solve. Nothing frozen; no test data."
+notes: "Final hardening job (request allowance 80 on both splits): rerun pre-registered dev noise-floor selection, reference+random on both splits (72 hidden instances/experiment), dev and hidden-test audits, validation."

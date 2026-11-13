@@ -1,0 +1,375 @@
+{
+  "rule": "Development-split choice of the reference's GP noise floor (packager only).\n\nThe rule is fixed before the job runs. The previous package bounded the\nfitted noise variance at 1e-10; the development pilot (eval/train/\nhardening_pilot_summary.json) found that this makes the posterior mean carry\nspurious unsafe regions more than four units from any observation, and that\na well-conditioned floor removes them. Candidates: 1e-4 (the inferred-noise\nfloor of GPyTorch, the toolkit of the cited training procedure), 1e-5, 1e-6.\nEverything else is the previous reference.\n\nOn the development split only, each candidate's reference and its random\ncontrol (same GP settings) run on identical instances. A candidate\nqualifies if both pass the success gate and its reference outranks its\nrandom control (evaluator rank rule, scales from that pair). Among\nqualifying candidates the one with the highest reference uniform-space\naccuracy averaged over the two experiments (the paper's headline quantity)\nis chosen; candidates within 0.0005 of the best are tied, and ties go to the\nlargest floor. If none qualifies, the gate-passing candidate with the\nhighest reference accuracy is chosen (same tie rule). Hidden-test data are\nnever read. Writes tmp/noise_floor_selection.json; the last printed line is\nthe chosen floor.",
+  "candidates": {
+    "0.0001": {
+      "gate_passed": true,
+      "random_rank_vs_reference": -4.6,
+      "reference_outranks_random": true,
+      "reference_accuracy_mean": 0.9688262939453125,
+      "metrics": {
+        "double_integrator_g3": {
+          "reference": {
+            "accuracy": 0.981109619140625,
+            "balanced_accuracy": 0.768788956803812,
+            "near_boundary_balanced_accuracy": 0.7417341640637934,
+            "safe_recall": 0.9534314355707919,
+            "unsafe_recall": 0.5841464780368321
+          },
+          "random": {
+            "accuracy": 0.978912353515625,
+            "balanced_accuracy": 0.7378034644105661,
+            "near_boundary_balanced_accuracy": 0.7102378208548483,
+            "safe_recall": 0.7333594686287261,
+            "unsafe_recall": 0.7422474601924063
+          }
+        },
+        "complex_boundary_stress": {
+          "reference": {
+            "accuracy": 0.95654296875,
+            "balanced_accuracy": 0.8200134022036399,
+            "near_boundary_balanced_accuracy": 0.7851879594222679,
+            "safe_recall": 0.9554018721564429,
+            "unsafe_recall": 0.6846249322508369
+          },
+          "random": {
+            "accuracy": 0.9514567057291666,
+            "balanced_accuracy": 0.7398045193323727,
+            "near_boundary_balanced_accuracy": 0.6980941691728205,
+            "safe_recall": 0.9169798921167575,
+            "unsafe_recall": 0.562629146547988
+          }
+        }
+      },
+      "reference_minus_random": {
+        "double_integrator_g3": {
+          "accuracy": [
+            0.002197265625,
+            -0.008748372395833334,
+            0.012512461344401038
+          ],
+          "balanced_accuracy": [
+            0.030985492393245686,
+            -0.001697603270651616,
+            0.0633865852798202
+          ],
+          "near_boundary_balanced_accuracy": [
+            0.031496343208945246,
+            0.005895761624857505,
+            0.05560804919629428
+          ],
+          "safe_recall": [
+            0.22007196694206566,
+            0.13538196730379784,
+            0.30354777534926297
+          ],
+          "unsafe_recall": [
+            -0.15810098215557425,
+            -0.2585174138423371,
+            -0.05250006189976965
+          ]
+        },
+        "complex_boundary_stress": {
+          "accuracy": [
+            0.005086263020833333,
+            -0.0006815592447916666,
+            0.01055908203125
+          ],
+          "balanced_accuracy": [
+            0.0802088828712671,
+            0.048023227758738234,
+            0.11063894314676141
+          ],
+          "near_boundary_balanced_accuracy": [
+            0.08709379024944756,
+            0.05810019317339128,
+            0.11437958991123243
+          ],
+          "safe_recall": [
+            0.03842198003968534,
+            0.019613883089857263,
+            0.05756756363557939
+          ],
+          "unsafe_recall": [
+            0.12199578570284887,
+            0.045704100136125324,
+            0.19162423341728196
+          ]
+        }
+      },
+      "acquisition": {
+        "reference": {
+          "double_integrator_g3": {
+            "demos_mean": 8.958333333333334,
+            "demos_min": 4,
+            "requests_mean": 25.75
+          },
+          "complex_boundary_stress": {
+            "demos_mean": 11.291666666666666,
+            "demos_min": 4,
+            "requests_mean": 26.583333333333332
+          }
+        },
+        "random": {
+          "double_integrator_g3": {
+            "demos_mean": 12.0,
+            "demos_min": 12,
+            "requests_mean": 9.416666666666666
+          },
+          "complex_boundary_stress": {
+            "demos_mean": 12.0,
+            "demos_min": 12,
+            "requests_mean": 9.791666666666666
+          }
+        }
+      }
+    },
+    "1e-05": {
+      "gate_passed": true,
+      "random_rank_vs_reference": -4.6,
+      "reference_outranks_random": true,
+      "reference_accuracy_mean": 0.9668935139973958,
+      "metrics": {
+        "double_integrator_g3": {
+          "reference": {
+            "accuracy": 0.980865478515625,
+            "balanced_accuracy": 0.7816472152257615,
+            "near_boundary_balanced_accuracy": 0.7498472450172337,
+            "safe_recall": 0.8915835323924745,
+            "unsafe_recall": 0.6717108980590485
+          },
+          "random": {
+            "accuracy": 0.9801127115885416,
+            "balanced_accuracy": 0.7392338898025995,
+            "near_boundary_balanced_accuracy": 0.715073397559709,
+            "safe_recall": 0.7695678217840379,
+            "unsafe_recall": 0.7088999578211609
+          }
+        },
+        "complex_boundary_stress": {
+          "reference": {
+            "accuracy": 0.9529215494791666,
+            "balanced_accuracy": 0.8143247706960861,
+            "near_boundary_balanced_accuracy": 0.7841755039171733,
+            "safe_recall": 0.9691323760570394,
+            "unsafe_recall": 0.6595171653351328
+          },
+          "random": {
+            "accuracy": 0.95001220703125,
+            "balanced_accuracy": 0.7369528129399098,
+            "near_boundary_balanced_accuracy": 0.6945349387177832,
+            "safe_recall": 0.9132429245918313,
+            "unsafe_recall": 0.5606627012879882
+          }
+        }
+      },
+      "reference_minus_random": {
+        "double_integrator_g3": {
+          "accuracy": [
+            0.0007527669270833334,
+            -0.007365163167317708,
+            0.008229827880859372
+          ],
+          "balanced_accuracy": [
+            0.04241332542316203,
+            0.009690557383887244,
+            0.0741821467531924
+          ],
+          "near_boundary_balanced_accuracy": [
+            0.03477384745752459,
+            0.009257824705914854,
+            0.05905824615806514
+          ],
+          "safe_recall": [
+            0.12201571060843654,
+            0.03897484531609911,
+            0.2010613517948423
+          ],
+          "unsafe_recall": [
+            -0.037189059762112474,
+            -0.1415507113990032,
+            0.06080657775663993
+          ]
+        },
+        "complex_boundary_stress": {
+          "accuracy": [
+            0.0029093424479166665,
+            -0.0024820963541666665,
+            0.008270263671875
+          ],
+          "balanced_accuracy": [
+            0.07737195775617635,
+            0.04348947816208027,
+            0.10883877170782234
+          ],
+          "near_boundary_balanced_accuracy": [
+            0.08964056519939027,
+            0.058066423641405476,
+            0.11948625185166994
+          ],
+          "safe_recall": [
+            0.05588945146520805,
+            0.033874916387628295,
+            0.08076775058902243
+          ],
+          "unsafe_recall": [
+            0.09885446404714464,
+            0.028230963107685376,
+            0.16925278680849246
+          ]
+        }
+      },
+      "acquisition": {
+        "reference": {
+          "double_integrator_g3": {
+            "demos_mean": 9.958333333333334,
+            "demos_min": 4,
+            "requests_mean": 25.875
+          },
+          "complex_boundary_stress": {
+            "demos_mean": 10.666666666666666,
+            "demos_min": 4,
+            "requests_mean": 23.791666666666668
+          }
+        },
+        "random": {
+          "double_integrator_g3": {
+            "demos_mean": 12.0,
+            "demos_min": 12,
+            "requests_mean": 9.416666666666666
+          },
+          "complex_boundary_stress": {
+            "demos_mean": 12.0,
+            "demos_min": 12,
+            "requests_mean": 9.791666666666666
+          }
+        }
+      }
+    },
+    "1e-06": {
+      "gate_passed": true,
+      "random_rank_vs_reference": -0.6,
+      "reference_outranks_random": true,
+      "reference_accuracy_mean": 0.9599253336588541,
+      "metrics": {
+        "double_integrator_g3": {
+          "reference": {
+            "accuracy": 0.9741312662760416,
+            "balanced_accuracy": 0.7881611773990702,
+            "near_boundary_balanced_accuracy": 0.7546075693193967,
+            "safe_recall": 0.7662226764856417,
+            "unsafe_recall": 0.8100996783124984
+          },
+          "random": {
+            "accuracy": 0.9756876627604166,
+            "balanced_accuracy": 0.7437343500421804,
+            "near_boundary_balanced_accuracy": 0.7185065722906888,
+            "safe_recall": 0.7780850555718514,
+            "unsafe_recall": 0.7093836445125091
+          }
+        },
+        "complex_boundary_stress": {
+          "reference": {
+            "accuracy": 0.9457194010416666,
+            "balanced_accuracy": 0.7815456053082991,
+            "near_boundary_balanced_accuracy": 0.7551260529815177,
+            "safe_recall": 0.9711180184932507,
+            "unsafe_recall": 0.5919731921233474
+          },
+          "random": {
+            "accuracy": 0.9493916829427084,
+            "balanced_accuracy": 0.7377641531269555,
+            "near_boundary_balanced_accuracy": 0.6947494493112284,
+            "safe_recall": 0.9119911735111671,
+            "unsafe_recall": 0.563537132742744
+          }
+        }
+      },
+      "reference_minus_random": {
+        "double_integrator_g3": {
+          "accuracy": [
+            -0.001556396484375,
+            -0.007405598958333333,
+            0.004160817464192705
+          ],
+          "balanced_accuracy": [
+            0.04442682735688983,
+            0.013012510581895363,
+            0.07447910902852732
+          ],
+          "near_boundary_balanced_accuracy": [
+            0.0361009970287077,
+            0.01146664131416354,
+            0.05918258833204212
+          ],
+          "safe_recall": [
+            -0.011862379086209624,
+            -0.10193264311261589,
+            0.07815443507661848
+          ],
+          "unsafe_recall": [
+            0.1007160337999893,
+            -0.01695933847753127,
+            0.21219627457634876
+          ]
+        },
+        "complex_boundary_stress": {
+          "accuracy": [
+            -0.0036722819010416665,
+            -0.008138275146484375,
+            0.0008544921875
+          ],
+          "balanced_accuracy": [
+            0.043781452181343626,
+            0.015157114507448303,
+            0.07316196324510439
+          ],
+          "near_boundary_balanced_accuracy": [
+            0.060376603670289214,
+            0.03310465379542673,
+            0.08891048493006787
+          ],
+          "safe_recall": [
+            0.059126844982083815,
+            0.038788926414252405,
+            0.08163265604359338
+          ],
+          "unsafe_recall": [
+            0.02843605938060344,
+            -0.03244313415498424,
+            0.09180973016192379
+          ]
+        }
+      },
+      "acquisition": {
+        "reference": {
+          "double_integrator_g3": {
+            "demos_mean": 11.041666666666666,
+            "demos_min": 4,
+            "requests_mean": 17.666666666666668
+          },
+          "complex_boundary_stress": {
+            "demos_mean": 10.916666666666666,
+            "demos_min": 4,
+            "requests_mean": 25.833333333333332
+          }
+        },
+        "random": {
+          "double_integrator_g3": {
+            "demos_mean": 12.0,
+            "demos_min": 12,
+            "requests_mean": 9.416666666666666
+          },
+          "complex_boundary_stress": {
+            "demos_mean": 12.0,
+            "demos_min": 12,
+            "requests_mean": 9.791666666666666
+          }
+        }
+      }
+    }
+  },
+  "chosen": {
+    "noise_floor": "0.0001",
+    "basis": "qualifying candidates"
+  }
+}

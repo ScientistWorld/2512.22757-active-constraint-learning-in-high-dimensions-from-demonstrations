@@ -1,0 +1,86 @@
+{
+ "gp_acl": {
+  "double_integrator_g3": {
+   "counts": {
+    "requests": 618,
+    "accepted": 119,
+    "start_inside": 418,
+    "goal_inside": 300,
+    "too_close": 0,
+    "solver_failure": 0,
+    "recovered_feasible": 0,
+    "recovered_kkt_ok": 0
+   },
+   "examples": []
+  },
+  "complex_boundary_stress": {
+   "counts": {
+    "requests": 638,
+    "accepted": 175,
+    "start_inside": 379,
+    "goal_inside": 221,
+    "too_close": 0,
+    "solver_failure": 0,
+    "recovered_feasible": 0,
+    "recovered_kkt_ok": 0
+   },
+   "examples": []
+  }
+ },
+ "f6_reference": {
+  "double_integrator_g3": {
+   "counts": {
+    "requests": 424,
+    "accepted": 169,
+    "start_inside": 199,
+    "goal_inside": 88,
+    "too_close": 0,
+    "solver_failure": 0,
+    "recovered_feasible": 0,
+    "recovered_kkt_ok": 0
+   },
+   "examples": []
+  },
+  "complex_boundary_stress": {
+   "counts": {
+    "requests": 620,
+    "accepted": 166,
+    "start_inside": 389,
+    "goal_inside": 191,
+    "too_close": 0,
+    "solver_failure": 0,
+    "recovered_feasible": 0,
+    "recovered_kkt_ok": 0
+   },
+   "examples": []
+  }
+ },
+ "variant_previous_floor": {
+  "double_integrator_g3": {
+   "counts": {
+    "requests": 390,
+    "accepted": 178,
+    "start_inside": 134,
+    "goal_inside": 100,
+    "too_close": 0,
+    "solver_failure": 0,
+    "recovered_feasible": 0,
+    "recovered_kkt_ok": 0
+   },
+   "examples": []
+  },
+  "complex_boundary_stress": {
+   "counts": {
+    "requests": 508,
+    "accepted": 144,
+    "start_inside": 307,
+    "goal_inside": 149,
+    "too_close": 0,
+    "solver_failure": 0,
+    "recovered_feasible": 0,
+    "recovered_kkt_ok": 0
+   },
+   "examples": []
+  }
+ }
+}
