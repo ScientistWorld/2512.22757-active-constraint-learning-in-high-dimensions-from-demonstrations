@@ -454,3 +454,8 @@ The test performs no offline training and never retrains the baseline. It runs e
 - **Working time**: 26m | **GPU**: 0.0h
 - **Jobs**: 19 total (8 completed, 4 failed)
 
+### Iteration 11: claude-opus-5-5 (hardener)
+- **Milestone**: `core_claim` | **Status**: done
+- **Working time**: 38m | **GPU**: 0.0h
+- **Jobs**: 24 total (11 completed, 4 failed)
+
