@@ -5,4 +5,4 @@ action: submit
 gpus: 0
 test: false
 milestone: core_claim
-notes: "Development-only diagnostic pilot: contact quality, error localization, final-classifier rescoring of frozen dev records under GP settings of the cited training family (noise floor, prior mean, hinge), and end-to-end dev runs of three restorations. No test data; nothing frozen."
+notes: "Final hardening job: dev-only pre-registered choice of a well-conditioned GP noise floor (1e-4/1e-5/1e-6; previous 1e-10 caused far-field phantom unsafe regions), apply, rerun reference+random on both splits (hidden test enlarged to 72 instances/experiment), dev and hidden-test audits, validation."

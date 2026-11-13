@@ -2,7 +2,7 @@
 
 Inputs are evaluator score files only: the hidden-test audit cohort
 (reference, frozen random control, variants, shortcut probes), the
-development audit cohort, and the development setup selection. Every
+development audit cohort, and the development noise-floor selection. Every
 comparison pairs identical instances, initial data and query coordinates.
 """
 import json
@@ -142,9 +142,9 @@ def add_hybrid(scores):
             m:float(np.mean([r[m] for r in rows])) for m in rows[0]}
 
 
-report={'before':BEFORE,'setup_selection':read('tmp/setup_selection.json'),
-        # Development-only: where uniform-space errors fall, previous setup and final.
-        'dev_error_map_before':read('tmp/dev_error_map_before.json'),
+report={'before':BEFORE,'noise_floor_selection':read('tmp/noise_floor_selection.json'),
+        # Development-only: where uniform-space errors fall (final controls and
+        # members); the pilot's diagnosis is in eval/train/hardening_pilot_summary.json.
         'dev_error_map':read('tmp/dev_error_map.json')}
 SMALL=['gp_acl','random_baseline']
 for side,scores in (('test',test),('train',train)):

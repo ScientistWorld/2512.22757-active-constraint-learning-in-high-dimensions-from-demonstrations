@@ -9,17 +9,21 @@ import numpy as np
 from scipy.optimize import minimize
 
 TASK_SEED = 94107231
-TASKS_PER_EXPERIMENT = 36
+# Seventy-two paired instances per experiment: per-instance paired accuracy
+# differences vary with an SD of about 0.03, so 36 could not resolve the
+# effect sizes this task produces.
+TASKS_PER_EXPERIMENT = 72
 N_UNIFORM = 4096
 N_BOUNDARY = 8192
 HORIZON = 30
-# Alg. 1 takes an initial demonstration set S_D^(1) as input. The paper's
-# runs start from a weak first model (Fig. 5), and its random-query baseline
-# ends with only the parts of g3 its first demonstrations touched (Fig. 8):
-# the initial set covers the obstacle only partially. Every method shares the
-# first INITIAL_CROSSINGS fixed crossings below (selected on the development
-# split, scripts/select_setup.py) and then acquires demonstrations up to the
-# total BUDGET, which includes the shared initial ones.
+# Alg. 1 takes an initial demonstration set S_D^(1) as input. Every method
+# shares the first INITIAL_CROSSINGS fixed crossings below, which wrap each
+# obstacle from several sides, and then acquires demonstrations up to the
+# total BUDGET, which includes the shared initial ones. Partial initial sets
+# (one or two crossings, closer to the paper's Fig. 8) were tested on the
+# development split and rejected: Alg. 1 then stalls (on the complex-boundary
+# task it acquired 0.4 demonstrations on average from one crossing) and the
+# random control outranked it.
 BUDGET = 12
 REQUEST_LIMIT = 40
 # The paper's 2D double-integrator g3 figures use the workspace [-15, 15]^2.

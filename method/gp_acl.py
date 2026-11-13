@@ -165,15 +165,23 @@ def observations(demos, raw=False):
 # Chou et al. (2022), Sec. IV-B, which the paper's Sec. 2.3 says its GP
 # training parallels: minimize the negative marginal log likelihood plus the
 # demonstration-feasibility hinge mean_n max(mu(x_n)+rho*sd(x_n), 0) over all
-# demonstrated states. Neither paper reports rho; RHO below is the default
-# (--rho), a mild safety margin chosen on the development split together with
-# the evaluator's shared initial demonstration set (scripts/select_setup.py).
-# Smaller rho moves the tied prior mean (-rho*signal, see CONFIG) toward the
-# paper's zero-mean posterior. With a freely learned constant prior mean,
+# demonstrated states. Neither paper reports rho; RHO (--rho) is a mild safety
+# margin. Smaller rho moves the tied prior mean (-rho*signal, see CONFIG)
+# toward the paper's zero-mean posterior. With a freely learned constant prior mean,
 # demonstrated states far from any contact pin that constant at -rho*signal
 # (prior='learned'; rho=1 made unexplored obstacle interiors 84% "safe", so
 # queried endpoints fell inside the obstacle and were rejected).
 RHO = 0.1
+# Lower bound of the fitted observation-noise variance (Eq. 15's sigma^2).
+# The previous package bounded it at 1e-10: with dense, nearly coincident
+# tight states the training covariance is then numerically singular, and the
+# posterior mean carried spurious "unsafe" regions more than four position
+# units from any observation (about 2% of the workspace on the g3
+# development instances). The cited training procedure fits its GP with
+# GPyTorch, whose inferred-noise floor is 1e-4. NOISE_FLOOR (--noise-floor)
+# is the well-conditioned floor chosen on the development split
+# (scripts/select_noise_floor.py) among 1e-4, 1e-5 and 1e-6.
+NOISE_FLOOR = 0.0001
 
 
 def _covariance_derivatives(gp):
@@ -271,7 +279,7 @@ def marginal_likelihood(logp, points, gradients, values_only=False):
 # noise_floor: lower bound of the fitted observation-noise variance; hinge:
 # include the demonstration-feasibility hinge in training (Chou et al.);
 # tight_tol: Problem 7 optimal-value threshold for a tight state.
-CONFIG={'prior':'tied','trust':1.0,'draws':4,'rho':RHO,'noise_floor':1e-10,'hinge':True,'tight_tol':1e-4}
+CONFIG={'prior':'tied','trust':1.0,'draws':4,'rho':RHO,'noise_floor':NOISE_FLOOR,'hinge':True,'tight_tol':1e-4}
 
 
 def tied_objective(y, points, gradients, states=(), values_only=False):

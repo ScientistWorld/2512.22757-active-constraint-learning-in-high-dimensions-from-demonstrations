@@ -13,10 +13,11 @@ import numpy as np
 p=argparse.ArgumentParser();p.add_argument('--attack',required=True)
 p.add_argument('--prior',default=None,help='prior flag passed to the relayed reference')
 p.add_argument('--rho',default=None,help='rho flag passed to the relayed reference')
+p.add_argument('--noise-floor',default=None,help='noise-floor flag passed to the relayed reference')
 args=p.parse_args()
 attack=args.attack
 RELAY=([sys.executable,'method/gp_acl.py']+(['--prior',args.prior] if args.prior else [])
-       +(['--rho',args.rho] if args.rho else []))
+       +(['--rho',args.rho] if args.rho else [])+(['--noise-floor',args.noise_floor] if args.noise_floor else []))
 
 
 def fit_stress_family(contacts):

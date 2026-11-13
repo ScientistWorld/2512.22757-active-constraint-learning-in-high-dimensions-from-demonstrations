@@ -1,7 +1,7 @@
 #!/bin/bash
-# Development-only diagnostic pilot (no hidden-test data, nothing frozen).
-# After the final hardening job, run.sh is restored to end-to-end
-# reproduction (scripts/reproduce.sh).
+# Final hardening job: development-only noise-floor selection, controls from
+# the final code on both splits, development and hidden-test audits. After
+# this job, run.sh is restored to end-to-end reproduction (scripts/reproduce.sh).
 set -euo pipefail
 cd /home/user
-bash scripts/pilot.sh
+bash scripts/harden.sh
