@@ -2,7 +2,7 @@
 
 Inputs are evaluator score files only: the hidden-test audit cohort
 (reference, frozen random control, variants, shortcut probes), the
-development audit cohort, and the development prior selection. Every
+development audit cohort, and the development setup selection. Every
 comparison pairs identical instances, initial data and query coordinates.
 """
 import json
@@ -17,20 +17,34 @@ test=read('eval/test/hardening_scores.json')
 train=read('eval/train/hardening_scores.json')
 rng=np.random.default_rng(872)
 
-# Previous final audit (iteration before this one), same rank convention.
-BEFORE={'test_ranks_audit_cohort':{'random_baseline':-.905851,'better_fill':1.087569,'weaker_legacy':-.682791,
-            'weaker_learned_prior':-.759296,'weaker_no_acquisition':-2.156079,'weaker_raw_gradients':-4.327973,
-            'weaker_no_gradients':None,'weaker_two_draws':.151170,'alt_periodic':-1.418192,
-            'shortcut_family_fit_g3_polynomial_only':-.184401},
-        'shortcut_family_fit_undeformed_g3_three_member_cohort':2.583663,
+# Previous final audit (eval/test/hardening_eighth_summary.json): four shared
+# initial crossings. Core-cohort ranks (every passing member except the
+# alt_ prior), with paired 95% intervals, and the paired paper-direction
+# gaps (random minus reference) on the hidden test.
+BEFORE={'setup':{'initial_crossings':4,'rho':0.1,'budget':12,'request_limit':40},
+        'core_cohort_rank':{'better_fill_topup':[1.3310,.9923,1.6726],'better_fill':[.8866,.6314,1.1425],
+            'better_topup':[.3139,.1355,.5348],'weaker_two_draws':[.1937,-.3116,.6760],
+            'random_baseline':[-.7770,-1.3677,-.1918],'weaker_learned_prior':[-.7803,-1.5073,-.0458],
+            'weaker_no_acquisition':[-1.8370,-2.4768,-1.2480],'weaker_raw_gradients':[-4.2805,-5.0695,-3.5305],
+            'weaker_no_gradients':None,'shortcut_family_fit':[-2.3091,-2.8285,-1.7905],
+            'hybrid_stress_family_fit':[.5392,.2188,.8726]},
+        'evaluator_cohort_rank':{'alt_zero_prior':-3.2754,'better_fill':.4081,'better_fill_topup':.6871,
+            'better_topup':.2564,'random_baseline':-1.1103,'shortcut_family_fit':-1.649,
+            'weaker_learned_prior':-1.4398,'weaker_no_acquisition':-2.0838,'weaker_no_gradients':-6.6687,
+            'weaker_raw_gradients':-3.6251,'weaker_two_draws':.262},
+        'random_minus_reference_test':{
+            'double_integrator_g3':{'accuracy':[.0036,-.0007,.0077],'balanced_accuracy':[-.048,-.0741,-.0223],
+                'near_boundary_balanced_accuracy':[-.0446,-.0641,-.0261]},
+            'complex_boundary_stress':{'accuracy':[.0078,.0046,.011],'balanced_accuracy':[-.0318,-.0545,-.0091],
+                'near_boundary_balanced_accuracy':[-.0454,-.0678,-.023]}},
         'reference_test':{'double_integrator_g3':{'accuracy':.963725,'balanced_accuracy':.808414,
             'near_boundary_balanced_accuracy':.778346,'safe_recall':.945263,'unsafe_recall':.671564},
-            'complex_boundary_stress':{'accuracy':.936808,'balanced_accuracy':.766683,
-            'near_boundary_balanced_accuracy':.749290,'safe_recall':.975122,'unsafe_recall':.558245}},
+            'complex_boundary_stress':{'accuracy':.937127,'balanced_accuracy':.765363,
+            'near_boundary_balanced_accuracy':.746270,'safe_recall':.972407,'unsafe_recall':.558319}},
         'random_test':{'double_integrator_g3':{'accuracy':.967306,'balanced_accuracy':.760423,
             'near_boundary_balanced_accuracy':.733713,'safe_recall':.778159,'unsafe_recall':.742688},
-            'complex_boundary_stress':{'accuracy':.944668,'balanced_accuracy':.737781,
-            'near_boundary_balanced_accuracy':.702904,'safe_recall':.922407,'unsafe_recall':.553156}}}
+            'complex_boundary_stress':{'accuracy':.944926,'balanced_accuracy':.733586,
+            'near_boundary_balanced_accuracy':.700849,'safe_recall':.925623,'unsafe_recall':.541549}}}
 
 
 def paired_metrics(scores,candidate,anchor='gp_acl'):
@@ -128,7 +142,10 @@ def add_hybrid(scores):
             m:float(np.mean([r[m] for r in rows])) for m in rows[0]}
 
 
-report={'before':BEFORE,'prior_selection':read('tmp/prior_selection.json')}
+report={'before':BEFORE,'setup_selection':read('tmp/setup_selection.json'),
+        # Development-only: where uniform-space errors fall, previous setup and final.
+        'dev_error_map_before':read('tmp/dev_error_map_before.json'),
+        'dev_error_map':read('tmp/dev_error_map.json')}
 SMALL=['gp_acl','random_baseline']
 for side,scores in (('test',test),('train',train)):
     if scores is None:
@@ -153,7 +170,7 @@ for side,scores in (('test',test),('train',train)):
         # random control and the probe itself.
         'three_member_cohort_rank':{c:paired_rank(scores,side,c,SMALL+[c]) for c in candidates
                                     if c.startswith(('shortcut_','hybrid_')) and c in passing},
-        'acquisition':acquisition(side,['gp_acl','random_baseline']+[c for c in candidates if c.startswith(('better_','weaker_','alt_'))])}
+        'acquisition':acquisition(side,['gp_acl','random_baseline']+[c for c in candidates if c.startswith(('better_','weaker_','alt_','simple_','variant_'))])}
 Path('eval/test/hardening_summary.json').write_text(json.dumps(report,indent=2,allow_nan=False)+'\n')
 for side in ('test','train'):
     if side not in report:

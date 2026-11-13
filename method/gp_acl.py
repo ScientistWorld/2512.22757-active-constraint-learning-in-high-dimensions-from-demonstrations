@@ -164,13 +164,15 @@ def observations(demos, raw=False):
 # Chou et al. (2022), Sec. IV-B, which the paper's Sec. 2.3 says its GP
 # training parallels: minimize the negative marginal log likelihood plus the
 # demonstration-feasibility hinge mean_n max(mu(x_n)+rho*sd(x_n), 0) over all
-# demonstrated states. Neither paper reports rho; rho=0.1 is a mild safety
-# margin. With a freely learned constant prior mean, demonstrated states far
-# from any contact pin that constant at -rho*signal (prior='learned'; rho=1
-# made unexplored obstacle interiors 84% "safe", so queried endpoints fell
-# inside the obstacle and were rejected). The reference keeps the paper's
-# zero prior mean (see CONFIG below).
-RHO = .1
+# demonstrated states. Neither paper reports rho; RHO below is the default
+# (--rho), a mild safety margin chosen on the development split together with
+# the evaluator's shared initial demonstration set (scripts/select_setup.py).
+# Smaller rho moves the tied prior mean (-rho*signal, see CONFIG) toward the
+# paper's zero-mean posterior. With a freely learned constant prior mean,
+# demonstrated states far from any contact pin that constant at -rho*signal
+# (prior='learned'; rho=1 made unexplored obstacle interiors 84% "safe", so
+# queried endpoints fell inside the obstacle and were rejected).
+RHO = 0.1
 
 
 def _covariance_derivatives(gp):
@@ -191,14 +193,16 @@ def _covariance_derivatives(gp):
     return dlength
 
 
-def training_objective(z, points, gradients, states=(), values_only=False, rho=RHO):
+def training_objective(z, points, gradients, states=(), values_only=False, rho=None):
     """Loss and exact gradient in z=(log length, log signal, log noise, mean).
 
     The likelihood is averaged over observations (as GPyTorch's exact MLL is)
     and the hinge over demonstrated states, with equal weights as in Chou et
     al. (2022). Analytic derivatives avoid finite differences of nearly
-    singular derivative-observation factorizations.
+    singular derivative-observation factorizations. rho defaults to the run's
+    CONFIG['rho'].
     """
+    rho=CONFIG['rho'] if rho is None else rho
     try:
         gp=GPModel(points,gradients,np.exp(z[:3]),values_only,z[3])
     except np.linalg.LinAlgError:
@@ -252,25 +256,26 @@ def marginal_likelihood(logp, points, gradients, values_only=False):
 
 
 # Run configuration (command-line flags). prior='tied' (the reference) fixes
-# the constant prior mean at -RHO*signal, the hinge boundary for states far
-# from data, so unexplored states keep prior safety probability Phi(0.1)=0.54,
-# just below the paper's endpoint level beta=0.55 (Eq. 10 endpoints need
-# evidence of safety). Far-from-data states default to safe, which leaves
-# poorly observed obstacle interiors classified safe.
+# the constant prior mean at -rho*signal, the hinge boundary for states far
+# from data, so unexplored states keep prior safety probability Phi(rho),
+# above one half and below the paper's endpoint level beta=0.55 (Eq. 10
+# endpoints need evidence of safety). Far-from-data states default to safe;
+# the larger rho, the sooner poorly observed obstacle interiors relax to safe.
 # prior='zero' is the paper's own posterior (Eqs. 15-16, zero prior mean).
 # It was tested as the reference and rejected on the development split by a
 # rule fixed in advance (scripts/select_prior.py): the hinge drives the
 # lengthscale to its upper bound and gradient tails extrapolate as half-plane
 # "unsafe" regions, so uniform accuracy fell to 0.73 (0.97 with 'tied').
 # prior='learned' optimizes the constant freely (an earlier package).
-CONFIG={'prior':'tied','trust':1.0,'draws':4}
+CONFIG={'prior':'tied','trust':1.0,'draws':4,'rho':RHO}
 
 
 def tied_objective(y, points, gradients, states=(), values_only=False):
-    """Training loss in (log length, log signal, log noise), mean -RHO*signal."""
+    """Training loss in (log length, log signal, log noise), mean -rho*signal."""
+    rho=CONFIG['rho']
     signal=np.exp(y[1])
-    value,gradient=training_objective(np.r_[y,-RHO*signal],points,gradients,states,values_only)
-    out=gradient[:3].copy();out[1]+=gradient[3]*(-RHO*signal)
+    value,gradient=training_objective(np.r_[y,-rho*signal],points,gradients,states,values_only,rho)
+    out=gradient[:3].copy();out[1]+=gradient[3]*(-rho*signal)
     return value,out
 
 
@@ -280,12 +285,13 @@ def zero_objective(y, points, gradients, states=(), values_only=False):
     return value,gradient[:3].copy()
 
 
-FIXED_MEAN={'tied':(tied_objective,lambda signal:-RHO*signal),
+FIXED_MEAN={'tied':(tied_objective,lambda signal:-CONFIG['rho']*signal),
             'zero':(zero_objective,lambda signal:0.)}
 
 
 def _fit_key(points, gradients, states, values_only, init, prior='learned'):
     digest=hashlib.sha256(SOURCE_DIGEST.encode());digest.update(prior.encode())
+    digest.update(f"|rho={float(CONFIG['rho'])!r}|".encode())
     for array in (points,gradients,states):
         digest.update(np.ascontiguousarray(array,float).tobytes()); digest.update(b'|')
     digest.update(b'values' if values_only else b'joint')
@@ -297,7 +303,7 @@ def train_gp(points, gradients, states=(), values_only=False, init=None, prior=N
     """Minimize the training loss from deterministic starts (or warm start).
 
     Starts are in the paper's physical position units. The prior mean is
-    fixed for prior='zero' (the reference) and 'tied'; a learned constant
+    fixed for prior='tied' (the reference) and 'zero'; a learned constant
     ('learned') starts on the hinge boundary far from data (-rho * signal).
     With `init` (the previous Alg. 1 iteration's optimum) the optimizer is
     warm-started from it plus one default start. The returned model carries
@@ -324,7 +330,7 @@ def train_gp(points, gradients, states=(), values_only=False, init=None, prior=N
             starts.append(np.clip(np.asarray(init,float),[b[0] for b in bounds],[b[1] for b in bounds]))
         for length in ((3.25,) if init is not None else (1.,3.25,6.)):
             signal=max(rms*length,.001)
-            starts.append(np.r_[np.log([length,signal,max((.03*rms)**2,1e-8)]),-RHO*signal])
+            starts.append(np.r_[np.log([length,signal,max((.03*rms)**2,1e-8)]),-CONFIG['rho']*signal])
         fits=[]
         fixed=prior in FIXED_MEAN
         objective=FIXED_MEAN[prior][0] if fixed else training_objective
@@ -867,7 +873,7 @@ def random_acquire(task, rng, demos):
 
 
 VARIANTS=['reference','random','legacy','no_acquisition','no_gradients','raw_gradients',
-          'fill','periodic','periodic6','topup','fill_topup']
+          'fill','periodic','periodic6','topup','fill_topup','sweep']
 
 
 def main():
@@ -876,17 +882,24 @@ def main():
     parser.add_argument('--prior',default=CONFIG['prior'],choices=['zero','tied','learned'])
     parser.add_argument('--trust',type=float,default=CONFIG['trust'])
     parser.add_argument('--draws',type=int,default=CONFIG['draws'])
+    parser.add_argument('--rho',type=float,default=CONFIG['rho'])
     args=parser.parse_args()
-    CONFIG.update(prior='learned' if args.variant=='legacy' else args.prior,trust=args.trust,draws=args.draws)
+    if not (np.isfinite(args.rho) and args.rho>0): parser.error('--rho must be positive')
+    CONFIG.update(prior='learned' if args.variant=='legacy' else args.prior,trust=args.trust,
+                  draws=args.draws,rho=args.rho)
     task=json.loads(sys.stdin.readline())
     rng=np.random.default_rng(task['seed'])
     demos=list(task['initial_demos'])
     observe=Observations(raw=args.variant=='raw_gradients')
     if args.variant=='legacy':
         gp=legacy_acquire(task,rng,demos,observe)
-    elif args.variant in ('random','no_acquisition'):
+    elif args.variant in ('random','no_acquisition','sweep'):
         if args.variant=='random':
             random_acquire(task,rng,demos)
+        elif args.variant=='sweep':
+            # A simple hand-written acquisition rule (not the paper's method):
+            # coverage crossings aimed at the least-covered arc from the start.
+            coverage_topup(task,demos,observe,[],task['query_limit'])
         points,gradients=observe(demos)
         gp=train_gp(points,gradients,demonstrated_states(demos))
         diagnostic('final',demos,points,gp)

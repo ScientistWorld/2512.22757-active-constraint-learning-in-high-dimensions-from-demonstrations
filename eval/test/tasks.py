@@ -13,10 +13,13 @@ TASKS_PER_EXPERIMENT = 36
 N_UNIFORM = 4096
 N_BOUNDARY = 8192
 HORIZON = 30
-# Four shared initial crossings give coarse coverage of each obstacle from
-# several sides (Alg. 1 takes an initial demonstration set S_D^(1) as input;
-# the paper's Fig. 5 starts both methods from a usable first model). Every
-# method then acquires at most eight more demonstrations.
+# Alg. 1 takes an initial demonstration set S_D^(1) as input. The paper's
+# runs start from a weak first model (Fig. 5), and its random-query baseline
+# ends with only the parts of g3 its first demonstrations touched (Fig. 8):
+# the initial set covers the obstacle only partially. Every method shares the
+# first INITIAL_CROSSINGS fixed crossings below (selected on the development
+# split, scripts/select_setup.py) and then acquires demonstrations up to the
+# total BUDGET, which includes the shared initial ones.
 BUDGET = 12
 REQUEST_LIMIT = 40
 # The paper's 2D double-integrator g3 figures use the workspace [-15, 15]^2.
@@ -27,8 +30,12 @@ BAND_WIDTH = .5
 NEAR_WIDTH = .175
 EXPERIMENTS = ('double_integrator_g3', 'complex_boundary_stress')
 # Fixed world-coordinate endpoints, outside every instance, shared by methods.
-INITIAL_PAIRS = (([-13.5,-11.5],[13.5,11.5]),([-13.5,11.5],[13.5,-11.5]),
-                 ([-14.,1.5],[14.,-1.5]),([1.5,14.],[-1.5,-14.]))
+# Each crossing passes the workspace centre, so its expert detour wraps one
+# side of every instance.
+CROSSINGS = (([-13.5,-11.5],[13.5,11.5]),([-13.5,11.5],[13.5,-11.5]),
+             ([-14.,1.5],[14.,-1.5]),([1.5,14.],[-1.5,-14.]))
+INITIAL_CROSSINGS = 4
+INITIAL_PAIRS = CROSSINGS[:INITIAL_CROSSINGS]
 # Private per-instance smooth radial deformation of the paper's g3 polynomial:
 # localized angular bumps and dents (von Mises profiles). Its form and size
 # stay here; the development split uses a different family of comparable

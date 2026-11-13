@@ -25,16 +25,25 @@ for values_only in (False,True):
         assert np.allclose(analytic,numeric,rtol=1e-4,atol=1e-6),(values_only,z,analytic,numeric)
 # The tied prior mean (-RHO*signal) enters the signal derivative; the zero
 # prior mean (the paper's Eqs. 15-16, tested and rejected) drops the mean.
-from method.gp_acl import tied_objective,zero_objective,CONFIG
-assert CONFIG['prior']=='tied'
-for objective in (tied_objective,zero_objective):
-    for values_only in (False,True):
-        for y in (np.log([.6,.7,.003]),np.log([.9,.4,.01])):
-            value,analytic=objective(y,p,g,states,values_only)
-            step=np.eye(3)*1e-6
-            numeric=np.array([(objective(y+e,p,g,states,values_only)[0]
-                              -objective(y-e,p,g,states,values_only)[0])/2e-6 for e in step])
-            assert np.allclose(analytic,numeric,rtol=1e-4,atol=1e-6),(objective.__name__,values_only,y,analytic,numeric)
+from method.gp_acl import tied_objective,zero_objective,CONFIG,RHO,_fit_key
+assert CONFIG['prior']=='tied' and CONFIG['rho']==RHO
+default_rho=CONFIG['rho']
+for rho in (default_rho,.01,.1):
+    CONFIG['rho']=rho
+    for objective in (tied_objective,zero_objective):
+        for values_only in (False,True):
+            for y in (np.log([.6,.7,.003]),np.log([.9,.4,.01])):
+                value,analytic=objective(y,p,g,states,values_only)
+                step=np.eye(3)*1e-6
+                numeric=np.array([(objective(y+e,p,g,states,values_only)[0]
+                                  -objective(y-e,p,g,states,values_only)[0])/2e-6 for e in step])
+                assert np.allclose(analytic,numeric,rtol=1e-4,atol=1e-6),(rho,objective.__name__,values_only,y,analytic,numeric)
+# The memoized fits are keyed by rho, so runs with different --rho never share them.
+keys=set()
+for rho in (.01,.1):
+    CONFIG['rho']=rho;keys.add(_fit_key(p,g,states,False,None,'tied'))
+assert len(keys)==2
+CONFIG['rho']=default_rho
 # A constant prior mean leaves the observed zero values and gradients intact.
 shifted=GPModel(p,g,(.6,.7,1e-9),constant=-.8)
 assert np.max(np.abs(gp.mean_var(p)[0]))<1e-6
