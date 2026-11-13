@@ -1,8 +1,6 @@
 # Once you set action to 'submit' or 'done', STOP immediately.
 # Do NOT sleep, poll, or wait for jobs. The system reads this file
 # only after your turn ends.
-action: submit
-gpus: 0
-test: false
+action: done
 milestone: core_claim
-notes: "Final hardening job (request allowance 80 on both splits): rerun pre-registered dev noise-floor selection, reference+random on both splits (72 hidden instances/experiment), dev and hidden-test audits, validation."
+notes: "Restored a well-conditioned GP noise floor (1e-4, dev-selected; the old 1e-10 floor caused spurious unsafe regions) and enlarged the hidden test to 72 instances: reference now beats random on uniform accuracy in both experiments (beyond noise on complex, within noise on g3) and on boundary metrics beyond noise; better variants above, ablations/random/simple rule below; partial initial sets and an 80-request allowance tested and rejected. See HARDENING.md."

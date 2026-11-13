@@ -1,16 +1,23 @@
 # Progress
 
-Final hardening iteration. Jobs:
-- `3b3ba72f-7f9` (exit 0): the combined audit.
-  - Development-only test of the paper's zero-mean prior: rejected by the pre-fixed rule.
-  - Controls on both splits from final code, frozen.
-  - Development and hidden-test audits: stress-family shortcut before/after; fill, top-up and fill+top-up variants; ablations; the zero-mean alternative.
-- `5aa244fe-ed9` (exit 0): fresh-clone end-to-end reproduction of the reference and random control from the final code. It reproduced every frozen record exactly; validation passed.
+Final hardening iteration. It addressed REVIEW.md: the headline uniform-accuracy effect tied random.
+
+Jobs:
+- `ecec050e-3cf` (cancelled): development test of a partial shared initial set. Rejected: Alg. 1 stalls and random outranks the reference.
+- `3216cb5c-ccf` (exit 0): development pilot.
+  - Tight states are clean.
+  - The g3 errors were spurious unsafe regions caused by a numerically singular 1e-10 noise floor; the complex-boundary errors were hollow interiors.
+  - GPyTorch's 1e-4 floor removes most of the spurious regions.
+- `1a6389bd-3dd` (exit 0): the final job.
+  - Development selection of the noise floor (1e-4) by a pre-fixed rule.
+  - Controls rerun and frozen on both splits; the hidden test is enlarged to 72 instances.
+  - Development and hidden-test audits; validation passed.
+- `808829f2-232` (exit 0): rejected-request diagnostic. Every rejection had an endpoint inside the obstacle; no solver failures.
+- `59bd0533-310` (cancelled): an 80-request allowance gave no gain and was reverted.
 
 Outcome:
-- The reference (unchanged method, tied prior) beats random beyond paired noise.
-- Three better variants beat the reference beyond noise; the best is fill + top-up, +1.33 [0.99, 1.67] in the core cohort.
-- The ablations, learned prior and random control score below it.
-- Hand-coding the visible stress generator fell from +1.57 to +0.34 [−0.24, 0.93]. It now loses near-boundary accuracy.
+- The reference now leads random on uniform accuracy in both experiments: beyond noise on the complex task, within noise on g3.
+- It leads on boundary metrics beyond noise in both, and in combined rank.
+- Three better variants beat it beyond noise; ablations, a simple coverage rule and random score below it.
 
-Details and numbers are in HARDENING.md.
+Details are in HARDENING.md.

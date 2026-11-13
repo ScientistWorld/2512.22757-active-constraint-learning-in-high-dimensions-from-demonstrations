@@ -1,7 +1,7 @@
 #!/bin/bash
-# Final hardening job: development-only noise-floor selection, controls from
-# the final code on both splits, development and hidden-test audits. After
-# this job, run.sh is restored to end-to-end reproduction (scripts/reproduce.sh).
+# End-to-end reproduction of the reference and the random-query control on
+# both splits, from scratch: freezes their raw comparison records, publishes
+# the reference-only scoring files and validates the workspace.
 set -euo pipefail
 cd /home/user
-bash scripts/harden.sh
+bash scripts/reproduce.sh

@@ -1,12 +1,13 @@
 # Final hardening checklist
 
-- [x] Read the paper, REDTEAM.md and the previous HARDENING.md before deciding fixes.
-- [x] Restore the paper's zero-mean posterior as the reference candidate; select on development by a pre-fixed rule (rejected: uniform accuracy 0.73).
-- [x] Private hidden complex-boundary family at matched difficulty (closes hand-coding the visible generator at the boundary).
-- [x] New probe: MAP fit of the visible stress generator; before (development) and after (hidden test).
-- [x] Coverage top-up and fill + top-up headroom variants.
-- [x] One combined audit job (`3b3ba72f-7f9`).
-- [x] Reference-only scores regenerated from final code; fresh-clone reproduction checked.
-- [x] HARDENING.md with before/after evidence.
+- [x] Read the paper, REDTEAM.md, REVIEW.md and the previous HARDENING.md before deciding fixes.
+- [x] Test the paper's partial initial set on development (rejected by a pre-fixed rule: Alg. 1 stalls).
+- [x] Diagnose what limits uniform accuracy (development pilot): spurious unsafe regions from a singular 1e-10 noise floor; hollow interiors.
+- [x] Restore a well-conditioned noise floor (1e-4, GPyTorch's default), chosen on development by a pre-fixed rule.
+- [x] Enlarge the hidden test from 36 to 72 instances per experiment (paired noise).
+- [x] Rejected-request diagnostic (no expert solver failures); 80-request allowance tried and reverted.
+- [x] Reference and random control rerun from final code on both splits; raw records frozen.
+- [x] Hidden-test audit: better, weaker, previous-reference, simple, shortcut and alternative members.
+- [x] HARDENING.md with before/after evidence; briefing and scoring documents updated (test size, noise floor).
 - [x] scripts/run.sh restored to end-to-end reproduction.
 - [x] Final commit and action: done.

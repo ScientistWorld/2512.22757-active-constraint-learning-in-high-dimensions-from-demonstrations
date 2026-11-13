@@ -6,7 +6,7 @@ In both experiments the hidden shape family differs from the development one at 
 - g3 shapes carry a smooth per-instance deformation from different private families (RMS 4.06% vs 3.99% of the radius).
 - Complex-boundary shapes use a different private family of matched radius variation, slope and narrowest radius.
 
-Hand-coding a development generator therefore does not answer hidden instances. Development has 24 instances per experiment; the hidden test has 36.
+Hand-coding a development generator therefore does not answer hidden instances. Development has 24 instances per experiment; the hidden test has 72.
 
 Methods are commands that speak the same online protocol on both splits. They acquire demonstrations from the evaluator's oracle within twelve demonstrations (four shared initial crossings) and forty requests. They then classify a shuffled batch of points revealed only after acquisition ends.
 
