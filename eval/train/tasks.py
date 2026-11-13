@@ -22,14 +22,7 @@ HORIZON = 30
 # task it acquired 0.4 demonstrations on average from one crossing) and the
 # random control outranked it.
 BUDGET = 12
-# Requests, rejected ones included (an endpoint inside the obstacle yields no
-# demonstration). The paper's Alg. 1 solicits every planned pair and has no
-# request cap; 80 equals the reference's own loop maximum (10 batches of 8
-# pairs). With 40, the reference exhausted the allowance before its twelfth
-# demonstration on 15 of 72 hidden g3 instances; every one of its rejected
-# development requests had an endpoint inside the obstacle (no expert
-# solver failures).
-REQUEST_LIMIT = 80
+REQUEST_LIMIT = 40
 # The paper's 2D double-integrator g3 figures use the workspace [-15, 15]^2.
 BOUND = 15.0
 # Obstacles are translated so a fixed origin-centred shape is not an answer.
