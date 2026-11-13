@@ -5,4 +5,4 @@ action: submit
 gpus: 0
 test: false
 milestone: core_claim
-notes: "Final hardening job: dev-only pre-registered choice of a well-conditioned GP noise floor (1e-4/1e-5/1e-6; previous 1e-10 caused far-field phantom unsafe regions), apply, rerun reference+random on both splits (hidden test enlarged to 72 instances/experiment), dev and hidden-test audits, validation."
+notes: "Development-only diagnostic: classify rejected demonstration requests of the reference (endpoint inside obstacle vs expert solver failure) and retry solver failures with a more persistent solve. Nothing frozen; no test data."
