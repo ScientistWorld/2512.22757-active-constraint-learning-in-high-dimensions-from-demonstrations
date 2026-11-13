@@ -1,6 +1,8 @@
 # Once you set action to 'submit' or 'done', STOP immediately.
 # Do NOT sleep, poll, or wait for jobs. The system reads this file
 # only after your turn ends.
-action: done
+action: submit
+gpus: 0
+test: false
 milestone: core_claim
-notes: "Hardening complete. Paper's zero-mean prior tested and rejected on dev (uniform acc 0.73), so the tied-prior reference is kept and reproduces exactly from a fresh clone. Private hidden stress family: hand-coding the visible generator fell from +1.57 to +0.34 [-0.24,0.93]. Better variants beat the reference beyond noise (fill+topup +1.33 [0.99,1.67]); random -0.78 and the ablations rank below. Paper's uniform-accuracy advantage still not reproduced (stated in HARDENING.md)."
+notes: "Development-only diagnostic pilot: contact quality, error localization, final-classifier rescoring of frozen dev records under GP settings of the cited training family (noise floor, prior mean, hinge), and end-to-end dev runs of three restorations. No test data; nothing frozen."

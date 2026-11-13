@@ -115,7 +115,7 @@ class GPModel:
         return sample
 
 
-def kkt_tight_points(demo, tolerance=1e-4):
+def kkt_tight_points(demo, tolerance=None):
     """Appendix A.1, Problems 7 and 8 in exactly eliminated coordinates.
 
     All free control stationarity equations force the dynamics multipliers to
@@ -124,6 +124,7 @@ def kkt_tight_points(demo, tolerance=1e-4):
     lambda_unknown=1 at tight times and finds w satisfying grad_p c+w=0.
     The other positions must have residual below the numerical tolerance.
     """
+    tolerance = CONFIG['tight_tol'] if tolerance is None else tolerance
     p = np.asarray(demo['positions'], float)
     grad = 2*(2*p[1:-1]-p[:-2]-p[2:])
     points, gradients = [], []
@@ -267,7 +268,10 @@ def marginal_likelihood(logp, points, gradients, values_only=False):
 # lengthscale to its upper bound and gradient tails extrapolate as half-plane
 # "unsafe" regions, so uniform accuracy fell to 0.73 (0.97 with 'tied').
 # prior='learned' optimizes the constant freely (an earlier package).
-CONFIG={'prior':'tied','trust':1.0,'draws':4,'rho':RHO}
+# noise_floor: lower bound of the fitted observation-noise variance; hinge:
+# include the demonstration-feasibility hinge in training (Chou et al.);
+# tight_tol: Problem 7 optimal-value threshold for a tight state.
+CONFIG={'prior':'tied','trust':1.0,'draws':4,'rho':RHO,'noise_floor':1e-10,'hinge':True,'tight_tol':1e-4}
 
 
 def tied_objective(y, points, gradients, states=(), values_only=False):
@@ -291,7 +295,7 @@ FIXED_MEAN={'tied':(tied_objective,lambda signal:-CONFIG['rho']*signal),
 
 def _fit_key(points, gradients, states, values_only, init, prior='learned'):
     digest=hashlib.sha256(SOURCE_DIGEST.encode());digest.update(prior.encode())
-    digest.update(f"|rho={float(CONFIG['rho'])!r}|".encode())
+    digest.update(f"|rho={float(CONFIG['rho'])!r}|floor={float(CONFIG['noise_floor'])!r}|hinge={bool(CONFIG['hinge'])}|".encode())
     for array in (points,gradients,states):
         digest.update(np.ascontiguousarray(array,float).tobytes()); digest.update(b'|')
     digest.update(b'values' if values_only else b'joint')
@@ -314,7 +318,9 @@ def train_gp(points, gradients, states=(), values_only=False, init=None, prior=N
     prior=prior or CONFIG['prior']
     points=np.asarray(points,float).reshape(-1,2); gradients=np.asarray(gradients,float).reshape(-1,2)
     states=np.asarray(states,float).reshape(-1,2)
-    bounds=[tuple(b) for b in np.log([[.35,12.5],[1e-5,100],[1e-10,1.]])]+[(-1e3,1e3)]
+    if not CONFIG['hinge']:
+        states=np.zeros((0,2))
+    bounds=[tuple(b) for b in np.log([[.35,12.5],[1e-5,100],[CONFIG['noise_floor'],1.]])]+[(-1e3,1e3)]
     key=_fit_key(points,gradients,states,values_only,init,prior)
     path=FIT_CACHE/f'{key}.json'
     best=None
@@ -330,7 +336,8 @@ def train_gp(points, gradients, states=(), values_only=False, init=None, prior=N
             starts.append(np.clip(np.asarray(init,float),[b[0] for b in bounds],[b[1] for b in bounds]))
         for length in ((3.25,) if init is not None else (1.,3.25,6.)):
             signal=max(rms*length,.001)
-            starts.append(np.r_[np.log([length,signal,max((.03*rms)**2,1e-8)]),-CONFIG['rho']*signal])
+            start=np.r_[np.log([length,signal,max((.03*rms)**2,1e-8)]),-CONFIG['rho']*signal]
+            starts.append(np.clip(start,[b[0] for b in bounds],[b[1] for b in bounds]))
         fits=[]
         fixed=prior in FIXED_MEAN
         objective=FIXED_MEAN[prior][0] if fixed else training_objective
@@ -883,10 +890,15 @@ def main():
     parser.add_argument('--trust',type=float,default=CONFIG['trust'])
     parser.add_argument('--draws',type=int,default=CONFIG['draws'])
     parser.add_argument('--rho',type=float,default=CONFIG['rho'])
+    parser.add_argument('--noise-floor',type=float,default=CONFIG['noise_floor'])
+    parser.add_argument('--no-hinge',action='store_true')
+    parser.add_argument('--tight-tol',type=float,default=CONFIG['tight_tol'])
     args=parser.parse_args()
     if not (np.isfinite(args.rho) and args.rho>0): parser.error('--rho must be positive')
+    if not (0<args.noise_floor<1 and 0<args.tight_tol): parser.error('invalid noise floor or tolerance')
     CONFIG.update(prior='learned' if args.variant=='legacy' else args.prior,trust=args.trust,
-                  draws=args.draws,rho=args.rho)
+                  draws=args.draws,rho=args.rho,noise_floor=args.noise_floor,
+                  hinge=not args.no_hinge,tight_tol=args.tight_tol)
     task=json.loads(sys.stdin.readline())
     rng=np.random.default_rng(task['seed'])
     demos=list(task['initial_demos'])
