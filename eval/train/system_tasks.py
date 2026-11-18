@@ -116,8 +116,10 @@ class SystemTask:
         self.wave_vector = direction*2*np.pi/WAVE_LENGTH[d]
         self.wave_phase = extra.uniform(-np.pi, np.pi, WAVES)
         self.wave_amplitude = extra.uniform(-WAVE_AMPLITUDE[d], WAVE_AMPLITUDE[d], (WAVES, d))
-        self.rng = rng
-        self._graph = None
+        # Evaluation coordinates come from their own stream: evaluation() is
+        # idempotent however often (and in whatever order) it is called.
+        self.evaluation_seed = np.random.SeedSequence([TASK_SEED, 10+EXPERIMENTS.index(experiment), index, 2])
+        self._graph = None; self._evaluation = None
 
     # ----- the hidden constraint -----
     def value_gradient(self, points):
@@ -149,8 +151,8 @@ class SystemTask:
         projected, ok = self.project(points)
         return np.where(ok, np.linalg.norm(np.atleast_2d(points)-projected, axis=1), np.inf)
 
-    def band_points(self, count):
-        s = self.settings; rng = self.rng
+    def band_points(self, count, rng):
+        s = self.settings
         half = (EXTENT[self.family]+1.)*self.scale
         found = []
         total = 0
@@ -166,14 +168,17 @@ class SystemTask:
         return boundary+offset[:, None]*normal
 
     def evaluation(self):
-        s = self.settings
-        uniform = self.rng.uniform(-self.bound, self.bound, (s['n_uniform'], self.dim))
-        band = self.band_points(s['n_band'])
+        if self._evaluation is not None:
+            return tuple(a.copy() for a in self._evaluation)
+        s = self.settings; rng = np.random.default_rng(self.evaluation_seed)
+        uniform = rng.uniform(-self.bound, self.bound, (s['n_uniform'], self.dim))
+        band = self.band_points(s['n_band'], rng)
         points = np.vstack([uniform, band]); is_uniform = np.arange(len(points)) < s['n_uniform']
-        order = self.rng.permutation(len(points))
+        order = rng.permutation(len(points))
         points = points[order]
         truth = (self.value_gradient(points)[0] <= 0).astype(int)
-        return points, truth, is_uniform[order]
+        self._evaluation = (points, truth, is_uniform[order])
+        return tuple(a.copy() for a in self._evaluation)
 
     # ----- the protocol header -----
     def header(self):

@@ -75,9 +75,15 @@ elif attack=='family_fit':
         print(line.strip(),flush=True)
         reply=sys.stdin.readline()
         if message.get('op')=='finish':
-            q=np.asarray(json.loads(reply)['points']);child.kill();break
+            q=np.asarray(json.loads(reply)['points'])
+            child.stdin.write(reply);child.stdin.flush()
+            reference=json.loads(child.stdout.readline())['predictions'];child.kill();break
         if json.loads(reply).get('demo'): demos.append(json.loads(reply)['demo'])
         child.stdin.write(reply);child.stdin.flush()
+    if task.get('system','double_integrator')!='double_integrator':
+        # Only the double-integrator families are fitted; elsewhere the
+        # reference's own predictions are returned.
+        print(json.dumps({'predictions':reference}),flush=True);sys.exit(0)
     contacts=[];normals=[]
     for d in demos:
         pos=np.asarray(d['positions'],float);curv=2*pos[1:-1]-pos[:-2]-pos[2:]
@@ -120,6 +126,84 @@ elif attack=='family_fit':
         weight=(qa-angle[right-1])/np.maximum(angle[right]-angle[right-1],1e-12)
         pred=(np.linalg.norm(rq,axis=1)>=(1-weight)*radius[right-1]+weight*radius[right]).astype(int)
     print(json.dumps({'predictions':pred.tolist()}),flush=True)
+elif attack=='paper_fit':
+    # Writing down the paper's published constraints (App. B.1): relay the
+    # reference acquisition; on the unicycle/quadrotor experiments fit g1, g2,
+    # g3 (2D) or the hourglass g5 (3D) with free rotation, scale and centre to
+    # every tight state and its normal, and classify with the best fit when
+    # it fits well. The double-integrator experiments keep the reference.
+    from scipy.optimize import least_squares
+    child=subprocess.Popen(RELAY,stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True,bufsize=1)
+    child.stdin.write(initial);child.stdin.flush()
+    demos=list(task['initial_demos'])
+    while True:
+        line=child.stdout.readline();message=json.loads(line)
+        print(line.strip(),flush=True)
+        reply=sys.stdin.readline()
+        child.stdin.write(reply);child.stdin.flush()
+        if message.get('op')=='finish':
+            q=np.asarray(json.loads(reply)['points'],float)
+            reference=np.asarray(json.loads(child.stdout.readline())['predictions']);child.kill();break
+        if json.loads(reply).get('demo'): demos.append(json.loads(reply)['demo'])
+    pred=reference;fits={}
+    if task.get('system','double_integrator')!='double_integrator':
+        dim=len(task['bounds']);contacts=[];normals=[]
+        for d in demos:
+            pos=np.asarray(d['positions'],float);curv=2*pos[1:-1]-pos[:-2]-pos[2:]
+            tight=np.abs(curv).sum(axis=1)>1e-4
+            contacts.append(pos[1:-1][tight]);normals.append(-curv[tight]/np.linalg.norm(curv[tight],axis=1,keepdims=True))
+        contacts=np.vstack(contacts);normals=np.vstack(normals)
+        Q=np.array([[.0868,.0243],[.0243,.0868]]);q1=np.array([-.8403,-.7153])
+        def base(family,z):
+            if family=='g1':
+                x,y=z.T;u1=1.732*x+y;u2=x-1.732*y
+                d1=-.028*np.abs(u1)**.4*np.sign(u1);d2=-.0588*np.abs(u2)**.4*np.sign(u2)
+                return -.02*np.abs(u1)**1.4-.042*np.abs(u2)**1.4+1,np.column_stack([1.732*d1+d2,d1-1.732*d2])
+            if family=='g2':
+                quad=np.einsum('ni,ij,nj->n',z,Q,z);f1=quad+z@q1+1.7534;f2=quad-z@q1+1.7534;first=f1<=f2
+                return -np.where(first,f1,f2),-(2*z@Q+np.where(first[:,None],q1,-q1))
+            if family=='g3':
+                x,y=z.T;a=.25*x*x+y*y-25
+                return (-a*a-50*x*x+687.5)/687.5,np.column_stack([-a*x-100*x,-4*a*y])/687.5
+            x,y,w=z.T;a=(x*x+y*y)/9+w*w-6
+            return ((-a*a-16/3*(x*x+y*y)+39.6)/39.6,
+                    np.column_stack([-4*a*x/9-32/3*x,-4*a*y/9-32/3*y,-4*a*w])/39.6)
+        def rotation(params):
+            if dim==2:
+                c,s_=np.cos(params[0]),np.sin(params[0]);return np.array([[c,-s_],[s_,c]])
+            v=np.asarray(params[:3]);angle=np.linalg.norm(v)
+            if angle<1e-12: return np.eye(3)
+            k=v/angle;K=np.array([[0,-k[2],k[1]],[k[2],0,-k[0]],[-k[1],k[0],0]])
+            return np.eye(3)+np.sin(angle)*K+(1-np.cos(angle))*K@K
+        nrot=1 if dim==2 else 3
+        def model(family,params,points):
+            R=rotation(params);scale=np.exp(params[nrot]);centre=params[nrot+1:]
+            value,grad=base(family,(points-centre)@R/scale)
+            return value,grad@R.T/scale
+        def residuals(params,family):
+            value,grad=model(family,params,contacts);norm=np.maximum(np.linalg.norm(grad,axis=1),1e-9)
+            return np.r_[value/norm,1-np.sum(grad*normals,axis=1)/norm]
+        centre=contacts.mean(axis=0);best=None
+        if dim==2:
+            starts=[(f,np.r_[t,np.log(sc),centre]) for f in ('g1','g2','g3') for t in np.linspace(-np.pi,np.pi,12,endpoint=False) for sc in (.9,1.)]
+        else:
+            # The hourglass is symmetric about its axis: start from axis directions.
+            i=np.arange(16)+.5;z_=1-i/16;r=np.sqrt(1-z_*z_);phi=np.pi*(1+5**.5)*i
+            axes=np.column_stack([r*np.cos(phi),r*np.sin(phi),z_])
+            starts=[]
+            for a in axes:
+                v=np.cross([0,0,1.],a);n_=np.linalg.norm(v);angle=np.arccos(np.clip(a[2],-1,1))
+                starts+=[('g5',np.r_[(v/n_*angle if n_>1e-9 else np.zeros(3)),np.log(sc),centre]) for sc in (.9,1.)]
+        for family,start in starts:
+            try: fit=least_squares(residuals,start,args=(family,),method='trf',max_nfev=300)
+            except (ValueError,np.linalg.LinAlgError): continue
+            rms=float(np.sqrt(np.mean(residuals(fit.x,family)[:len(contacts)]**2)))
+            fits[family]=min(fits.get(family,np.inf),rms)
+            if best is None or rms<best[0]: best=(rms,family,fit.x)
+        if best is not None and best[0]<.3:
+            pred=(model(best[1],best[2],q)[0]<=0).astype(int)
+    print(json.dumps({'paper_fit_rms':{k:round(v,4) for k,v in fits.items()}}),file=sys.stderr,flush=True)
+    print(json.dumps({'predictions':np.asarray(pred).astype(int).tolist()}),flush=True)
 elif attack in ('false_count','negative_count','nan_count','negative_inf_count','move_baseline'):
     child=subprocess.Popen(RELAY,stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True,bufsize=1)
     child.stdin.write(initial);child.stdin.flush()
