@@ -1,7 +1,7 @@
 {
   "experiments": {
     "double_integrator_g3": {
-      "weight": 0.6,
+      "weight": 0.2,
       "metrics": {
         "accuracy": {
           "higher_is_better": true,
@@ -31,7 +31,7 @@
       }
     },
     "complex_boundary_stress": {
-      "weight": 0.4,
+      "weight": 0.2,
       "metrics": {
         "accuracy": {
           "higher_is_better": true,
@@ -47,6 +47,66 @@
           "higher_is_better": true,
           "coefficient": 0.6,
           "description": "Mean safe and unsafe recall within 0.175 position units of the boundary."
+        },
+        "safe_recall": {
+          "higher_is_better": true,
+          "coefficient": 0.25,
+          "description": "Fraction of safe boundary-band states identified as safe."
+        },
+        "unsafe_recall": {
+          "higher_is_better": true,
+          "coefficient": 0.25,
+          "description": "Fraction of unsafe boundary-band states identified as unsafe."
+        }
+      }
+    },
+    "unicycle_paper_constraints": {
+      "weight": 0.35,
+      "metrics": {
+        "accuracy": {
+          "higher_is_better": true,
+          "coefficient": 1.0,
+          "description": "Fraction of uniformly sampled constraint states classified correctly (the paper's recovery accuracy)."
+        },
+        "balanced_accuracy": {
+          "higher_is_better": true,
+          "coefficient": 0.5,
+          "description": "Mean safe and unsafe recall in a shuffled boundary band."
+        },
+        "near_boundary_balanced_accuracy": {
+          "higher_is_better": true,
+          "coefficient": 0.6,
+          "description": "Mean safe and unsafe recall within 0.175 position units of the boundary."
+        },
+        "safe_recall": {
+          "higher_is_better": true,
+          "coefficient": 0.25,
+          "description": "Fraction of safe boundary-band states identified as safe."
+        },
+        "unsafe_recall": {
+          "higher_is_better": true,
+          "coefficient": 0.25,
+          "description": "Fraction of unsafe boundary-band states identified as unsafe."
+        }
+      }
+    },
+    "quadcopter_hourglass": {
+      "weight": 0.25,
+      "metrics": {
+        "accuracy": {
+          "higher_is_better": true,
+          "coefficient": 1.0,
+          "description": "Fraction of uniformly sampled constraint states classified correctly (the paper's recovery accuracy)."
+        },
+        "balanced_accuracy": {
+          "higher_is_better": true,
+          "coefficient": 0.5,
+          "description": "Mean safe and unsafe recall in a shuffled boundary band."
+        },
+        "near_boundary_balanced_accuracy": {
+          "higher_is_better": true,
+          "coefficient": 0.6,
+          "description": "Mean safe and unsafe recall within 0.125 position units of the boundary."
         },
         "safe_recall": {
           "higher_is_better": true,

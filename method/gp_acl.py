@@ -1,10 +1,11 @@
-"""Algorithm 1 of Qiu et al.: GP-ACL, specialized to free double integrators.
+"""Algorithm 1 of Qiu et al.: GP-ACL for constraint states in 2D or 3D.
 
-Position elimination is exact: v[t]=p[t+1]-p[t], u[t]=v[t+1]-v[t].
-With no control/velocity bounds or endpoint velocity constraints (the paper's
-position start/goal setting), every position sequence lifts to a feasible
-state/control trajectory. Problems 7/8 below are their reduced KKT programs,
-not quantile contact detection. No simulator or truth module is imported.
+Demonstrations come from the evaluator's expert (Prob. 1) for a known system:
+the 2D double integrator, the 4D unicycle or the 12D quadrotor. Problems 7-8
+are solved as linear programs over the full KKT system of that system's
+dynamics (method/kkt.py). The GP, its posterior samples and Problems 3-6 live
+in the constraint space (positions, 2D or 3D). No simulator or truth module is
+imported.
 """
 from __future__ import annotations
 import argparse
@@ -15,8 +16,11 @@ import sys
 from pathlib import Path
 import numpy as np
 from scipy.linalg import cho_factor, cho_solve
-from scipy.optimize import minimize, linprog, brentq
+from scipy.optimize import minimize, brentq
 from scipy.special import ndtr
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from kkt import kkt_tight_points, make_dynamics  # noqa: E402
 
 # Memoized GP training results (hyperparameters only, keyed by a digest of
 # this source file and the exact training data). Variants that share the
@@ -27,7 +31,7 @@ FIT_CACHE=Path(os.environ.get('GP_ACL_FIT_CACHE',Path(__file__).resolve().parent
 
 
 class GPModel:
-    """Joint value/derivative RBF GP with a constant prior mean.
+    """Joint value/derivative RBF GP with a constant prior mean, in d dims.
 
     The constant has zero derivative, so gradient observations are unchanged;
     value observations are measured relative to it. This is the constant-mean
@@ -35,22 +39,24 @@ class GPModel:
     constraint-learning procedure the paper cites for its training.
     """
     def __init__(self, points, gradients, params=(.6, .1, 1e-5), values_only=False, constant=0.):
-        self.points = np.asarray(points).reshape(-1, 2)
-        self.gradients = np.asarray(gradients).reshape(-1, 2)
+        points=np.asarray(points,float)
+        self.dim=dim=points.shape[-1]
+        self.points = points.reshape(-1, dim)
+        self.gradients = np.asarray(gradients,float).reshape(-1, dim)
         self.ls, self.signal, self.noise = params
         self.constant = float(constant)
-        self.types = np.tile(np.arange(3), len(self.points)) if not values_only else np.zeros(len(self.points), int)
-        self.x = np.repeat(self.points, 3, axis=0) if not values_only else self.points
+        self.types = np.tile(np.arange(dim+1), len(self.points)) if not values_only else np.zeros(len(self.points), int)
+        self.x = np.repeat(self.points, dim+1, axis=0) if not values_only else self.points
         self.y = np.column_stack([np.zeros(len(self.points)), self.gradients]).ravel() if not values_only else np.zeros(len(self.points))
         self.value_mask = (self.types == 0).astype(float)
         diff = self.x[:, None] - self.x[None, :]
         k = self.signal**2 * np.exp(-np.sum(diff**2, axis=2)/(2*self.ls**2))
         ti, tj = self.types[:, None], self.types[None, :]
-        for i in (1, 2):
+        for i in range(1, dim+1):
             k = np.where((ti==i)&(tj==0), k * (-diff[:,:,i-1]/self.ls**2), k)
             k = np.where((ti==0)&(tj==i), k * (diff[:,:,i-1]/self.ls**2), k)
-        for i in (1, 2):
-            for j in (1, 2):
+        for i in range(1, dim+1):
+            for j in range(1, dim+1):
                 k = np.where((ti==i)&(tj==j), k * ((i==j)/self.ls**2-diff[:,:,i-1]*diff[:,:,j-1]/self.ls**4), k)
         self.kernel = k.copy()
         k.flat[::len(k)+1] += self.noise
@@ -61,105 +67,71 @@ class GPModel:
         q = np.atleast_2d(query)
         diff = self.x[:, None] - q[None, :]
         k = self.signal**2*np.exp(-np.sum(diff**2, axis=2)/(2*self.ls**2))
-        for d in (1, 2):
+        for d in range(1, self.dim+1):
             k = np.where(self.types[:,None]==d, k*(-diff[:,:,d-1]/self.ls**2), k)
         return k
 
-    def mean_var(self, query):
-        k = self.cross(query)
+    def mean_var(self, query, chunk=4096):
+        q=np.atleast_2d(query)
+        if len(q)>chunk:
+            parts=[self.mean_var(q[i:i+chunk]) for i in range(0,len(q),chunk)]
+            return np.concatenate([a for a,b in parts]),np.concatenate([b for a,b in parts])
+        k = self.cross(q)
         m = self.constant + k.T @ self.alpha
         v = np.maximum(self.signal**2-np.sum(k*cho_solve(self.chol,k,check_finite=False), axis=0), 1e-12)
         return m, v
 
-    def derivatives(self, query):
-        """Analytic mean/variance gradients for the continuous P3 solve."""
-        q = np.atleast_2d(query)
+    def mean(self, query, chunk=8192):
+        q=np.atleast_2d(query)
+        return np.concatenate([self.constant+self.cross(q[i:i+chunk]).T@self.alpha for i in range(0,len(q),chunk)])
+
+    def _dk(self, q):
         diff = self.x[:, None] - q[None, :]
         base = self.signal**2*np.exp(-np.sum(diff**2,axis=2)/(2*self.ls**2))
         dk = base[:,:,None]*diff/self.ls**2
-        for d in (1,2):
+        eye=np.eye(self.dim)
+        for d in range(1,self.dim+1):
             rows = self.types==d
-            dk[rows] = base[rows,:,None]*(np.eye(2)[d-1]/self.ls**2
+            dk[rows] = base[rows,:,None]*(eye[d-1]/self.ls**2
                        -diff[rows,:,d-1,None]*diff[rows]/self.ls**4)
+        return dk
+
+    def derivatives(self, query):
+        """Analytic mean/variance gradients for the continuous P3 solve."""
+        q = np.atleast_2d(query)
+        dk = self._dk(q)
         k = self.cross(q)
         return np.einsum('iqd,i->qd',dk,self.alpha), -2*np.einsum(
             'iqd,iq->qd',dk,cho_solve(self.chol,k,check_finite=False))
 
     def sample_function(self, rng, n_features=1000, alpha=.3):
-        omega = rng.normal(0, 1/self.ls, (n_features, 2))
+        """Posterior draw of Eq. 16 (Wilson et al. pathwise RFF update)."""
+        omega = rng.normal(0, 1/self.ls, (n_features, self.dim))
         phase = rng.uniform(0, 2*np.pi, n_features)
         weights = rng.normal(size=n_features)
         scale = self.signal*np.sqrt(2/n_features)
         angles = self.x @ omega.T + phase
         features = scale*np.cos(angles)
-        for d in (1, 2):
+        for d in range(1, self.dim+1):
             rows = self.types==d
             features[rows] = -scale*np.sin(angles[rows])*omega[:,d-1]
         correction = cho_solve(self.chol, features@weights, check_finite=False)
-        def sample(q):
+        coefficient = self.alpha-alpha*correction
+        def sample(q, chunk=8192):
             q = np.atleast_2d(q)
-            k = self.cross(q)
-            return self.constant + k.T@self.alpha + alpha*(scale*np.cos(q@omega.T+phase)@weights-k.T@correction)
+            out=[]
+            for i in range(0,len(q),chunk):
+                block=q[i:i+chunk]
+                k = self.cross(block)
+                out.append(self.constant + k.T@self.alpha + alpha*(scale*np.cos(block@omega.T+phase)@weights-k.T@correction))
+            return np.concatenate(out)
         def derivative(q):
             q=np.atleast_2d(q)
-            diff=self.x[:,None]-q[None,:]
-            base=self.signal**2*np.exp(-np.sum(diff**2,axis=2)/(2*self.ls**2))
-            dk=base[:,:,None]*diff/self.ls**2
-            for d in (1,2):
-                rows=self.types==d
-                dk[rows]=base[rows,:,None]*(np.eye(2)[d-1]/self.ls**2
-                         -diff[rows,:,d-1,None]*diff[rows]/self.ls**4)
+            dk=self._dk(q)
             prior=-scale*(np.sin(q@omega.T+phase)*weights)@omega
-            return np.einsum('iqd,i->qd',dk,self.alpha-alpha*correction)+alpha*prior
+            return np.einsum('iqd,i->qd',dk,coefficient)+alpha*prior
         sample.derivative=derivative
         return sample
-
-
-def kkt_tight_points(demo, tolerance=None):
-    """Appendix A.1, Problems 7 and 8 in exactly eliminated coordinates.
-
-    All free control stationarity equations force the dynamics multipliers to
-    zero on interior positions; endpoint multipliers have no interior column.
-    Thus P7 is min ||grad_p c||_1, implemented with its LP epigraph. P8 fixes
-    lambda_unknown=1 at tight times and finds w satisfying grad_p c+w=0.
-    The other positions must have residual below the numerical tolerance.
-    """
-    tolerance = CONFIG['tight_tol'] if tolerance is None else tolerance
-    p = np.asarray(demo['positions'], float)
-    grad = 2*(2*p[1:-1]-p[:-2]-p[2:])
-    points, gradients = [], []
-    for point, gc in zip(p[1:-1], grad):
-        p7 = linprog(np.ones(2), A_ub=-np.eye(2).repeat(2, axis=0),
-                     b_ub=np.array([-gc[0],gc[0],-gc[1],gc[1]]),
-                     bounds=[(0,None)]*2, method='highs')
-        if not p7.success:
-            raise RuntimeError('P7 failed')
-        if p7.fun > tolerance:
-            p8 = linprog(np.zeros(2), A_eq=np.eye(2), b_eq=-gc,
-                         bounds=[(None,None)]*2, method='highs')
-            if not p8.success:
-                raise RuntimeError('P8 failed')
-            points.append(point)
-            gradients.append(p8.x)
-    return np.asarray(points).reshape(-1,2), np.asarray(gradients).reshape(-1,2)
-
-
-def observations(demos, raw=False):
-    """Tight states and gradient estimates of all demonstrations (Eqs. 3-4).
-
-    App. A.1: P8's w recovers the constraint gradient only up to an unknown
-    positive scale per state (it absorbs the true multiplier). Measured raw
-    magnitudes here scale with a demonstration's step length: long crossings
-    give |w|~1, short queried demonstrations |w|~0.001-0.1, for the same g.
-    The reference fixes this free scale by unit-norm estimates, i.e. it
-    learns g normalized to unit gradient on its boundary; raw=True keeps the
-    multiplier-scaled magnitudes (an ablation).
-    """
-    contacts=[kkt_tight_points(d) for d in demos]
-    points=np.vstack([p for p,g in contacts]); gradients=np.vstack([g for p,g in contacts])
-    if not raw and len(gradients):
-        gradients=gradients/np.linalg.norm(gradients,axis=1,keepdims=True)
-    return points,gradients
 
 
 # Chou et al. (2022), Sec. IV-B, which the paper's Sec. 2.3 says its GP
@@ -167,20 +139,12 @@ def observations(demos, raw=False):
 # demonstration-feasibility hinge mean_n max(mu(x_n)+rho*sd(x_n), 0) over all
 # demonstrated states. Neither paper reports rho; RHO (--rho) is a mild safety
 # margin. Smaller rho moves the tied prior mean (-rho*signal, see CONFIG)
-# toward the paper's zero-mean posterior. With a freely learned constant prior mean,
-# demonstrated states far from any contact pin that constant at -rho*signal
-# (prior='learned'; rho=1 made unexplored obstacle interiors 84% "safe", so
-# queried endpoints fell inside the obstacle and were rejected).
+# toward the paper's zero-mean posterior.
 RHO = 0.1
 # Lower bound of the fitted observation-noise variance (Eq. 15's sigma^2).
-# The previous package bounded it at 1e-10: with dense, nearly coincident
-# tight states the training covariance is then numerically singular, and the
-# posterior mean carried spurious "unsafe" regions more than four position
-# units from any observation (about 2% of the workspace on the g3
-# development instances). The cited training procedure fits its GP with
-# GPyTorch, whose inferred-noise floor is 1e-4. NOISE_FLOOR (--noise-floor)
-# is the well-conditioned floor chosen on the development split
-# (scripts/select_noise_floor.py) among 1e-4, 1e-5 and 1e-6.
+# GPyTorch's inferred-noise floor 1e-4 (chosen on the development split among
+# 1e-4, 1e-5 and 1e-6; 1e-10 made the training covariance numerically
+# singular, with spurious unsafe regions far from all observations).
 NOISE_FLOOR = 0.0001
 
 
@@ -191,11 +155,11 @@ def _covariance_derivatives(gp):
     base=gp.signal**2*np.exp(-r2/2)
     dlength=gp.kernel*r2
     ti,tj=gp.types[:,None],gp.types[None,:]
-    for i in (1,2):
+    for i in range(1,gp.dim+1):
         mixed=((ti==i)&(tj==0))|((ti==0)&(tj==i))
         dlength=np.where(mixed,gp.kernel*(r2-2),dlength)
-    for i in (1,2):
-        for j in (1,2):
+    for i in range(1,gp.dim+1):
+        for j in range(1,gp.dim+1):
             derivative=base*((i==j)*(r2-2)/gp.ls**2
                 -diff[:,:,i-1]*diff[:,:,j-1]*(r2-4)/gp.ls**4)
             dlength=np.where((ti==i)&(tj==j),derivative,dlength)
@@ -207,9 +171,7 @@ def training_objective(z, points, gradients, states=(), values_only=False, rho=N
 
     The likelihood is averaged over observations (as GPyTorch's exact MLL is)
     and the hinge over demonstrated states, with equal weights as in Chou et
-    al. (2022). Analytic derivatives avoid finite differences of nearly
-    singular derivative-observation factorizations. rho defaults to the run's
-    CONFIG['rho'].
+    al. (2022). rho defaults to the run's CONFIG['rho'].
     """
     rho=CONFIG['rho'] if rho is None else rho
     try:
@@ -227,7 +189,7 @@ def training_objective(z, points, gradients, states=(), values_only=False, rho=N
                        .5*np.sum(residual*(2*gp.kernel))/count,
                        .5*gp.noise*np.trace(residual)/count,
                        -(gp.value_mask@gp.alpha)/count])
-    states=np.asarray(states,float).reshape(-1,2)
+    states=np.asarray(states,float).reshape(-1,gp.dim)
     if len(states):
         kx=gp.cross(states)
         v=cho_solve(gp.chol,kx,check_finite=False)
@@ -268,14 +230,11 @@ def marginal_likelihood(logp, points, gradients, values_only=False):
 # the constant prior mean at -rho*signal, the hinge boundary for states far
 # from data, so unexplored states keep prior safety probability Phi(rho),
 # above one half and below the paper's endpoint level beta=0.55 (Eq. 10
-# endpoints need evidence of safety). Far-from-data states default to safe;
-# the larger rho, the sooner poorly observed obstacle interiors relax to safe.
-# prior='zero' is the paper's own posterior (Eqs. 15-16, zero prior mean).
-# It was tested as the reference and rejected on the development split by a
-# rule fixed in advance (scripts/select_prior.py): the hinge drives the
-# lengthscale to its upper bound and gradient tails extrapolate as half-plane
-# "unsafe" regions, so uniform accuracy fell to 0.73 (0.97 with 'tied').
-# prior='learned' optimizes the constant freely (an earlier package).
+# endpoints need evidence of safety). prior='zero' is the paper's own
+# posterior (Eqs. 15-16, zero prior mean); it was tested as the reference and
+# rejected on the development split (scripts/select_prior.py): uniform
+# accuracy fell to 0.73 (0.97 with 'tied'). prior='learned' optimizes the
+# constant freely (an earlier package).
 # noise_floor: lower bound of the fitted observation-noise variance; hinge:
 # include the demonstration-feasibility hinge in training (Chou et al.);
 # tight_tol: Problem 7 optimal-value threshold for a tight state.
@@ -314,20 +273,20 @@ def _fit_key(points, gradients, states, values_only, init, prior='learned'):
 def train_gp(points, gradients, states=(), values_only=False, init=None, prior=None):
     """Minimize the training loss from deterministic starts (or warm start).
 
-    Starts are in the paper's physical position units. The prior mean is
-    fixed for prior='tied' (the reference) and 'zero'; a learned constant
-    ('learned') starts on the hinge boundary far from data (-rho * signal).
-    With `init` (the previous Alg. 1 iteration's optimum) the optimizer is
-    warm-started from it plus one default start. The returned model carries
-    its optimum in `model.z` for the next iteration's warm start.
+    Starts are in physical position units. The prior mean is fixed for
+    prior='tied' (the reference) and 'zero'; a learned constant ('learned')
+    starts on the hinge boundary far from data (-rho * signal). With `init`
+    (the previous Alg. 1 iteration's optimum) the optimizer is warm-started
+    from it plus one default start.
     """
     if not len(points):
         return None
     prior=prior or CONFIG['prior']
-    points=np.asarray(points,float).reshape(-1,2); gradients=np.asarray(gradients,float).reshape(-1,2)
-    states=np.asarray(states,float).reshape(-1,2)
+    points=np.asarray(points,float); dim=points.shape[-1]
+    points=points.reshape(-1,dim); gradients=np.asarray(gradients,float).reshape(-1,dim)
+    states=np.asarray(states,float).reshape(-1,dim)
     if not CONFIG['hinge']:
-        states=np.zeros((0,2))
+        states=np.zeros((0,dim))
     bounds=[tuple(b) for b in np.log([[.35,12.5],[1e-5,100],[CONFIG['noise_floor'],1.]])]+[(-1e3,1e3)]
     key=_fit_key(points,gradients,states,values_only,init,prior)
     path=FIT_CACHE/f'{key}.json'
@@ -370,7 +329,7 @@ def train_gp(points, gradients, states=(), values_only=False, init=None, prior=N
 
 
 def finite_gradient(f, x):
-    e = np.eye(2)*1e-5
+    x=np.asarray(x,float); e = np.eye(len(x))*1e-5
     return np.array([(f(x+v)[0]-f(x-v)[0])/(2e-5) for v in e])
 
 
@@ -379,8 +338,7 @@ def scalar_feasible_extreme(constraints, upper, length, nearest=True):
 
     Squared distance is monotone on each signed ray. Its optimum is a domain
     endpoint or a constraint root. A mesh brackets roots; brentq refines them,
-    and feasible intervals (not mesh predictions) select the extremum. This
-    avoids the badly scaled tau variables in the previous SLSQP subproblems.
+    and feasible intervals (not mesh predictions) select the extremum.
     """
     if upper<=1e-7: return None
     count=min(2048,max(129,int(np.ceil(upper/(length/20)))+1))
@@ -424,99 +382,9 @@ def endpoint_constraints(gp, sample, query, beta):
                             ndtr(-mean/np.sqrt(variance))-beta])
 
 
-def legacy_solve_queries(gp, rng, bounds, n_samples=2):
-    """The continuous Programs 3--6, in physical position/cost units.
-
-    P3 uses analytic derivatives and dimensionless residuals. P4--6 reduce
-    exactly to signed scalar rays in 2D and use continuous root solves. A unit
-    ray is only a reparameterization of tau: it preserves the minimizing
-    endpoints and does not normalize the raw gradient in Equation 7.
-    """
-    pairs=[]
-    for _ in range(n_samples):
-        f=gp.sample_function(rng,1000,.3)
-        try:
-            pairs.extend(legacy_sample_queries(gp,f,rng,bounds))
-        except (ValueError,ArithmeticError,np.linalg.LinAlgError,RuntimeError):
-            # A failed local solve yields no query, as a failed IPOPT solve would.
-            continue
-    return pairs
-
-
-def spread_points(points, count, rng):
-    """Greedy farthest-point subset, from a random first point."""
-    chosen=[int(rng.integers(len(points)))]
-    distance=np.linalg.norm(points-points[chosen[0]],axis=1)
-    while len(chosen)<min(count,len(points)):
-        index=int(np.argmax(distance))
-        if distance[index]<=0: break
-        chosen.append(index)
-        distance=np.minimum(distance,np.linalg.norm(points-points[index],axis=1))
-    return points[chosen]
-
-
-def legacy_sample_queries(gp, f, rng, bounds):
-    """Previous packaged Programs 3--6 (P3 started at observed tight states)."""
-    lo,hi=np.asarray(bounds,float).T
-    signal=max(gp.signal,1e-10)
-    pairs=[]
-    def ray_bound(center,vector):
-        return min([(hi[d]-center[d])/vector[d] if vector[d]>0 else
-                    (lo[d]-center[d])/vector[d] for d in range(2) if abs(vector[d])>1e-12])
-    # P3 asks for the most uncertain state on the sampled boundary. It is a
-    # local constrained NLP (IPOPT in the paper), so it is multi-started on
-    # the inferred boundary rather than at arbitrary zero contours of a draw
-    # far from any observation. Starts are spread over all observed contacts
-    # (greedy farthest-point order): random contacts would mostly lie in the
-    # densest, already-resolved arc and return its local variance maxima.
-    candidates=gp.points[np.all((gp.points>=lo)&(gp.points<=hi),axis=1)]
-    if not len(candidates): return pairs
-    spread=spread_points(candidates,10,rng)
-    starts=np.clip(spread+rng.normal(0,.02*gp.ls,(len(spread),2)),lo,hi)
-    solutions=[]
-    for start in starts:
-        res=minimize(lambda q:-gp.mean_var(q)[1][0]/signal**2,start,
-                     jac=lambda q:-gp.derivatives(q)[1][0]/signal**2,
-                     method='SLSQP',bounds=bounds,
-                     constraints=[{'type':'eq','fun':lambda q:f(q)[0]/signal,
-                                   'jac':lambda q:f.derivative(q)[0]/signal}],
-                     options={'maxiter':150,'ftol':1e-9})
-        if res.success and abs(f(res.x)[0])/signal<1e-6: solutions.append(res)
-    if not solutions: return pairs
-    mi=min(solutions,key=lambda r:r.fun).x
-    raw=f.derivative(mi)[0]
-    norm=np.linalg.norm(raw)
-    if norm<1e-10: return pairs
-    center=mi+1.*raw  # Eq.7: eta=1; with unit-gradient estimates this offset is ~1 position unit.
-    if np.any(center<lo) or np.any(center>hi) or f(center)[0]<=0: return pairs
-    tangent=np.array([-raw[1],raw[0]])/norm
-    p4=[]
-    for sign in (-1,1):
-        vector=sign*tangent
-        def unsafe(t): return f(center+np.asarray(t)[:,None]*vector)[:,None]/signal
-        far=scalar_feasible_extreme(unsafe,ray_bound(center,vector),gp.ls,nearest=False)
-        if far is not None: p4.append((far,far*vector))
-    directions=[]
-    if p4: directions.append((max(p4,key=lambda v:v[0])[1],(.55,.55)))
-    directions.append((raw,(.30,.55)))
-    for direction,betas in directions:
-        pair=[]
-        for sign,beta in zip((-1,1),betas):
-            vector=sign*direction/np.linalg.norm(direction)
-            def safe(t):
-                q=center+np.asarray(t)[:,None]*vector
-                return endpoint_constraints(gp,f,q,beta)
-            near=scalar_feasible_extreme(safe,ray_bound(center,vector),gp.ls)
-            if near is None: break
-            pair.append(center+near*vector)
-        if len(pair)==2: pairs.append(pair)
-    return pairs
-
-
 # P3 is solved over the posterior sample's boundary within this many fitted
 # lengthscales of the nearest tight state, where that boundary is anchored by
-# observations (spurious zero contours of a draw far from all data, and the
-# back side of a sampled obstacle beyond the observed constraint, carry no
+# observations (spurious zero contours of a draw far from all data carry no
 # information about where demonstrations can touch the constraint).
 TRUST_LENGTHSCALES=1.0  # default of CONFIG['trust']
 # Posterior draws per Alg. 1 batch (P, unspecified in the paper; chosen on the
@@ -527,29 +395,33 @@ POSTERIOR_DRAWS=4  # default of CONFIG['draws']
 DUPLICATE_TOLERANCE=.25
 MAX_BATCHES=10
 MAX_REDRAWS=3
+# P3 boundary enumeration: grid cells per box side at most (finer in 2D).
+GRID_RESOLUTION={2:160,3:48}
+MAX_CROSSINGS=4000
+# Problem 4 in 3D: the hyperplane H is a plane; its in-plane directions are
+# enumerated at this many angles (in 2D H is a line: two directions).
+PLANE_DIRECTIONS=36
 
 
 def boundary_crossings(f, lo, hi, step, chunk=4096):
     """All zero crossings of f along the edges of a regular grid on [lo,hi]."""
-    xs=lo[0]+step*np.arange(int(np.floor((hi[0]-lo[0])/step))+1)
-    ys=lo[1]+step*np.arange(int(np.floor((hi[1]-lo[1])/step))+1)
-    if len(xs)<2 or len(ys)<2: return np.zeros((0,2))
-    X,Y=np.meshgrid(xs,ys,indexing='ij')
-    grid=np.column_stack([X.ravel(),Y.ravel()])
-    v=np.concatenate([np.asarray(f(grid[i:i+chunk])).ravel() for i in range(0,len(grid),chunk)]).reshape(X.shape)
+    lo=np.asarray(lo,float); hi=np.asarray(hi,float); dim=len(lo)
+    axes=[lo[k]+step*np.arange(int(np.floor((hi[k]-lo[k])/step))+1) for k in range(dim)]
+    if any(len(a)<2 for a in axes): return np.zeros((0,dim))
+    mesh=np.meshgrid(*axes,indexing='ij')
+    grid=np.column_stack([m.ravel() for m in mesh])
+    v=np.concatenate([np.asarray(f(grid[i:i+chunk])).ravel() for i in range(0,len(grid),chunk)]).reshape(mesh[0].shape)
     found=[]
-    for axis in (0,1):
-        a=v[:-1,:] if axis==0 else v[:,:-1]
-        b=v[1:,:] if axis==0 else v[:,1:]
+    for axis in range(dim):
+        first=tuple(slice(None,-1) if k==axis else slice(None) for k in range(dim))
+        second=tuple(slice(1,None) if k==axis else slice(None) for k in range(dim))
+        a=v[first]; b=v[second]
         mask=np.signbit(a)!=np.signbit(b)
         if not np.any(mask): continue
         den=a[mask]-b[mask]
         frac=np.where(den!=0,a[mask]/np.where(den!=0,den,1.),.5)
-        if axis==0:
-            found.append(np.column_stack([X[:-1,:][mask]+frac*step,Y[:-1,:][mask]]))
-        else:
-            found.append(np.column_stack([X[:,:-1][mask],Y[:,:-1][mask]+frac*step]))
-    return np.vstack(found) if found else np.zeros((0,2))
+        found.append(np.column_stack([mesh[k][first][mask]+(frac*step if k==axis else 0) for k in range(dim)]))
+    return np.vstack(found) if found else np.zeros((0,dim))
 
 
 def nearest_distance(points, anchors, chunk=2048):
@@ -587,11 +459,15 @@ def solve_p3(gp, f, lo, hi):
     reach=CONFIG['trust']*gp.ls
     box_lo=np.maximum(lo,contacts.min(axis=0)-reach); box_hi=np.minimum(hi,contacts.max(axis=0)+reach)
     if np.any(box_hi-box_lo<=0): return None
-    step=float(np.clip(gp.ls/4,.05,.5)); step=max(step,float(np.max(box_hi-box_lo))/160)
+    step=float(np.clip(gp.ls/4,.05,.5)); step=max(step,float(np.max(box_hi-box_lo))/GRID_RESOLUTION[gp.dim])
     crossings=boundary_crossings(f,box_lo,box_hi,step)
     if not len(crossings): return None
     crossings=crossings[nearest_distance(crossings,contacts)<=reach]
     if not len(crossings): return None
+    if len(crossings)>MAX_CROSSINGS:
+        # Deterministic thinning (separate stream: the run's draws are unchanged).
+        keep=np.random.default_rng(len(crossings)).choice(len(crossings),MAX_CROSSINGS,replace=False)
+        crossings=crossings[np.sort(keep)]
     variance=gp.mean_var(crossings)[1]
     chosen=[]
     for i in np.argsort(-variance):
@@ -614,14 +490,29 @@ def solve_p3(gp, f, lo, hi):
     return None if best is None else best[1]
 
 
+def hyperplane_directions(normal):
+    """Unit directions spanning H (Eq. 8), the hyperplane orthogonal to normal."""
+    norm=np.linalg.norm(normal)
+    if len(normal)==2:
+        tangent=np.array([-normal[1],normal[0]])/norm
+        return [-tangent,tangent]
+    unit=normal/norm
+    helper=np.eye(len(normal))[int(np.argmin(np.abs(unit)))]
+    first=np.cross(unit,helper); first/=np.linalg.norm(first)
+    second=np.cross(unit,first)
+    angles=np.linspace(0,2*np.pi,PLANE_DIRECTIONS,endpoint=False)
+    return [np.cos(a)*first+np.sin(a)*second for a in angles]
+
+
 def sample_queries(gp, f, rng, bounds):
     """Programs 3--6 for one posterior draw f; returns its start/goal pairs."""
     lo,hi=np.asarray(bounds,float).T
+    dim=len(lo)
     signal=max(gp.signal,1e-10)
     pairs=[]
     def ray_bound(center,vector):
         return min([(hi[d]-center[d])/vector[d] if vector[d]>0 else
-                    (lo[d]-center[d])/vector[d] for d in range(2) if abs(vector[d])>1e-12])
+                    (lo[d]-center[d])/vector[d] for d in range(dim) if abs(vector[d])>1e-12])
     mi=solve_p3(gp,f,lo,hi)
     if mi is None: return pairs
     raw=f.derivative(mi)[0]
@@ -629,16 +520,16 @@ def sample_queries(gp, f, rng, bounds):
     if norm<1e-10: return pairs
     center=mi+1.*raw  # Eq.7: eta=1; with unit-gradient estimates this offset is ~1 position unit.
     if np.any(center<lo) or np.any(center>hi) or f(center)[0]<=0: return pairs
-    tangent=np.array([-raw[1],raw[0]])/norm
+    # Problem 4: the in-H direction along which the draw stays unsafe longest.
     p4=[]
-    for sign in (-1,1):
-        vector=sign*tangent
+    for vector in hyperplane_directions(raw):
         def unsafe(t): return f(center+np.asarray(t)[:,None]*vector)[:,None]/signal
         far=scalar_feasible_extreme(unsafe,ray_bound(center,vector),gp.ls,nearest=False)
         if far is not None: p4.append((far,far*vector))
     directions=[]
     if p4: directions.append((max(p4,key=lambda v:v[0])[1],(.55,.55)))
     directions.append((raw,(.30,.55)))
+    # Problems 5 and 6: nearest safe endpoints (Eq. 10) on both sides.
     for direction,betas in directions:
         pair=[]
         for sign,beta in zip((-1,1),betas):
@@ -675,50 +566,43 @@ def near_duplicate(pair, requested, tolerance=DUPLICATE_TOLERANCE):
     return False
 
 
-def fit_periodic(points, gradients, query, order=12):
-    """Honest headroom variant: periodic contact/normal regression.
-
-    No oracle labels, task parameters or test feedback are used. A smooth
-    periodic radius about the contact centroid suits star-shaped obstacles;
-    the private stress instances include unresolved high frequency structure.
-    """
-    origin=points.mean(axis=0); points=points-origin; query=query-origin
-    theta=np.arctan2(points[:,1],points[:,0]); radii=np.maximum(np.linalg.norm(points,axis=1),1e-9)
-    radial=points/radii[:,None]; tangent=np.column_stack([-radial[:,1],radial[:,0]])
-    nr=np.sum(gradients*radial,axis=1)
-    norms=np.linalg.norm(gradients,axis=1)
-    good=nr/np.maximum(norms,1e-12)<-.08
-    harmonics=np.arange(1,order+1)
-    def design(t):
-        z=np.asarray(t)[:,None]*harmonics
-        return np.column_stack([np.ones(len(t)),np.sin(z),np.cos(z)])
-    z=theta[good,None]*harmonics
-    deriv=np.column_stack([np.zeros(good.sum()),np.cos(z)*harmonics,-np.sin(z)*harmonics])
-    dr=-radii[good]*np.sum(gradients[good]*tangent[good],axis=1)/nr[good]
-    a=np.vstack([design(theta),.25*deriv]); b=np.r_[radii,.25*dr]
-    ridge=2e-5*np.r_[.001,harmonics**4,harmonics**4]
-    coef=np.linalg.solve(a.T@a+np.diag(ridge),a.T@b)
-    radius=design(np.arctan2(query[:,1],query[:,0]))@coef
-    return (np.linalg.norm(query,axis=1)>=radius).astype(int)
+def sphere_directions(count):
+    """Near-uniform unit vectors (Fibonacci lattice)."""
+    i=np.arange(count)+.5
+    z=1-2*i/count; r=np.sqrt(1-z*z); phi=np.pi*(1+5**.5)*i
+    return np.column_stack([r*np.cos(phi),r*np.sin(phi),z])
 
 
 def star_fill(points, query, unsafe, margin=.5, max_gap=np.pi/4):
     """Headroom variant: fill the deep interior enclosed by the tight states.
 
-    Tight states, ordered by angle about their centroid, define a polar
-    piecewise-linear radius. States at least `margin` inside it (and only
-    across angular gaps up to `max_gap`) are also predicted unsafe, which
-    corrects a stationary-kernel posterior mean that relaxes back to its
-    safe prior inside large obstacles. No oracle labels or task parameters
-    are used; only a star-shaped obstacle is assumed.
+    Tight states, ordered by direction about their centroid, define a radial
+    boundary (piecewise-linear in angle in 2D; nearest-direction average in
+    3D). States at least `margin` inside it (only where observed directions
+    are within `max_gap`) are also predicted unsafe, which corrects a
+    stationary-kernel posterior mean that relaxes back to its safe prior
+    inside large obstacles. No oracle labels or task parameters are used;
+    only a star-shaped obstacle is assumed.
     """
     if len(points)<8: return unsafe
     centre=points.mean(axis=0)
     rel=points-centre
+    q=np.asarray(query,float)-centre
+    if points.shape[1]==3:
+        radius=np.linalg.norm(rel,axis=1); direction=rel/np.maximum(radius,1e-12)[:,None]
+        qr=np.linalg.norm(q,axis=1); qd=q/np.maximum(qr,1e-12)[:,None]
+        fill=np.zeros(len(q),bool)
+        for i in range(0,len(q),8192):
+            cosine=np.clip(qd[i:i+8192]@direction.T,-1,1)
+            nearest=np.argsort(-cosine,axis=1)[:,:4]
+            angle=np.arccos(np.take_along_axis(cosine,nearest,axis=1))
+            weight=1/(angle+1e-3)
+            boundary=np.sum(weight*radius[nearest],axis=1)/np.sum(weight,axis=1)
+            fill[i:i+8192]=(qr[i:i+8192]<boundary-margin)&(angle[:,-1]<=max_gap)
+        return unsafe|fill
     angle=np.arctan2(rel[:,1],rel[:,0]); radius=np.linalg.norm(rel,axis=1)
     order=np.argsort(angle); angle=angle[order]; radius=radius[order]
     angle=np.r_[angle[-1]-2*np.pi,angle,angle[0]+2*np.pi]; radius=np.r_[radius[-1],radius,radius[0]]
-    q=np.asarray(query,float)-centre
     qa=np.arctan2(q[:,1],q[:,0]); qr=np.linalg.norm(q,axis=1)
     right=np.clip(np.searchsorted(angle,qa),1,len(angle)-1); left=right-1
     gap=angle[right]-angle[left]
@@ -746,55 +630,25 @@ def diagnostic(stage, demos, points, gp, **extra):
 
 
 class Observations:
-    """Per-demonstration P7/P8 results, computed once per demonstration."""
-    def __init__(self, raw=False):
-        self.raw=raw; self.items=[]
+    """Per-demonstration P7/P8 results, computed once per demonstration.
+
+    App. A.1: P8's w recovers the constraint gradient only up to an unknown
+    positive scale per state (it absorbs the true multiplier), and measured
+    raw magnitudes scale with a demonstration's step length. The reference
+    fixes this free scale by unit-norm estimates; raw=True keeps the
+    multiplier-scaled magnitudes (an ablation).
+    """
+    def __init__(self, dynamics, raw=False):
+        self.dynamics=dynamics; self.raw=raw; self.items=[]
     def __call__(self, demos):
         while len(self.items)<len(demos):
-            self.items.append(kkt_tight_points(demos[len(self.items)]))
-        points=np.vstack([p for p,g in self.items]).reshape(-1,2)
-        gradients=np.vstack([g for p,g in self.items]).reshape(-1,2)
+            self.items.append(kkt_tight_points(demos[len(self.items)],self.dynamics,CONFIG['tight_tol']))
+        dim=self.dynamics.nc
+        points=np.vstack([p for p,g in self.items]).reshape(-1,dim)
+        gradients=np.vstack([g for p,g in self.items]).reshape(-1,dim)
         if not self.raw and len(gradients):
             gradients=gradients/np.linalg.norm(gradients,axis=1,keepdims=True)
         return points,gradients
-
-
-def legacy_acquire(task, rng, demos, observe):
-    """The previous packaged acquisition (kept as a weaker comparison).
-
-    Three fits; two stages that repeatedly redraw posterior samples from one
-    fit, with Problem 3 started at observed tight states.
-    """
-    bounds=task['bounds']; available_requests=task['query_limit']
-    gp=None
-    for iteration in range(3):
-        points,gradients=observe(demos)
-        gp=train_gp(points,gradients,demonstrated_states(demos),prior='learned')
-        diagnostic(iteration,demos,points,gp)
-        if iteration==2 or available_requests<=0:
-            if iteration==2: break
-            continue
-        stages_left=2-iteration
-        target=(task['budget']-len(demos)+stages_left-1)//stages_left
-        allowance=(available_requests+stages_left-1)//stages_left
-        accepted=used=0
-        for query_round in range(12):
-            if accepted>=target or used>=allowance or available_requests<=0:
-                break
-            if gp is None:
-                lo,hi=np.asarray(bounds).T
-                pairs=[rng.uniform(lo,hi,(2,2)) for _ in range(target-accepted)]
-            else:
-                pairs=legacy_solve_queries(gp,rng,bounds)
-            for pair in pairs:
-                if accepted>=target or used>=allowance or available_requests<=0:
-                    break
-                response=send({'op':'query','start':pair[0].tolist(),'goal':pair[1].tolist()})
-                used+=1
-                available_requests=response.get('requests_remaining',0)
-                if response.get('demo'):
-                    demos.append(response['demo']); accepted+=1
-    return gp
 
 
 def gp_acl_acquire(task, rng, demos, observe, topup=False):
@@ -820,7 +674,7 @@ def gp_acl_acquire(task, rng, demos, observe, topup=False):
         for _ in range(MAX_REDRAWS):
             if gp is None:
                 lo,hi=np.asarray(bounds,float).T
-                candidates=[rng.uniform(lo,hi,(2,2)) for _ in range(2*CONFIG['draws'])]
+                candidates=[rng.uniform(lo,hi,(2,len(lo))) for _ in range(2*CONFIG['draws'])]
             else:
                 candidates=solve_queries(gp,rng,bounds)
             pairs=[pair for pair in candidates if not near_duplicate(pair,requested)]
@@ -847,26 +701,39 @@ def gp_acl_acquire(task, rng, demos, observe, topup=False):
 def coverage_topup(task, demos, observe, requested, requests_left):
     """Variant: spend unused demonstrations on crossings of uncovered arcs.
 
-    About the tight-state centroid, the direction psi farthest in angle from
+    About the tight-state centroid, the direction u farthest in angle from
     every observed tight state (and earlier targets) is chosen. A straight
-    start/goal chord perpendicular to psi, offset 0.6 median contact radii
-    toward psi, cuts the obstacle near that arc, so the shortest feasible
+    start/goal chord perpendicular to u, offset 0.6 median contact radii
+    toward u, cuts the obstacle near that side, so the shortest feasible
     detour wraps around it there. No oracle labels or task parameters.
     """
     lo,hi=np.asarray(task['bounds'],float).T
+    dim=len(lo); half=13/15*float(np.min(hi-lo))/2
     targeted=[]
-    candidates=np.linspace(-np.pi,np.pi,72,endpoint=False)
+    if dim==2:
+        angles=np.linspace(-np.pi,np.pi,72,endpoint=False)
+        candidates=np.column_stack([np.cos(angles),np.sin(angles)])
+    else:
+        candidates=sphere_directions(256)
     while len(demos)<task['budget'] and requests_left>0 and len(targeted)<len(candidates):
         points,_=observe(demos)
         if not len(points): return
         centre=points.mean(axis=0); rel=points-centre
-        used=np.r_[np.arctan2(rel[:,1],rel[:,0]),np.asarray(targeted,float)]
-        gap=np.min(np.abs((candidates[:,None]-used[None,:]+np.pi)%(2*np.pi)-np.pi),axis=1)
-        psi=float(candidates[int(np.argmax(gap))]); targeted.append(psi)
+        if dim==2:
+            used=np.r_[np.arctan2(rel[:,1],rel[:,0]),np.asarray([np.arctan2(u[1],u[0]) for u in targeted],float)]
+            gap=np.min(np.abs((angles[:,None]-used[None,:]+np.pi)%(2*np.pi)-np.pi),axis=1)
+        else:
+            used=np.vstack([rel/np.maximum(np.linalg.norm(rel,axis=1),1e-12)[:,None]]+[np.atleast_2d(u) for u in targeted])
+            gap=np.arccos(np.clip(np.max(candidates@used.T,axis=1),-1,1))
+        u=candidates[int(np.argmax(gap))]; targeted.append(u)
         radius=float(np.median(np.linalg.norm(rel,axis=1)))
-        u=np.array([np.cos(psi),np.sin(psi)]); v=np.array([-u[1],u[0]])
+        if dim==2:
+            v=np.array([-u[1],u[0]])
+        else:
+            helper=np.eye(3)[int(np.argmin(np.abs(u)))]
+            v=np.cross(u,helper); v/=np.linalg.norm(v)
         foot=centre+.6*radius*u
-        pair=(np.clip(foot-13*v,lo+.5,hi-.5),np.clip(foot+13*v,lo+.5,hi-.5))
+        pair=(np.clip(foot-half*v,lo+.5,hi-.5),np.clip(foot+half*v,lo+.5,hi-.5))
         if near_duplicate(pair,requested): continue
         response=send({'op':'query','start':pair[0].tolist(),'goal':pair[1].tolist()})
         requested.append(pair)
@@ -880,15 +747,15 @@ def random_acquire(task, rng, demos):
     lo,hi=np.asarray(task['bounds'],float).T
     requests_left=task['query_limit']
     while len(demos)<task['budget'] and requests_left>0:
-        pair=rng.uniform(lo,hi,(2,2))
+        pair=rng.uniform(lo,hi,(2,len(lo)))
         response=send({'op':'query','start':pair[0].tolist(),'goal':pair[1].tolist()})
         requests_left=response.get('requests_remaining',0)
         if response.get('demo'):
             demos.append(response['demo'])
 
 
-VARIANTS=['reference','random','legacy','no_acquisition','no_gradients','raw_gradients',
-          'fill','periodic','periodic6','topup','fill_topup','sweep']
+VARIANTS=['reference','random','no_acquisition','no_gradients','raw_gradients',
+          'fill','topup','fill_topup','sweep']
 
 
 def main():
@@ -904,21 +771,21 @@ def main():
     args=parser.parse_args()
     if not (np.isfinite(args.rho) and args.rho>0): parser.error('--rho must be positive')
     if not (0<args.noise_floor<1 and 0<args.tight_tol): parser.error('invalid noise floor or tolerance')
-    CONFIG.update(prior='learned' if args.variant=='legacy' else args.prior,trust=args.trust,
+    CONFIG.update(prior=args.prior,trust=args.trust,
                   draws=args.draws,rho=args.rho,noise_floor=args.noise_floor,
                   hinge=not args.no_hinge,tight_tol=args.tight_tol)
     task=json.loads(sys.stdin.readline())
     rng=np.random.default_rng(task['seed'])
     demos=list(task['initial_demos'])
-    observe=Observations(raw=args.variant=='raw_gradients')
-    if args.variant=='legacy':
-        gp=legacy_acquire(task,rng,demos,observe)
-    elif args.variant in ('random','no_acquisition','sweep'):
+    dim=len(task['bounds'])
+    dynamics=make_dynamics(task.get('system','double_integrator'),dim,task.get('dt',1.))
+    observe=Observations(dynamics,raw=args.variant=='raw_gradients')
+    if args.variant in ('random','no_acquisition','sweep'):
         if args.variant=='random':
             random_acquire(task,rng,demos)
         elif args.variant=='sweep':
             # A simple hand-written acquisition rule (not the paper's method):
-            # coverage crossings aimed at the least-covered arc from the start.
+            # coverage crossings aimed at the least-covered side from the start.
             coverage_topup(task,demos,observe,[],task['query_limit'])
         points,gradients=observe(demos)
         gp=train_gp(points,gradients,demonstrated_states(demos))
@@ -930,12 +797,10 @@ def main():
     points,gradients=observe(demos)
     response=send({'op':'finish'})
     query=np.asarray(response['points'],float)
-    unsafe=(gp.mean_var(query)[0]>0) if gp is not None else np.zeros(len(query),bool)
-    if args.variant in ('periodic','periodic6') and len(points)>4:
-        pred=fit_periodic(points,gradients,query,6 if args.variant=='periodic6' else 12)
-    elif args.variant=='no_gradients':
+    unsafe=(gp.mean(query)>0) if gp is not None else np.zeros(len(query),bool)
+    if args.variant=='no_gradients':
         ablation=train_gp(points,gradients,demonstrated_states(demos),True)
-        pred=(ablation.mean_var(query)[0]<=0).astype(int) if ablation else np.ones(len(query),int)
+        pred=(ablation.mean(query)<=0).astype(int) if ablation else np.ones(len(query),int)
     elif args.variant in ('fill','fill_topup'):
         pred=(~star_fill(points,query,unsafe)).astype(int)
     else:

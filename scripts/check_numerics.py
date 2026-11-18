@@ -1,7 +1,14 @@
 """Small meaningful checks of restored GP/KKT mathematical primitives."""
 import numpy as np
-from method.gp_acl import (GPModel,kkt_tight_points,finite_gradient,scalar_feasible_extreme,
-                           marginal_likelihood,training_objective,train_gp,endpoint_constraints,observations)
+from method.gp_acl import (GPModel,finite_gradient,scalar_feasible_extreme,Observations,
+                           marginal_likelihood,training_objective,train_gp,endpoint_constraints)
+from method.kkt import kkt_tight_points,make_dynamics,Quadcopter,Unicycle
+DI=make_dynamics('double_integrator',2)
+def di_demo(positions):
+    p=np.asarray(positions,float);v=np.vstack([np.diff(p,axis=0),np.diff(p,axis=0)[-1:]])
+    return {'positions':p.tolist(),'velocities':v.tolist(),'controls':np.diff(v,axis=0).tolist()}
+def observations(demos,raw=False):
+    return Observations(DI,raw)([di_demo(d['positions']) for d in demos])
 p=np.array([[.4,.1],[-.5,.3]])
 g=np.array([[.3,-.4],[-.2,.5]])
 gp=GPModel(p,g,(.6,.7,1e-9))
@@ -68,9 +75,9 @@ near=scalar_feasible_extreme(lambda t:np.column_stack([t-.314159,1.7-t]),2.,.5)
 assert abs(near-.314159)<1e-6
 far=scalar_feasible_extreme(lambda t:((t-.2)*(t-.8)*(t-1.3)*(1.9-t))[:,None],2.,.5,False)
 assert abs(far-1.9)<1e-6
-point,gradient=kkt_tight_points({'positions':[[0,0],[1,.2],[2,0]]})
+point,gradient=kkt_tight_points(di_demo([[0,0],[1,.2],[2,0]]),DI)
 assert len(point)==1 and np.allclose(gradient,[[0,-.8]])
-point,gradient=kkt_tight_points({'positions':[[0,0],[1,0],[2,0]]})
+point,gradient=kkt_tight_points(di_demo([[0,0],[1,0],[2,0]]),DI)
 assert len(point)==0
 # P8 estimates are identified up to a positive scale: unit directions are kept.
 bent=[{'positions':[[0,0],[1,.2],[2,0]]},{'positions':[[0,0],[.1,.02],[.2,0]]}]
@@ -104,7 +111,7 @@ print('Ring probe: length %.3f signal %.3f noise %.2e prior mean %.3f; mean at r
 # New Problem 3 machinery: zero-crossing enumeration, projection, the
 # trust-region global solve, duplicate requests, and memoized/warm training.
 from method.gp_acl import (boundary_crossings,nearest_distance,project_to_boundary,solve_p3,
-                           near_duplicate,star_fill,solve_queries,TRUST_LENGTHSCALES)
+                           near_duplicate,star_fill,solve_queries,TRUST_LENGTHSCALES,sphere_directions)
 def circle(q):
     q=np.atleast_2d(q);return 4.-np.sum(q**2,axis=1)
 circle.derivative=lambda q:-2*np.atleast_2d(q)
@@ -150,3 +157,59 @@ print('Problem 3 crossing enumeration, projection, trust-region solve, duplicate
       'half-ring P3 solutions',found,'of 6; batch pairs',len(pairs),
       '; fitted length %.3f signal %.3f; P3 variance / arc-gap variance'%(half_gp.ls,half_gp.signal),
       np.round(ratios,2).tolist(),flush=True)
+
+# Three-dimensional GP: likelihood/hinge gradients, posterior derivatives and
+# draws, and Problems 3-6 on a sphere of contacts.
+p3=np.array([[.4,.1,.2],[-.5,.3,-.1],[.2,-.6,.4]]);g3=np.array([[.3,-.4,.1],[-.2,.5,.3],[.1,.2,-.6]])
+states3=np.array([[1.3,.2,.1],[-1.1,.9,.4],[.1,-1.4,-.3],[2.5,2.5,1.],[.05,.2,.1]])
+for values_only in (False,True):
+    z=np.r_[np.log([.7,.6,.003]),-.3]
+    value,analytic=training_objective(z,p3,g3,states3,values_only)
+    numeric=np.array([(training_objective(z+e,p3,g3,states3,values_only)[0]
+                      -training_objective(z-e,p3,g3,states3,values_only)[0])/2e-6 for e in np.eye(4)*1e-6])
+    assert np.allclose(analytic,numeric,rtol=1e-4,atol=1e-6),(values_only,analytic,numeric)
+gp3=GPModel(p3,g3,(.7,.6,1e-9),constant=-.2)
+assert np.max(np.abs(gp3.mean_var(p3)[0]))<1e-6
+for point,gradient in zip(p3,g3):
+    assert np.max(np.abs(finite_gradient(lambda q:gp3.mean_var(q)[0],point)-gradient))<1e-5
+    dm,dv=gp3.derivatives(point)
+    assert np.max(np.abs(dv[0]-finite_gradient(lambda q:gp3.mean_var(q)[1],point)))<1e-6
+draw=gp3.sample_function(np.random.default_rng(3))
+for point in p3:
+    assert np.max(np.abs(draw.derivative(point)[0]-finite_gradient(draw,point)))<1e-5
+sphere=sphere_directions(40)*2.5
+shell=train_gp(sphere,-sphere/2.5,sphere*1.6)
+pairs3=solve_queries(shell,np.random.default_rng(4),[[-6,6]]*3)
+assert all(np.asarray(p).shape==(2,3) and np.all(np.isfinite(p)) for p in pairs3)
+print('3D GP gradients, posterior derivatives, draws and P3-P6 batch: pass; pairs',len(pairs3),
+      '; fitted length %.3f signal %.3f'%(shell.ls,shell.signal),flush=True)
+# Full-dynamics KKT programs: a bent unicycle path and a bent quadrotor path
+# give the same tight states and gradient directions as their positions.
+def lift_unicycle(p):
+    step=np.diff(p,axis=0);speed=np.linalg.norm(step,axis=1);heading=np.unwrap(np.arctan2(step[:,1],step[:,0]))
+    th=np.r_[heading,heading[-1]];v=np.r_[speed,speed[-1]]
+    return {'positions':p.tolist(),'states':np.column_stack([p,th,v]).tolist(),'controls':np.column_stack([np.diff(th),np.diff(v)]).tolist()}
+bent=np.array([[0,0],[1,.1],[2,.3],[3,.3],[4,0.]])
+pu,gu=kkt_tight_points(lift_unicycle(bent),Unicycle())
+pd,gd=kkt_tight_points(di_demo(bent),DI)
+assert np.allclose(pu,pd) and np.allclose(gu,gd,atol=1e-8),(pu,pd,gu,gd)
+quad=Quadcopter()
+def lift_quad(p):
+    from method.kkt import QUAD_MASS,QUAD_INERTIA,GRAVITY
+    v=np.vstack([np.diff(p,axis=0),np.diff(p,axis=0)[-1:]]);a=np.diff(v,axis=0)+[0,0,GRAVITY]
+    unit=a/np.linalg.norm(a,axis=1,keepdims=True)
+    eta=np.column_stack([-np.arcsin(unit[:,1]),np.arctan2(unit[:,0],unit[:,2]),np.zeros(len(a))]);eta=np.vstack([eta,eta[-1]])
+    rates=[]
+    for t in range(len(p)-1):
+        ph,th=eta[t,:2]
+        W=np.array([[1,np.sin(ph)*np.tan(th),np.cos(ph)*np.tan(th)],[0,np.cos(ph),-np.sin(ph)],[0,np.sin(ph)/np.cos(th),np.cos(ph)/np.cos(th)]])
+        rates.append(np.linalg.solve(W,eta[t+1]-eta[t]))
+    rates=np.vstack([rates,rates[-1]])
+    tau=QUAD_INERTIA*np.diff(rates,axis=0)+np.cross(rates[:-1],QUAD_INERTIA*rates[:-1])
+    x=np.hstack([p,v,eta,rates]);u=np.column_stack([QUAD_MASS*np.linalg.norm(a,axis=1),tau])
+    assert max(np.max(np.abs(quad.step(x[t],u[t])-x[t+1])) for t in range(len(u)))<1e-9
+    return {'positions':p.tolist(),'states':x.tolist(),'controls':u.tolist()}
+bent3=np.array([[0,0,0],[1,.1,.05],[2,.3,.1],[3,.3,.1],[4,0,0.]])
+pq,gq=kkt_tight_points(lift_quad(bent3),quad)
+assert len(pq)==3 and np.allclose(gq,-2*(2*bent3[1:-1]-bent3[:-2]-bent3[2:]),atol=1e-7),(pq,gq)
+print('Unicycle and quadrotor KKT Problems 7-8 over the full dynamics: pass',flush=True)

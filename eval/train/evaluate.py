@@ -16,7 +16,30 @@ import subprocess
 import sys
 import time
 import numpy as np
-from tasks import Task,EXPERIMENTS,TASKS_PER_EXPERIMENT,BUDGET,REQUEST_LIMIT,BOUND,NEAR_WIDTH,HORIZON
+from tasks import Task,EXPERIMENTS as PLANAR_EXPERIMENTS,TASKS_PER_EXPERIMENT,BUDGET,REQUEST_LIMIT,BOUND,NEAR_WIDTH,HORIZON
+import system_tasks
+from system_tasks import SystemTask
+
+# The double-integrator experiments (tasks.py) and the paper's unicycle and
+# quadrotor experiments (system_tasks.py), each with its own instance count.
+EXPERIMENTS=PLANAR_EXPERIMENTS+system_tasks.EXPERIMENTS
+COUNT={**{exp:TASKS_PER_EXPERIMENT for exp in PLANAR_EXPERIMENTS},
+       **{exp:system_tasks.SETTINGS[exp]['tasks'] for exp in system_tasks.EXPERIMENTS}}
+assert system_tasks.BUDGET==BUDGET and system_tasks.REQUEST_LIMIT==REQUEST_LIMIT
+
+
+def make_task(exp,index):
+    return Task(exp,index) if exp in PLANAR_EXPERIMENTS else SystemTask(exp,index)
+
+
+def task_module(exp):
+    return HERE/('tasks.py' if exp in PLANAR_EXPERIMENTS else 'system_tasks.py')
+
+
+def header(task):
+    if isinstance(task,SystemTask): return task.header()
+    return {'system':'double_integrator','dimension':2,'state_dimension':4,'control_dimension':2,
+            'model':{'dt':1},'bounds':[[-BOUND,BOUND],[-BOUND,BOUND]],'horizon':HORIZON,'dt':1}
 
 SLICE='train'
 # Whole-run success gate on the boundary band: mean balanced accuracy must
@@ -65,17 +88,29 @@ def command_digest(manifest):
                         if dependency.is_file(): pending.append(dependency.resolve())
     # Own task/evaluator versions invalidate caches when the setup changes.
     digest.update((HERE/'tasks.py').read_bytes())
+    digest.update((HERE/'system_tasks.py').read_bytes())
     # Metric/rank changes rescore raw outputs. Bump this version only when
     # acquisition messages or their interpretation change.
-    digest.update(b'acl-v2-online-protocol-4')
+    digest.update(b'acl-v2-online-protocol-5')
     return digest.hexdigest()
 
 
 def instance_id(exp,index): return f'{exp}:{index}'
 
 
+def compact(run):
+    """Frozen comparison records keep what scoring reads: the predictions and
+    the oracle ledger's accept/reject outcomes. Trajectories are dropped."""
+    def one(record):
+        return {**record,'initial_demos':[1]*len(record['initial_demos']),
+                'ledger':[{'start':x['start'],'goal':x['goal'],'demo':None if x['demo'] is None else 1}
+                          for x in record['ledger']],
+                'producer_stderr':record.get('producer_stderr','')[-2000:]}
+    return {**run,'records':{exp:[one(r) for r in records] for exp,records in run['records'].items()}}
+
+
 def run_instance(manifest,task):
-    version=hashlib.sha256((HERE/'tasks.py').read_bytes()).hexdigest()[:12]
+    version=hashlib.sha256(task_module(task.experiment).read_bytes()).hexdigest()[:12]
     initial_path=HERE/'oracle_cache'/version/f'initial_{task.experiment}_{task.index}.json'
     initial=load(initial_path) if initial_path.exists() else task.initial_demonstrations()
     if not initial_path.exists(): write(initial_path,initial)
@@ -96,8 +131,8 @@ def run_instance(manifest,task):
         return json.loads(line,parse_constant=lambda v:(_ for _ in ()).throw(ValueError('nonfinite response')))
     failure=None
     try:
-        tell({'dimension':2,'bounds':[[-BOUND,BOUND],[-BOUND,BOUND]],'horizon':HORIZON,'dt':1,
-              'initial_demos':initial,'budget':BUDGET,'query_limit':REQUEST_LIMIT,'seed':7})
+        tell({**header(task),'initial_demos':initial,'budget':BUDGET,'query_limit':REQUEST_LIMIT,'seed':7})
+        dim=header(task)['dimension'];bound=header(task)['bounds'][0][1]
         while True:
             message=receive()
             if message.get('op')=='finish':
@@ -109,7 +144,7 @@ def run_instance(manifest,task):
             if len(initial)+sum(d['demo'] is not None for d in ledger)>=BUDGET:
                 raise ValueError('demonstration budget exceeded')
             endpoints=np.asarray([message['start'],message['goal']],float)
-            if endpoints.shape!=(2,2) or not np.all(np.isfinite(endpoints)) or np.max(np.abs(endpoints))>BOUND:
+            if endpoints.shape!=(2,dim) or not np.all(np.isfinite(endpoints)) or np.max(np.abs(endpoints))>bound:
                 raise ValueError('invalid endpoint coordinates')
             key=hashlib.sha256(endpoints.tobytes()).hexdigest()
             if key not in oracle_cache:
@@ -148,7 +183,7 @@ WORKERS=max(1,min(8,int(os.environ.get('ACL_EVAL_WORKERS',len(os.sched_getaffini
 
 def _instance(job):
     manifest,exp,index=job
-    return index,run_instance(manifest,Task(exp,index))
+    return index,run_instance(manifest,make_task(exp,index))
 
 
 def collect(manifest,exp,records,save,report):
@@ -157,10 +192,10 @@ def collect(manifest,exp,records,save,report):
     Deterministic protocol violations need no more expensive solves: such an
     attempt has already failed the whole task.
     """
-    pending=list(range(len(records),TASKS_PER_EXPERIMENT))
+    pending=list(range(len(records),COUNT[exp]))
     if WORKERS<=1 or len(pending)<=1:
         for index in pending:
-            record=run_instance(manifest,Task(exp,index));records.append(record);save();report(index,record)
+            record=run_instance(manifest,make_task(exp,index));records.append(record);save();report(index,record)
             if record['failure']: break
         return records
     from concurrent.futures import ProcessPoolExecutor,as_completed
@@ -183,14 +218,14 @@ def collect(manifest,exp,records,save,report):
 
 def metrics(records,exp):
     values=[]; errors=[]; per_instance=[]
-    if len(records)!=TASKS_PER_EXPERIMENT:
+    if len(records)!=COUNT[exp]:
         return None,['wrong number of instances']+[r['failure'] for r in records if r.get('failure')],[]
     for index,record in enumerate(records):
         if record['instance']!=instance_id(exp,index): errors.append('instance mismatch');continue
         if record.get('failure'): errors.append(record['failure']);continue
         if len(record['initial_demos'])+sum(x['demo'] is not None for x in record['ledger'])>BUDGET or len(record['ledger'])>REQUEST_LIMIT:
             errors.append('budget violation');continue
-        task=Task(exp,index);points,truth,uniform=task.evaluation()
+        task=make_task(exp,index);points,truth,uniform=task.evaluation()
         p=np.asarray(record['predictions'])
         if p.shape!=truth.shape or not np.all(np.isfinite(p)) or not np.all((p==0)|(p==1)):
             errors.append('invalid predictions');continue
@@ -201,7 +236,7 @@ def metrics(records,exp):
              'near_boundary_balanced_accuracy':float(.5*(safe+unsafe)),
              'safe_recall':float(safe),'unsafe_recall':float(unsafe)}
         # The narrow inner band resolves the boundary closest to the surface.
-        near=band&(task.boundary_distance(points)<=NEAR_WIDTH)
+        near=band&(task.boundary_distance(points)<=getattr(task,'near_width',NEAR_WIDTH))
         one['near_boundary_balanced_accuracy']=float(.5*(np.mean(p[near&(truth==1)]==1)+np.mean(p[near&(truth==0)]==0)))
         per_instance.append(one);values.append(one)
     if errors: return None,errors,per_instance
@@ -213,7 +248,7 @@ def metrics(records,exp):
 
 def development_progress(record,exp,index):
     # Public development diagnostics for job progress reports only.
-    points,truth,uniform=Task(exp,index).evaluation()
+    points,truth,uniform=make_task(exp,index).evaluation()
     p=np.asarray(record['predictions']);band=~uniform
     if p.shape!=truth.shape: return ''
     safe=np.mean(p[band&(truth==1)]==1);unsafe=np.mean(p[band&(truth==0)]==0)
@@ -271,7 +306,7 @@ def main():
             raw[name]['records'][exp]=records
             def save(): write(path,raw[name])
             def report(index,record,name=name,exp=exp):
-                print(f'[{time.strftime("%H:%M:%S")}] {SLICE} {name} {exp} {index+1}/{TASKS_PER_EXPERIMENT}: '+str(record['failure'] or ('raw output saved; demos='+str(len(record['initial_demos'])+sum(x['demo'] is not None for x in record['ledger']))+', requests='+str(len(record['ledger']))+development_progress(record,exp,index))),flush=True)
+                print(f'[{time.strftime("%H:%M:%S")}] {SLICE} {name} {exp} {index+1}/{COUNT[exp]}: '+str(record['failure'] or ('raw output saved; demos='+str(len(record['initial_demos'])+sum(x['demo'] is not None for x in record['ledger']))+', requests='+str(len(record['ledger']))+development_progress(record,exp,index))),flush=True)
             collect(manifest,exp,records,save,report)
             raw[name]['records'][exp]=records
             value,error,instances=metrics(records,exp)
@@ -283,7 +318,7 @@ def main():
     if args.bootstrap:
         for name in ('gp_acl','random_baseline'):
             if name not in raw: raise ValueError('Bootstrap requires reference and random baseline manifests')
-        write(fixed_path,{name:raw[name] for name in ('gp_acl','random_baseline')},compact=True)
+        write(fixed_path,{name:compact(raw[name]) for name in ('gp_acl','random_baseline')},compact=True)
     fixed=load(fixed_path)
     anchors={}
     for name in ('gp_acl','random_baseline'):
