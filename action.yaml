@@ -5,4 +5,4 @@ action: submit
 gpus: 0
 test: true
 milestone: core_claim
-notes: "Smoke test of the new unicycle (g1-g3) and quadrotor (g5) experiments: oracle/KKT/GP checks and a few development instances of reference, random and fill_topup with timings."
+notes: "Development pilot of the extended gym: reference, random control, better/weaker variants, coverage sweep and the paper-formula-fit shortcut on all four experiments (development split only), with paired reports."
