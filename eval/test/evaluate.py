@@ -109,12 +109,44 @@ def compact(run):
     return {**run,'records':{exp:[one(r) for r in records] for exp,records in run['records'].items()}}
 
 
+_EVALUATION={}
+
+
+def evaluation(task):
+    """Evaluator-owned states, labels, uniform mask and near-boundary mask.
+
+    Memoized per process, and for the unicycle/quadrotor tasks also cached in
+    the private oracle cache (their boundary band is built by projection)."""
+    key=(task.experiment,task.index)
+    if key in _EVALUATION: return _EVALUATION[key]
+    path=None
+    if isinstance(task,SystemTask):
+        version=hashlib.sha256(task_module(task.experiment).read_bytes()).hexdigest()[:12]
+        path=HERE/'oracle_cache'/version/f'evaluation_{task.experiment}_{task.index}.npz'
+        if path.exists():
+            try:
+                with np.load(path) as data:
+                    _EVALUATION[key]=(data['points'],data['truth'],data['uniform'],data['near'])
+                return _EVALUATION[key]
+            except (OSError,ValueError,KeyError):
+                pass
+    points,truth,uniform=task.evaluation()
+    near=np.zeros(len(points),bool)
+    near[~uniform]=task.boundary_distance(points[~uniform])<=getattr(task,'near_width',NEAR_WIDTH)
+    _EVALUATION[key]=(points,truth,uniform,near)
+    if path is not None:
+        path.parent.mkdir(parents=True,exist_ok=True)
+        temp=path.with_name(f'{path.stem}.{os.getpid()}.tmp.npz')
+        np.savez(temp,points=points,truth=truth,uniform=uniform,near=near);temp.replace(path)
+    return _EVALUATION[key]
+
+
 def run_instance(manifest,task):
     version=hashlib.sha256(task_module(task.experiment).read_bytes()).hexdigest()[:12]
     initial_path=HERE/'oracle_cache'/version/f'initial_{task.experiment}_{task.index}.json'
     initial=load(initial_path) if initial_path.exists() else task.initial_demonstrations()
     if not initial_path.exists(): write(initial_path,initial)
-    points,truth,uniform=task.evaluation()
+    points,truth,uniform,_=evaluation(task)
     # The demonstration cache is private and keyed by task AND exact endpoints;
     # it accelerates paired variants without disclosing trajectories to them.
     cache_path=HERE/'oracle_cache'/version/f'{task.experiment}_{task.index}.json'
@@ -225,7 +257,7 @@ def metrics(records,exp):
         if record.get('failure'): errors.append(record['failure']);continue
         if len(record['initial_demos'])+sum(x['demo'] is not None for x in record['ledger'])>BUDGET or len(record['ledger'])>REQUEST_LIMIT:
             errors.append('budget violation');continue
-        task=make_task(exp,index);points,truth,uniform=task.evaluation()
+        task=make_task(exp,index);points,truth,uniform,near_mask=evaluation(task)
         p=np.asarray(record['predictions'])
         if p.shape!=truth.shape or not np.all(np.isfinite(p)) or not np.all((p==0)|(p==1)):
             errors.append('invalid predictions');continue
@@ -236,7 +268,7 @@ def metrics(records,exp):
              'near_boundary_balanced_accuracy':float(.5*(safe+unsafe)),
              'safe_recall':float(safe),'unsafe_recall':float(unsafe)}
         # The narrow inner band resolves the boundary closest to the surface.
-        near=band&(task.boundary_distance(points)<=getattr(task,'near_width',NEAR_WIDTH))
+        near=band&near_mask
         one['near_boundary_balanced_accuracy']=float(.5*(np.mean(p[near&(truth==1)]==1)+np.mean(p[near&(truth==0)]==0)))
         per_instance.append(one);values.append(one)
     if errors: return None,errors,per_instance

@@ -42,7 +42,7 @@ SETTINGS = {
     # Paper Sec. 4.2: quadrotor, hourglass g5, T=20, n_s=27,000.
     'quadcopter_hourglass': dict(
         system='quadcopter', dim=3, state_dim=12, control_dim=4, horizon=20, bound=6.,
-        center_range=.75, families=('g5',), tasks=48, n_uniform=8192,
+        center_range=.75, families=('g5',), tasks=96, n_uniform=8192,
         n_band=8192, band=.35, near=.125, grid=.3, margin=.25,
         crossings=(([-5.5, -5.5, -5.5], [5.5, 5.5, 5.5]), ([-5.5, 5.5, -5.5], [5.5, -5.5, 5.5]),
                    ([5.5, -5.5, -5.5], [-5.5, 5.5, 5.5]), ([5.5, 5.5, -5.5], [-5.5, -5.5, 5.5]))),
@@ -54,8 +54,11 @@ EXTENT = {'g1': 8.3, 'g2': 9.1, 'g3': 7.3, 'g5': 3.7}
 # split uses a different (sinusoidal) field of comparable size, so neither the
 # paper's formulas nor the development generator answer hidden instances.
 BUMPS = 6
-BUMP_AMPLITUDE = {2: .6, 3: .3}
-BUMP_WIDTH = {2: 2., 3: 1.}
+# RMS displacement about 0.27 (2D) and 0.39 (3D) shape-frame units. The 3D
+# field is larger: a development pilot found a smaller one let a fit of the
+# undeformed published hourglass formula beat the learned boundary.
+BUMP_AMPLITUDE = {2: .6, 3: .75}
+BUMP_WIDTH = {2: 2., 3: 1.5}
 Q2 = np.array([[.0868, .0243], [.0243, .0868]])
 QQ2 = np.array([-.8403, -.7153])
 R2 = 1.7534
@@ -134,6 +137,12 @@ class SystemTask:
         value, grad0 = base_constraint(self.family, warped)
         grad_z = np.einsum('ni,nij->nj', grad0, jac)
         return value, grad_z@self.rotation.T/self.scale
+
+    def displacement(self, points):
+        """Size of the private deformation at these points (position units)."""
+        z = (np.atleast_2d(points)-self.center)@self.rotation/self.scale
+        weight = np.exp(-np.sum((z[:, None, :]-self.bump_center[None])**2, axis=2)/(2*self.bump_width**2))
+        return np.linalg.norm(weight@self.bump_amplitude, axis=1)*self.scale
 
     def project(self, points, steps=60):
         """Damped Newton projection onto g=0; returns points and convergence."""

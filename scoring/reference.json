@@ -1,7 +1,9 @@
 {
   "_paper_reported_unicycle_g3": {
     "gp_acl_accuracy": 0.9956,
-    "random_baseline_accuracy": 0.9492
+    "random_baseline_accuracy": 0.9492,
+    "n_s": 2500,
+    "source": "Sec. 4.2, unicycle simulations"
   },
   "_paper_reported_double_integrator_g3": {
     "gp_acl_accuracy": 0.9956,
@@ -61,12 +63,12 @@
       }
     }
   },
-  "_scale_note": "Paper setting restored where it was specified: 2D double integrator at dt=1, T=30, squared successive-position cost, workspace [-15,15]^2 (the paper's g3 figures), the paper's g3 polynomial, 1000 RFF, alpha 0.3, delta 0.001, beta 0.55/0.3/0.55. KKT gradient estimates, identified only up to a positive per-state scale (App. A.1), enter the GP as unit-norm directions. GP hyperparameters minimize the cited Chou et al. (2022) Sec. IV-B loss (negative marginal log likelihood plus the demonstration-feasibility hinge on mean+rho*sd, rho=0.1), with the observation-noise variance bounded below by 1e-4 (GPyTorch's inferred-noise floor; chosen on the development split among 1e-4, 1e-5 and 1e-6, replacing a numerically singular 1e-10); the constant prior mean is tied to -rho*signal so unexplored states have prior safety probability Phi(0.1)=0.54 < beta=0.55. The paper's own zero-mean posterior (Eqs. 15-16) was tested as the reference and rejected on the development split by a rule fixed in advance: its uniform accuracy collapsed to 0.73 (0.97 tied). Eq. 10 is the prose's safe probability Phi(-mean/sd)>=beta. Problem 3 is solved over the sampled boundary within one fitted lengthscale of observed tight states. Benchmark choices the paper leaves unspecified (selected on the development split only): four shared initial crossing demonstrations, twelve demonstrations and forty start/goal requests per instance for every method, Alg. 1 iterated with a refit after every batch of P=4 posterior draws until the budget is spent, eta=1. Instances add random rotation, scale in [0.88,1.08], centre offsets in [-2,2]^2 and a smooth radial deformation of the g3 shape (different private families on development and test, RMS about 4% of the radius). The complex-boundary stress shapes likewise use a different private family on the hidden test, matched to development in radius variation (RMS 0.140 vs 0.141 of the mean radius), boundary slope and narrowest radius. Seventy-two paired hidden instances per experiment (twenty-four on development). Boundary-band metrics and the complex-boundary stress experiment extend the paper's uniform-sample accuracy. Original reported numbers remain in _paper_reported_* and are not targets at this scale; split-specific benchmark measurements are kept separately under _measured_reference_runs.",
+  "_scale_note": "Paper setting restored where it was specified: 2D double integrator at dt=1, T=30, squared successive-position cost, workspace [-15,15]^2 (the paper's g3 figures), the paper's g3 polynomial, 1000 RFF, alpha 0.3, delta 0.001, beta 0.55/0.3/0.55. KKT gradient estimates, identified only up to a positive per-state scale (App. A.1), enter the GP as unit-norm directions. GP hyperparameters minimize the cited Chou et al. (2022) Sec. IV-B loss (negative marginal log likelihood plus the demonstration-feasibility hinge on mean+rho*sd, rho=0.1), with the observation-noise variance bounded below by 1e-4 (GPyTorch's inferred-noise floor; chosen on the development split among 1e-4, 1e-5 and 1e-6, replacing a numerically singular 1e-10); the constant prior mean is tied to -rho*signal so unexplored states have prior safety probability Phi(0.1)=0.54 < beta=0.55. The paper's own zero-mean posterior (Eqs. 15-16) was tested as the reference and rejected on the development split by a rule fixed in advance: its uniform accuracy collapsed to 0.73 (0.97 tied). Eq. 10 is the prose's safe probability Phi(-mean/sd)>=beta. Problem 3 is solved over the sampled boundary within one fitted lengthscale of observed tight states. Benchmark choices the paper leaves unspecified (selected on the development split only): four shared initial crossing demonstrations, twelve demonstrations and forty start/goal requests per instance for every method, Alg. 1 iterated with a refit after every batch of P=4 posterior draws until the budget is spent, eta=1. Instances add random rotation, scale in [0.88,1.08], centre offsets in [-2,2]^2 and a smooth radial deformation of the g3 shape (different private families on development and test, RMS about 4% of the radius). The complex-boundary stress shapes likewise use a different private family on the hidden test, matched to development in radius variation (RMS 0.140 vs 0.141 of the mean radius), boundary slope and narrowest radius. Seventy-two paired hidden instances per double-integrator experiment (twenty-four on development). The paper's main-text experiments are added: unicycle (App. B.1 g1, g2, g3; 4D unicycle dynamics, dt=1, T=30, [-15,15]^2) and quadrotor (hourglass g5; 12D quadrotor, dt=1, T=20, [-6,6]^3), with 72 and 96 hidden instances (24 and 24 on development), the same 4 shared crossings + 12-demonstration / 40-request budget, and private per-instance rotation, scale (0.88-1.08), translation and smooth displacement-field deformation (RMS about 0.3 (2D) and 0.39 (3D) shape units; a different field family on development). The expert solves Prob. 1 exactly in position space (unbounded controls and free non-position endpoint states place no restriction on positions) and lifts each path to the full state/control trajectory; the reference solves Probs. 7-8 as linear programs over the full KKT system of each system's dynamics. Weights: unicycle 0.35, quadrotor 0.25, double-integrator g3 0.2, complex-boundary 0.2. Boundary-band metrics and the complex-boundary stress experiment extend the paper's uniform-sample accuracy. Original reported numbers remain in _paper_reported_* and are not targets at this scale; split-specific benchmark measurements are kept separately under _measured_reference_runs.",
   "experiments": {
     "double_integrator_g3": {
       "description": "Private rotated, rescaled, translated and smoothly deformed instances of the paper's Appendix B g3 constraint on the paper's [-15,15]^2 workspace, with double-integrator demonstrations.",
       "notes": "Results are populated from end-to-end reference runs, not paper agreement targets. Baselines and anchors are recomputed from evaluator-owned raw records.",
-      "weight": 0.6,
+      "weight": 0.2,
       "primary_metric": "accuracy",
       "metrics": {
         "accuracy": {
@@ -112,7 +114,7 @@
     "complex_boundary_stress": {
       "description": "Private complex boundaries with varied curvature and limited informative demonstrations, probing recovery where sparse data leave errors.",
       "notes": "Results are populated from end-to-end reference runs, not paper agreement targets. Baselines and anchors are recomputed from evaluator-owned raw records.",
-      "weight": 0.4,
+      "weight": 0.2,
       "primary_metric": "accuracy",
       "metrics": {
         "accuracy": {
@@ -152,6 +154,88 @@
           "near_boundary_balanced_accuracy": 0.7476314811461062,
           "safe_recall": 0.9493428965511685,
           "unsafe_recall": 0.6118731631084597
+        }
+      }
+    },
+    "unicycle_paper_constraints": {
+      "description": "Private rotated, rescaled, translated and smoothly deformed instances of the paper's App. B.1 constraints g1, g2 and g3 (cycled over instances) on [-15,15]^2, with 4D unicycle demonstrations (dt=1, T=30) generated by the evaluator's expert.",
+      "notes": "Paper Sec. 4.2 reports accuracy over n_s=2500 uniform constraint states (see _paper_reported_unicycle_*). Here 4096 uniform states plus an 8192-state boundary band per instance; 72 hidden instances. Results are end-to-end reference runs, not paper agreement targets.",
+      "weight": 0.35,
+      "primary_metric": "accuracy",
+      "metrics": {
+        "accuracy": {
+          "higher_is_better": true,
+          "coefficient": 1.0,
+          "description": "Fraction of uniformly sampled constraint states classified correctly (the paper's recovery accuracy)."
+        },
+        "balanced_accuracy": {
+          "higher_is_better": true,
+          "coefficient": 0.5,
+          "description": "Mean safe and unsafe recall in a shuffled boundary band."
+        },
+        "near_boundary_balanced_accuracy": {
+          "higher_is_better": true,
+          "coefficient": 0.6,
+          "description": "Mean safe and unsafe recall within 0.175 position units of the boundary."
+        },
+        "safe_recall": {
+          "higher_is_better": true,
+          "coefficient": 0.25,
+          "description": "Fraction of safe boundary-band states identified as safe."
+        },
+        "unsafe_recall": {
+          "higher_is_better": true,
+          "coefficient": 0.25,
+          "description": "Fraction of unsafe boundary-band states identified as unsafe."
+        }
+      },
+      "results": {
+        "random_baseline": {
+          "type": "baseline"
+        },
+        "gp_acl": {
+          "type": "proposed"
+        }
+      }
+    },
+    "quadcopter_hourglass": {
+      "description": "Private rotated (3D), rescaled, translated and smoothly deformed instances of the paper's hourglass constraint g5 on [-6,6]^3, with 12D quadrotor demonstrations (dt=1, T=20) generated by the evaluator's expert.",
+      "notes": "Paper Sec. 4.2 reports accuracy over n_s=27,000 constraint states (see _paper_reported_quadcopter_g5). Here 8192 uniform states plus an 8192-state boundary band per instance; 96 hidden instances. Results are end-to-end reference runs, not paper agreement targets.",
+      "weight": 0.25,
+      "primary_metric": "accuracy",
+      "metrics": {
+        "accuracy": {
+          "higher_is_better": true,
+          "coefficient": 1.0,
+          "description": "Fraction of uniformly sampled constraint states classified correctly (the paper's recovery accuracy)."
+        },
+        "balanced_accuracy": {
+          "higher_is_better": true,
+          "coefficient": 0.5,
+          "description": "Mean safe and unsafe recall in a shuffled boundary band."
+        },
+        "near_boundary_balanced_accuracy": {
+          "higher_is_better": true,
+          "coefficient": 0.6,
+          "description": "Mean safe and unsafe recall within 0.125 position units of the boundary."
+        },
+        "safe_recall": {
+          "higher_is_better": true,
+          "coefficient": 0.25,
+          "description": "Fraction of safe boundary-band states identified as safe."
+        },
+        "unsafe_recall": {
+          "higher_is_better": true,
+          "coefficient": 0.25,
+          "description": "Fraction of unsafe boundary-band states identified as unsafe."
+        }
+      },
+      "results": {
+        "random_baseline": {
+          "type": "baseline"
+        },
+        "gp_acl": {
+          "type": "proposed"
         }
       }
     }
@@ -241,5 +325,29 @@
       "failures": {},
       "raw_metrics_of_failed": {}
     }
+  },
+  "_paper_reported_unicycle_g1": {
+    "gp_acl_accuracy": 0.9996,
+    "random_baseline_accuracy": 0.9788,
+    "n_s": 2500,
+    "source": "Sec. 4.2, unicycle simulations"
+  },
+  "_paper_reported_unicycle_g2": {
+    "gp_acl_accuracy": 1.0,
+    "random_baseline_accuracy": 0.9912,
+    "n_s": 2500,
+    "source": "Sec. 4.2, unicycle simulations"
+  },
+  "_paper_reported_quadcopter_g5": {
+    "gp_acl_accuracy": 0.9919,
+    "random_baseline_accuracy": 0.9423,
+    "n_s": 27000,
+    "horizon": 20,
+    "source": "Sec. 4.2, quadcopter simulations"
+  },
+  "_paper_reported_unicycle_mean_g1_g2_g3": {
+    "gp_acl_accuracy": 0.9984,
+    "random_baseline_accuracy": 0.9731,
+    "note": "Unweighted mean of the three unicycle constraints; the unicycle experiment cycles g1, g2, g3 over its instances."
   }
 }
