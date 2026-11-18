@@ -12,8 +12,10 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import multiprocessing
 import subprocess
 import sys
+import threading
 import time
 import numpy as np
 from tasks import Task,EXPERIMENTS as PLANAR_EXPERIMENTS,TASKS_PER_EXPERIMENT,BUDGET,REQUEST_LIMIT,BOUND,NEAR_WIDTH,HORIZON
@@ -154,11 +156,21 @@ def run_instance(manifest,task):
     ledger=[]; final=None
     process=subprocess.Popen(manifest['command'],cwd=ROOT,stdin=subprocess.PIPE,stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE,text=True,bufsize=1)
+    # The producer's stderr is drained concurrently (bounded tail): a chatty
+    # producer can never block on a full pipe while the protocol waits.
+    tail=[]
+    def drain():
+        for chunk in iter(lambda:process.stderr.read(4096),''):
+            tail.append(chunk)
+            if len(tail)>64: del tail[:-32]
+    reader=threading.Thread(target=drain,daemon=True);reader.start()
     def tell(message):
         process.stdin.write(json.dumps(message,allow_nan=False)+'\n');process.stdin.flush()
     def receive():
         line=process.stdout.readline()
-        if not line: raise ValueError('producer exited before completing protocol: '+process.stderr.read()[-1000:])
+        if not line:
+            process.wait(timeout=30);reader.join(timeout=30)
+            raise ValueError('producer exited before completing protocol: '+''.join(tail)[-1000:])
         if len(line)>1000000: raise ValueError('oversized response')
         return json.loads(line,parse_constant=lambda v:(_ for _ in ()).throw(ValueError('nonfinite response')))
     failure=None
@@ -202,7 +214,14 @@ def run_instance(manifest,task):
         failure=str(exc);pred=[]
     finally:
         process.kill()
-        _,producer_stderr=process.communicate(timeout=10)
+        try:
+            process.wait(timeout=30)
+        finally:
+            reader.join(timeout=30)
+            for stream in (process.stdin,process.stdout,process.stderr):
+                try: stream.close()
+                except (OSError,ValueError): pass
+        producer_stderr=''.join(tail)
     # Retain diagnostics as opaque text. No scored calculation reads this field.
     return {'instance':instance_id(task.experiment,task.index),'predictions':pred,
             'initial_demos':initial,'ledger':ledger,'failure':failure,
@@ -231,8 +250,9 @@ def collect(manifest,exp,records,save,report):
             if record['failure']: break
         return records
     from concurrent.futures import ProcessPoolExecutor,as_completed
-    done={};failed=False
-    with ProcessPoolExecutor(max_workers=min(WORKERS,len(pending))) as pool:
+    done={};failed=False;saved=time.time()
+    # Fresh (spawned) workers: they do not inherit the parent's records.
+    with ProcessPoolExecutor(max_workers=min(WORKERS,len(pending)),mp_context=multiprocessing.get_context('spawn')) as pool:
         futures=[pool.submit(_instance,(manifest,exp,index)) for index in pending]
         for future in as_completed(futures):
             if future.cancelled(): continue
@@ -244,7 +264,10 @@ def collect(manifest,exp,records,save,report):
             grew=False
             while len(records) in done:
                 records.append(done.pop(len(records)));grew=True
-            if grew: save()
+            # Checkpoints at most every 30 s (and at the end) keep large
+            # record files from being rewritten after every instance.
+            if grew and time.time()-saved>30: save();saved=time.time()
+    save()
     return records
 
 
@@ -327,7 +350,7 @@ def main():
         for exp in EXPERIMENTS:
             records=old.get(exp,[])
             raw[name]['records'][exp]=records
-            def save(): write(path,raw[name])
+            def save(): write(path,raw[name],compact=True)
             def report(index,record,name=name,exp=exp):
                 print(f'[{time.strftime("%H:%M:%S")}] {SLICE} {name} {exp} {index+1}/{COUNT[exp]}: '+str(record['failure'] or ('raw output saved; demos='+str(len(record['initial_demos'])+sum(x['demo'] is not None for x in record['ledger']))+', requests='+str(len(record['ledger'])))),flush=True)
             collect(manifest,exp,records,save,report)
@@ -337,7 +360,9 @@ def main():
             details.setdefault(name,{})[exp]=instances
             if error: failures.setdefault(name,[]).extend(error)
             if any(r.get('failure') for r in records): break
-        write(path,raw[name])
+        write(path,raw[name],compact=True)
+        # Only scoring fields are kept in memory once a method is complete.
+        raw[name]=compact(raw[name])
     if args.bootstrap:
         for name in ('gp_acl','random_baseline'):
             if name not in raw: raise ValueError('Bootstrap requires reference and random baseline manifests')

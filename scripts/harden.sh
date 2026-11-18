@@ -13,6 +13,11 @@ set -uo pipefail
 cd /home/user
 export PYTHONPATH=/home/user
 export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
+# Diagnostics only: tracebacks of a producer the watchdog aborts after a hang.
+export PYTHONFAULTHANDLER=1
+python scripts/watchdog.py --every 600 --abort 2700 &
+WATCHDOG=$!
+trap 'kill $WATCHDOG 2>/dev/null' EXIT
 START=$(date +%s)
 AUDIT_DEADLINE=${AUDIT_DEADLINE:-16500}
 elapsed() { echo $(( $(date +%s) - START )); }
