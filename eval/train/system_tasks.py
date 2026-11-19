@@ -52,11 +52,11 @@ EXTENT = {'g1': 8.3, 'g2': 9.1, 'g3': 7.3, 'g5': 3.7}
 # Development deformation: a smooth sinusoidal displacement field in the shape
 # frame, z -> z + sum_j a_j sin(omega_j . z + phase_j). The hidden test uses a
 # different private field of comparable size.
-# RMS displacement about 0.30 (2D) and 0.39 (3D) shape-frame units, matched
-# to the hidden test's field.
+# RMS displacement about 0.32 (2D) and 0.52 (3D) position units on the
+# boundary, matched to the hidden test's field.
 WAVES = 3
-WAVE_AMPLITUDE = {2: .3, 3: .32}
-WAVE_LENGTH = {2: 12., 3: 9.}
+WAVE_AMPLITUDE = {2: .3, 3: .47}
+WAVE_LENGTH = {2: 12., 3: 11.}
 Q2 = np.array([[.0868, .0243], [.0243, .0868]])
 QQ2 = np.array([-.8403, -.7153])
 R2 = 1.7534

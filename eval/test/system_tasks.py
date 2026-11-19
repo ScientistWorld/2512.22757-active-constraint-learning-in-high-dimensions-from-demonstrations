@@ -54,11 +54,12 @@ EXTENT = {'g1': 8.3, 'g2': 9.1, 'g3': 7.3, 'g5': 3.7}
 # split uses a different (sinusoidal) field of comparable size, so neither the
 # paper's formulas nor the development generator answer hidden instances.
 BUMPS = 6
-# RMS displacement about 0.27 (2D) and 0.39 (3D) shape-frame units. The 3D
-# field is larger: a development pilot found a smaller one let a fit of the
-# undeformed published hourglass formula beat the learned boundary.
-BUMP_AMPLITUDE = {2: .6, 3: .75}
-BUMP_WIDTH = {2: 2., 3: 1.5}
+# RMS displacement about 0.27 (2D) and 0.52 (3D) position units on the
+# boundary. The 3D field is larger: with RMS 0.18 (development pilot) and 0.35
+# (first hidden-test audit) a fit of the undeformed published hourglass
+# formula still beat the learned boundary on the quadrotor experiment.
+BUMP_AMPLITUDE = {2: .6, 3: .85}
+BUMP_WIDTH = {2: 2., 3: 1.8}
 Q2 = np.array([[.0868, .0243], [.0243, .0868]])
 QQ2 = np.array([-.8403, -.7153])
 R2 = 1.7534
