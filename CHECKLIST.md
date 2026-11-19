@@ -1,13 +1,13 @@
 # Final hardening checklist
 
 - [x] Read the paper, REDTEAM.md, REVIEW.md and the previous HARDENING.md before deciding fixes.
-- [x] Test the paper's partial initial set on development (rejected by a pre-fixed rule: Alg. 1 stalls).
-- [x] Diagnose what limits uniform accuracy (development pilot): spurious unsafe regions from a singular 1e-10 noise floor; hollow interiors.
-- [x] Restore a well-conditioned noise floor (1e-4, GPyTorch's default), chosen on development by a pre-fixed rule.
-- [x] Enlarge the hidden test from 36 to 72 instances per experiment (paired noise).
-- [x] Rejected-request diagnostic (no expert solver failures); 80-request allowance tried and reverted.
-- [x] Reference and random control rerun from final code on both splits; raw records frozen.
-- [x] Hidden-test audit: better, weaker, previous-reference, simple, shortcut and alternative members.
-- [x] HARDENING.md with before/after evidence; briefing and scoring documents updated (test size, noise floor).
+- [x] Add the paper's unicycle (g1–g3, 4D, T = 30) and quadrotor (g5, 12D, T = 20) experiments with hidden, evaluator-owned instances and expert.
+- [x] Reference: full-dynamics KKT Problems 7–8; dimension-general GP and Problems 3–6.
+- [x] Development smoke test and pilot; paper-formula-fit shortcut probe added.
+- [x] 3D deformation enlarged (matched across splits) until the published-formula fit no longer outranks the reference.
+- [x] Evaluator robustness after a stalled job (stderr drain, spawned workers, compact records).
+- [x] Reference and random control rerun from final code on both splits; raw records frozen; scores published.
+- [x] Hidden-test audit: better, weaker, simple, shortcut, alternative and interface members.
+- [x] HARDENING.md; briefing and scoring documents updated for four experiments.
 - [x] scripts/run.sh restored to end-to-end reproduction.
 - [x] Final commit and action: done.

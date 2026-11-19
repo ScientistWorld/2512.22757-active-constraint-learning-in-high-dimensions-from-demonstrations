@@ -1,171 +1,210 @@
 # Hardening
 
-Final iteration. `REVIEW.md` listed one weakness: the paper's headline claim (better uniform-space accuracy than random sampling) did not reproduce; random tied GP-ACL. Every number below comes from a completed job. Comparisons are paired: every method sees the same obstacles, initial trajectories and query points. Intervals are 95% paired bootstrap intervals.
+Final iteration. `REVIEW.md` found that only the 2D double integrator was scored. It asked for scored experiments on the paper's 4D unicycle constraints (App. B.1) and the 12D quadcopter, with the evaluator solving expert demonstrations on hidden instances. It also asked for a check that the reference beats random beyond paired noise there, and to say plainly where it does not.
 
-Ranks follow the gym's rule: weight × |coefficient| × better-direction improvement over the reference, divided by the metric's population standard deviation across the ranked cohort.
-- **Core cohort**: every passing audit member except `alt_zero_prior`, whose collapsed accuracy would otherwise set the accuracy scale for everyone (same convention as the previous iteration).
-- **Evaluator cohort**: everything the evaluator ranked.
+Both experiments were added. The reference and the random control were rerun end to end from the final code on all four experiments; `scoring/scores_test.json` from that run is the new baseline.
 
-Evidence files:
-- `eval/test/hardening_summary.json`: final audit (test and development).
-- `eval/test/hardening_eighth_summary.json`: the previous iteration's audit ("before").
-- `eval/train/hardening_pilot_summary.json`: development pilot (diagnosis).
-- `eval/train/noise_floor_selection.json`: development selection.
-- `eval/train/hardening_rejection_diagnostic.json`: rejected requests.
+- Comparisons are paired: every method sees the same instances, initial demonstrations and evaluation states.
+- Intervals are 95% paired bootstrap intervals over instances.
+- Ranks follow the evaluator's rule: weight × |coefficient| × better-direction improvement over the reference, divided by the metric's population standard deviation across a cohort.
+  - **Core cohort**: reference, random control and the honest variants.
+  - **Core+1**: the core cohort plus the one extra member being reported (shortcuts, the alternative zero prior).
 
-Jobs:
-
-| Job | What it ran | Outcome |
-|---|---|---|
-| `ecec050e-3cf` | Development selection of a partial shared initial set | Cancelled; every candidate rejected (below) |
-| `3216cb5c-ccf` | Development pilot: contact quality, error localization, classifier rescoring, three end-to-end settings | Diagnosis below |
-| `1a6389bd-3dd` | Final job: noise-floor selection, controls on both splits, development and 72-instance hidden-test audits | Exit 0; `validate.py --post-design` passed |
-| `808829f2-232` | Development diagnostic of rejected requests | No solver failures |
-| `59bd0533-310` | Same as the final job with an 80-request allowance | Cancelled after selection and controls: no gain; reverted |
-
-## Diagnosis: what blocked the headline
-
-Uniform-space errors were dominated by artifacts of the reference's GP, not by acquisition. The development pilot found (previous setup and reference):
-
-- **Tight states are clean.** All 6,799 flagged tight states lie within 0.05 of the true boundary, with estimated gradients within cos 0.9 of the true normal.
-- **g3: false "unsafe" far from any observation.** 0.0178 of the workspace (reference) and 0.0233 (random) was predicted unsafe more than 4 units from every tight state. The cause is the fitted noise-variance floor of 1e-10. Dense, nearly coincident tight states make the training covariance numerically singular, and the posterior mean then carries spurious unsafe regions.
-- **Complex-boundary task: hollow interiors.** False "safe" was 0.061 (reference) vs 0.050 (random). The reference's denser contacts fit a shorter lengthscale, so interiors relax to the safe prior sooner.
-
-Re-fitting only the final classifier to the frozen development demonstrations, with GPyTorch's inferred-noise floor (1e-4):
-- far false-unsafe fell from 0.0178 to 0.0024;
-- reference − random uniform accuracy moved from +0.0031 [−0.0030, +0.0104] to **+0.0092 [+0.0007, +0.0175]** on g3, and from −0.0103 [−0.0143, −0.0064] to +0.0007 [−0.0033, +0.0045] on the complex-boundary task.
+**Evidence files:**
+- `eval/test/hardening_summary.json`: final audit, hidden test and development.
+- `eval/test/hardening_rms035_summary.json`: the same audit with the first 3D deformation (RMS 0.35).
+- `eval/test/hardening_two_experiment_summary.json`: the previous iteration's final audit ("before").
 
 ## What changed
 
-**1. The reference's GP noise floor (restoring a well-conditioned Eq. 15).**
-- The fitted noise variance is now bounded below by 1e-4. That is GPyTorch's inferred-noise floor; the cited training procedure fits its GP with GPyTorch.
-- It was chosen on development by a rule fixed before the job (`scripts/select_noise_floor.py`): the reference with the best uniform accuracy (the paper's headline quantity), among candidates whose reference passes the gate and outranks its own random control. Ties within 0.0005 go to the larger floor.
+### 1. Two new scored experiments (the paper's main-text settings)
 
-| Development, reference accuracy | g3 | complex | mean | Reference − random, g3 | Reference − random, complex |
-|---|---:|---:|---:|---|---|
-| **1e-4 (chosen)** | 0.9811 | 0.9565 | **0.9688** | +0.0022 [−0.0087, +0.0125] | +0.0051 [−0.0007, +0.0106] |
-| 1e-5 | 0.9809 | 0.9529 | 0.9669 | +0.0008 [−0.0074, +0.0082] | +0.0029 [−0.0025, +0.0083] |
-| 1e-6 | 0.9741 | 0.9457 | 0.9599 | −0.0016 [−0.0074, +0.0042] | −0.0037 [−0.0081, +0.0009] |
-
-- Everything else in the reference is unchanged: Alg. 1, Probs. 3–8, the tied prior mean, P=4, α=0.3. The random control uses the same GP. The code default is `NOISE_FLOOR = 0.0001`, and the manifests pass `--noise-floor 0.0001`.
-
-**2. Hidden test enlarged from 36 to 72 obstacles per experiment.**
-- Per-instance paired accuracy differences on g3 vary with an SD of about 0.03, so 36 instances could not resolve the effect sizes this task produces.
-- The first 36 instances are unchanged. Development stays at 24.
-
-**3. New audit members.**
-- `simple_coverage_sweep`: a short hand-written acquisition rule (crossings aimed at the least-covered arc).
-- `variant_previous_floor`: the previous reference, i.e. the 1e-10 floor.
-
-**Tried and rejected:**
-
-| Change | Result | Decision |
+| | `unicycle_paper_constraints` | `quadcopter_hourglass` |
 |---|---|---|
-| Partial shared initial set (2 or 1 crossings; 1 crossing with ρ=0.01), closer to the paper's Fig. 8 | Alg. 1 stalled. On the complex task the reference acquired 0.4 demonstrations on average from one crossing. Random outranked the reference in every candidate (rank +1.50, +3.00, +3.49), and reference − random accuracy was negative in all six candidate/experiment cells (five beyond noise) | Kept four crossings |
-| Request allowance 80 instead of 40 | Development g3 gap +0.0021 (was +0.0022). Hidden test: random − reference on g3 −0.0019 [−0.0065, +0.0028] (was −0.0017). The extra requests were mostly rejected too: g3 demonstrations rose from 8.32 to 8.46, and 26 of 72 g3 instances stopped at Alg. 1's 10-batch limit | Reverted to 40: a larger allowance only enlarges the membership leak of rejected requests |
-| Learned constant prior (GPyTorch ConstantMeanGrad style), floor 1e-4 | Random ahead on both experiments (development) | Rejected |
-| Paper's zero-mean posterior, likelihood only, floor 1e-4 | Uniform accuracy collapses (0.92 / 0.83) | Rejected |
+| Dynamics | 4D unicycle (px, py, θ, v), controls (ω, a) | 12D quadrotor (position, world velocity, ZYX Euler angles, body rates), controls (thrust, 3 torques), Sabatino's mass and inertia |
+| Δt, T | 1, 30 (paper's default) | 1, 20 (paper) |
+| Constraints | App. B.1 g1, g2, g3, cycled over instances | App. B.1 hourglass g5 |
+| Workspace | [-15,15]² | [-6,6]³ |
+| Hidden test / development | 72 / 24 | 96 / 24 |
+| Uniform states per instance | 4,096 (paper: 2,500) | 8,192 (paper: 27,000 in total) |
+| Boundary band / near-boundary | 0.5 / 0.175 | 0.35 / 0.125 |
 
-**Unchanged:** the evaluator code, protocol, metrics, gates, coefficients and weights, the four shared crossings, the 12-demonstration budget and 40-request allowance, the instance families, and the paper-reported numbers in `scoring/reference.json`.
+- **Hidden instances.** Each is a private rotation, scale (0.88–1.08), translation and smooth displacement-field deformation of the paper's formula, with parameters only in `eval/test/system_tasks.py`. The test field is Gaussian bumps; development (`eval/train/system_tasks.py`, independent code and seeds) uses a sinusoidal field of matched size.
+  - Measured RMS displacement on the boundary band: unicycle 0.27 (test) vs 0.32 (development); quadrotor 0.52 vs 0.52.
+- **Expert (evaluator-owned).** It solves Prob. 1 exactly in position space, then lifts each path to the system's full state/control trajectory. The reduction is exact: with unbounded controls and free non-position endpoint states, the dynamics place no restriction on positions.
+  - Warm start: a shortest grid path around the margin-inflated obstacle; then SLSQP on the discrete Prob. 1.
+  - Job checks (`eval/test/check_system_oracle.py`) confirm feasibility, Prob. 1 stationarity residual ≤ 2.5e-6, and lifted dynamics exact to 4e-15 against independently written forward models.
+- **Budget and initial demonstrations.** Same as before: four shared initial crossings, twelve demonstrations, forty requests. The 3D crossings are the cube's body diagonals.
+- **Metrics and gate.** Same five metrics and the same success gate as the 2D experiments.
 
-## Paper direction (reference vs random, hidden test, paired)
+### 2. The reference now runs the paper's computational steps in these systems
 
-| Random − reference | Before: g3 (36) | After: g3 (72) | Before: complex (36) | After: complex (72) |
-|---|---|---|---|---|
-| Uniform accuracy | +0.0036 [−0.0007, +0.0077] | **−0.0017 [−0.0062, +0.0030]** | +0.0078 [+0.0046, +0.0110] | **−0.0028 [−0.0052, −0.0003]** |
-| Boundary balanced accuracy | −0.048 [−0.074, −0.022] | −0.023 [−0.036, −0.008] | −0.032 [−0.055, −0.009] | −0.043 [−0.062, −0.025] |
-| Near-boundary balanced accuracy | −0.045 [−0.064, −0.026] | −0.028 [−0.039, −0.018] | −0.045 [−0.068, −0.023] | −0.049 [−0.067, −0.032] |
+- **Problems 7–8** (`method/kkt.py`) are solved as linear programs over the full KKT system of each system's dynamics:
+  - Control and non-position-state stationarity rows are free of the unknown constraint, so they must hold with the dynamics and endpoint multipliers alone.
+  - The L1 residual of a position row certifies tightness.
+  - P8 gives the KKT-compatible gradient.
+  - Jacobians are analytic, or complex-step for the quadrotor.
+- **GP, posterior draws and Problems 3–6** (`method/gp_acl.py`) are dimension-general.
+  - Problem 4 in 3D searches the plane H (Eq. 8) over 36 in-plane directions; in 2D H is a line.
+  - Everything else is unchanged: tied prior mean, noise floor 1e-4, P = 4, α = 0.3, 1,000 RFF, β = 0.55/0.3/0.55, δ = 0.001, η = 1.
+- **The 2D experiments** use the same general KKT code. Their results reproduce the previous iteration's (reference on test: g3 accuracy 0.9792 vs 0.9791 before).
 
-- The reference now leads random on uniform accuracy in both experiments. The lead is beyond noise on the complex-boundary task but **not on g3**.
-- Boundary metrics favour the reference beyond noise in both.
-- Development agrees in direction: reference − random accuracy +0.0022 (g3) and +0.0051 (complex).
-- The combined score ranks random well below the reference: −1.269 [−1.784, −0.753] in the core cohort.
+### 3. Weights
+
+Unicycle 0.35, quadrotor 0.25, double-integrator g3 0.2, complex boundaries 0.2 (before: g3 0.6, complex 0.4).
+
+The paper's main text and its headline claim ("high dimensions") are the unicycle and quadrotor results; the double integrator is in its appendix. The complex-boundary task keeps weight as the setting where the method falls short. Metric coefficients are unchanged.
+
+### 4. Evaluator robustness (no score changes)
+
+The first final job stalled (see Jobs). Changes:
+- the producer's stderr is drained concurrently, so a chatty method can never block on a full pipe;
+- worker processes are spawned, not forked from a parent holding all records;
+- frozen and run records are compact;
+- checkpoints are throttled;
+- a private per-instance cache holds each instance's evaluation states and masks.
+
+### 5. Private 3D deformation enlarged after the shortcut audit
+
+See Shortcuts.
+
+## Paper direction: reference vs random, same demonstration budget
+
+Hidden test, random − reference (negative means the reference is better):
+
+| Experiment | Uniform accuracy | Boundary balanced | Near-boundary balanced |
+|---|---|---|---|
+| Unicycle g1–g3 (72) | **+0.0001 [−0.0058, +0.0058]** | −0.067 [−0.088, −0.045] | −0.085 [−0.107, −0.064] |
+| — g1 (24) | **+0.0106 [+0.0002, +0.0197]** | | |
+| — g2 (24) | −0.0097 [−0.0189, −0.0008] | | |
+| — g3 (24) | −0.0007 [−0.0097, +0.0091] | | |
+| Quadrotor g5 (96) | −0.0030 [−0.0053, −0.0006] | −0.033 [−0.044, −0.023] | −0.042 [−0.052, −0.033] |
+| Double integrator g3 (72) | −0.0017 [−0.0061, +0.0031] | −0.023 [−0.036, −0.009] | −0.028 [−0.039, −0.018] |
+| Complex boundaries (72) | −0.0028 [−0.0052, −0.0003] | −0.043 [−0.062, −0.025] | −0.050 [−0.067, −0.032] |
+
+Development, random − reference uniform accuracy:
+- unicycle −0.0134 [−0.0221, −0.0040], beyond noise;
+- quadrotor −0.0010 [−0.0049, +0.0030];
+- boundary metrics favour the reference beyond noise in every experiment.
+
+**Stated plainly:**
+- **Quadrotor.** The reference beats random beyond paired noise on every scored metric.
+- **Unicycle.**
+  - The reference beats random beyond noise on the boundary metrics, by about 8 points near the boundary.
+  - On uniform accuracy (the paper's metric) it does not: the two tie.
+  - Per constraint, the reference wins beyond noise on g2 and ties on g3. **Random is ahead on g1 by 0.011.**
+  - Why: g1 is the largest obstacle (semi-axes ≈ 8.2 × 4.8). The reference's dense contacts fit a short lengthscale, so the posterior mean deep inside the obstacle relaxes to the tied prior mean, which is "safe" (hollow interior). Its g1 band recalls are far better than random's (safe 0.990 vs 0.953, unsafe 0.859 vs 0.660), but interior states are misclassified.
+  - The fill variants, which close interiors, gain +0.006 uniform accuracy on the unicycle.
+- **Double integrator g3.** Uniform accuracy remains in the paper's direction but within noise (unchanged from before).
+- **Overall.** The combined score ranks random below the reference: −1.68 [−2.09, −1.24] in the core cohort.
 
 ## Do better results score higher?
 
-Yes. Ranks relative to the reference on the hidden test:
+Hidden test, core cohort rank relative to the reference:
 
-| Member | Before (core, 36) | After (core, 72) | After (evaluator cohort) |
-|---|---:|---:|---:|
-| Fill + coverage top-up (`better_fill_topup`) | +1.331 [0.992, 1.673] | **+0.884 [0.644, 1.146]** | +0.607 [0.398, 0.830] |
-| Fill (`better_fill`) | +0.887 [0.631, 1.142] | **+0.728 [0.531, 0.918]** | +0.495 [0.322, 0.666] |
-| Coverage top-up (`better_topup`) | +0.314 [0.136, 0.535] | **+0.164 [0.017, 0.335]** | +0.150 [0.022, 0.296] |
-| Previous reference, floor 1e-10 (`variant_previous_floor`) | (was the reference) | −0.064 [−0.566, +0.446] | +0.316 [−0.152, +0.790] |
-| P=2 posterior draws (`weaker_two_draws`) | +0.194 [−0.312, 0.676] | **−0.390 [−0.663, −0.123]** | −0.357 [−0.599, −0.114] |
-| Simple coverage sweep (`simple_coverage_sweep`) | n/a | −1.101 [−1.627, −0.605] | −1.055 [−1.521, −0.593] |
-| Random-query control | −0.777 [−1.368, −0.192] | −1.269 [−1.784, −0.753] | −1.213 [−1.686, −0.737] |
-| Learned prior mean | −0.780 [−1.507, −0.046] | −1.646 [−2.125, −1.168] | −1.360 [−1.808, −0.926] |
-| No acquisition (four initial demonstrations) | −1.837 | −3.249 [−3.727, −2.787] | −2.999 |
-| Raw (unnormalized) KKT gradients | −4.281 | −4.562 [−5.135, −3.999] | −3.987 |
-| No gradient observations | fails gate | fails gate | fails gate |
-| Paper's zero-mean prior (`alt_zero_prior`) | excluded | excluded | −3.274 [−3.746, −2.807] |
+| Member | Before (2 experiments, 72 each) | After (4 experiments) | After, by experiment (g3 / complex / unicycle / quadrotor) |
+|---|---:|---:|---|
+| Fill + coverage top-up (`better_fill_topup`) | +0.884 [0.644, 1.146] | **+0.357 [0.118, 0.601]** | +0.15 / +0.27 / +0.19 / −0.25 |
+| Coverage top-up (`better_topup`) | +0.164 [0.017, 0.335] | **+0.180 [0.059, 0.308]** | −0.05 / +0.12 / +0.03 / +0.09 |
+| Fill (`better_fill`) | +0.728 [0.531, 0.918] | +0.174 [−0.044, 0.378] | +0.20 / +0.15 / +0.16 / −0.33 |
+| P = 2 posterior draws (`weaker_two_draws`) | −0.390 [−0.663, −0.123] | −0.192 [−0.426, +0.046] | −0.07 / −0.13 / +0.02 / −0.01 |
+| Simple coverage sweep | −1.101 [−1.627, −0.605] | −0.485 [−0.914, −0.050] | |
+| Learned prior mean | −1.646 [−2.125, −1.168] | −1.199 [−1.627, −0.775] | |
+| Random-query control | −1.269 [−1.784, −0.753] | **−1.680 [−2.095, −1.242]** | −0.26 / −0.37 / −0.67 / −0.38 |
+| No acquisition (four initial demonstrations) | −3.249 [−3.727, −2.787] | −4.162 [−4.576, −3.752] | |
+| Raw (unnormalized) KKT gradients | −4.562 [−5.135, −3.999] | −6.336 [−6.878, −5.795] | |
+| No gradient observations | fails gate | fails gate | |
+| Paper's zero-mean prior (core+1) | excluded | −3.434 [−3.929, −2.975] | |
 
-- Every better variant is above the reference beyond paired noise. Every ablation, the simple rule and the random control are below it.
-- P=2 versus P=4 was an inseparable pair before; it is now separated beyond noise.
-- Paired gains of `better_fill_topup` over the reference:
-  - g3: accuracy +0.0020 [0.0003, 0.0037], balanced +0.014, near-boundary +0.006;
-  - complex: accuracy +0.0145 [0.0115, 0.0177], balanced +0.018, near-boundary +0.014.
-- It generalizes from development: there it ranks +1.165 [0.686, 1.705].
-- **The previous reference ties the new one.** On the same 72 hidden instances it is worse on uniform accuracy (g3 −0.0150, complex −0.0142, both beyond noise) but better on g3 boundary metrics (balanced +0.061, near-boundary +0.047). The 1e-4 floor smooths the model and gets fewer accepted demonstrations on g3 (8.3 vs 11.1). This is a genuine trade-off the combined score weighs as even. It is an honest alternative the test cannot separate, not a loophole.
+- **Better variants.** Two are above the reference beyond noise; fill is above it on average.
+  - On the quadrotor only the top-up variant helps. The star-shaped interior fill hurts there: the hourglass waist is not star-shaped about the contact centroid.
+- **Weaker members.** Every ablation, the simple rule and the random control are below the reference; P = 2 is below it but now within noise.
+- **Development agrees.** Fill + top-up +0.23, top-up +0.20, fill +0.12; random −3.17, no acquisition −6.14.
+- **Evaluator cohort** (every passing member, as `scripts/evaluate_test.sh` ranks them): fill + top-up +0.25, top-up +0.17, fill +0.10, P = 2 −0.22, sweep −0.46, paper-formula fit −0.62, family fit −1.02, learned prior −1.28, random −1.56, zero prior −3.35, no acquisition −3.54, raw gradients −5.17.
 
 ## Shortcuts
 
-No shortcut was changed in this iteration; the probe was rerun on the new setup.
-
 | Shortcut | Before | After |
 |---|---|---|
-| Write down the visible complex-boundary generator, fitted to all contacts, on both experiments (`shortcut_family_fit`) | −2.309 (core) | −2.725 [−3.175, −2.287] |
-| Same fit on the complex task only, reference on g3 (`hybrid_stress_family_fit`) | +0.539 [0.219, 0.873] core; +0.337 three-member | +0.313 [0.037, 0.588] core; +0.255 three-member |
+| **Paper-formula fit** (`shortcut_paper_fit`): relay the reference's acquisition, fit the paper's published g1/g2/g3 (2D) or g5 (3D) with free rotation, scale and centre to every tight state and normal, classify with the best fit | Development pilot, 3D RMS 0.18: **+0.455, highest of all members** (evaluator cohort; quadrotor balanced +0.10). Hidden test, 3D RMS 0.35: **−0.066 [−0.484, +0.332]** (core+1), quadrotor term **+0.198** | Hidden test, 3D RMS 0.52: **−0.257 [−0.652, +0.132]**, quadrotor term +0.007, unicycle −0.264. Development −0.673 |
+| Fit of the visible development double-integrator generators (`shortcut_family_fit`; reference elsewhere) | +0.313 [0.037, 0.588] (hybrid, core) | −0.842 [−1.023, −0.663] |
+| Interface probes: over-budget requests, false `n_demos`, forged flags/fields, impossible labels, constant safe, contact disk | failed (earlier audits) | all fail the run (protocol/budget rejection or success gate) |
 
-The interface shortcuts are not replayed because the evaluator code did not change: public answer oracle, grid ordering, grid resizing, false/negative/NaN/−inf counts, excess budget, replaced truth, moved baseline fields, impossible/empty/null labels, forged flags or scores, constant classifiers, fixed disks, static predictions. All failed the whole run in earlier audits.
+**Paper-formula fit: the fix.** The private 3D deformation was enlarged on both splits, matched in size. It was raised from 0.18 to 0.35 and then to 0.52 RMS (test bump amplitude 0.85, width 1.8; development waves amplitude 0.47, wavelength 11).
+- At 0.52 the published formula still gains uniform accuracy (quadrotor +0.011, unicycle +0.014), because it closes the reference's hollow interiors. It loses beyond noise near the boundary (quadrotor −0.067, unicycle −0.134).
+- Net, it ranks below the reference in both new experiments and overall.
+- What larger deformation cost the honest methods:
+  - the reference's quadrotor accuracy fell from 0.9771 to 0.9729;
+  - the reference − random accuracy gap on the quadrotor shrank from +0.0073 to +0.0030, still beyond noise;
+  - the better-variant ordering is unchanged.
 
 ### Left open, and why
 
-- **Generic closed-shape fill on the complex-boundary task (hybrid, +0.31).**
-  - On hidden instances the development generator is the wrong family. It loses near-boundary balanced accuracy (−0.040 [−0.051, −0.028]) and gains uniform accuracy (+0.026) only by closing the obstacle interior, which the reference leaves partly "safe".
-  - It stays below both honest variants that fill interiors without a hand-written generator (+0.728, +0.884).
-  - Removing it would mean changing the reference method or the complex-boundary family. The separate grader can judge whether a submission hard-codes the development generator.
+- **The paper-formula fit is below the reference but not beyond noise** (upper end +0.13).
+  - A hybrid was not run: published formula in the far field, the learned boundary near the observed contacts. It would keep the formula's uniform-accuracy gain without its boundary loss, and would likely outrank the reference.
+  - Its gain is the interior-filling the honest fill variants also find, here supplied by a hand-written published formula.
+  - Closing it entirely would need deformations large enough that the instances stop being the paper's shapes.
+  - `scoring/CONSTRAINTS.md` forbids hand-coding published formulas, and the grader can detect them (the App. B.1 constants appear in the code).
 - **Reading `eval/test/` at test time.** Submissions run as subprocesses with filesystem access. No small fix closes this; it is left to the grader, as before.
-- **Membership probing through rejected requests.** A rejected request reveals that an endpoint is inside the obstacle, at most 40 bits per instance. That is not enough to label the 12,288 test points. Raising the allowance to 80 did not help the reference, so the allowance stays at 40.
-- **Copying the reference** ties it; not a loophole.
+- **Membership probing through rejected requests.** A rejection reveals an endpoint inside the obstacle, at most 40 bits per instance, against 12,288–16,384 evaluation states.
+- **Copying the reference** ties it; that is not a loophole.
 
 ## Reference before and after (hidden test)
 
 | | Accuracy | Balanced | Near-boundary | Safe recall | Unsafe recall |
 |---|---:|---:|---:|---:|---:|
-| g3, before (36, floor 1e-10) | 0.9637 | 0.8084 | 0.7783 | 0.9453 | 0.6716 |
-| g3, previous reference on the 72 | 0.9642 | 0.8173 | 0.7826 | 0.9172 | 0.7174 |
-| **g3, after (72, floor 1e-4)** | **0.9791** | 0.7565 | 0.7354 | 0.9535 | 0.5594 |
-| complex, before (36) | 0.9371 | 0.7654 | 0.7463 | 0.9724 | 0.5583 |
-| complex, previous reference on the 72 | 0.9379 | 0.7572 | 0.7387 | 0.9732 | 0.5413 |
-| **complex, after (72)** | **0.9521** | 0.7806 | 0.7476 | 0.9493 | 0.6119 |
+| g3, before | 0.9791 | 0.7565 | 0.7354 | 0.9535 | 0.5594 |
+| g3, after | 0.9792 | 0.7565 | 0.7356 | 0.9544 | 0.5586 |
+| complex, before | 0.9521 | 0.7806 | 0.7476 | 0.9493 | 0.6119 |
+| complex, after | 0.9521 | 0.7809 | 0.7480 | 0.9500 | 0.6118 |
+| **unicycle (new)** | 0.9725 | 0.8913 | 0.8649 | 0.9750 | 0.8076 |
+| **quadrotor (new)** | 0.9729 | 0.7621 | 0.6800 | 0.7480 | 0.7763 |
 
-Random control after: g3 0.9774 / 0.7340 / 0.7074 / 0.7997 / 0.6683; complex 0.9493 / 0.7375 / 0.6985 / 0.9227 / 0.5524.
+Random control on the new experiments (accuracy / balanced / near-boundary / safe recall / unsafe recall):
+- unicycle: 0.9726 / 0.8247 / 0.7795 / 0.8629 / 0.7865;
+- quadrotor: 0.9699 / 0.7288 / 0.6379 / 0.6715 / 0.7862.
 
-`scoring/scores_test.json` and `scores_train.json` contain only the reference and the frozen random control. Both were rerun end to end from the final code in job `1a6389bd-3dd` (bootstrap of both splits). The task files and method are byte-identical to that job's.
+`scoring/scores_test.json` and `scores_train.json` contain only the reference and the frozen random control. Both were rerun end to end from the final code (job `e87b2f87-237`, bootstrap of both splits).
+- No method in that run has a wall-clock limit.
+- The job watchdog never fired (no aborts in any job).
+- The hidden test and `scripts/reproduce.sh` do not use it.
 
 ## Headroom
 
-The reference is at the bound of no scored metric. On test it scores g3 0.979 / 0.757 / 0.735 / 0.954 / 0.559 and complex 0.952 / 0.781 / 0.748 / 0.949 / 0.612.
-
-Three variants beat it beyond noise; the largest gains are on the complex-boundary experiment, the setting where the method falls short. Brute force is bounded by the evaluator-owned oracle (12 demonstrations, 40 requests). The simple coverage sweep, a short hand-written acquisition rule, ranks below the reference.
-
-## Weights
-
-Unchanged. The paper reports uniform accuracy as its headline number (coefficient 1.0) and stresses boundary errors (0.5, 0.6, recalls 0.25 each). g3 is the paper's own constraint (weight 0.6); the complex-boundary experiment is where the method falls short (0.4).
+- No scored metric of the reference is at its bound.
+  - Quadrotor near-boundary balanced accuracy is 0.68 and unicycle near-boundary 0.86.
+  - Accuracy is 0.95–0.98 in all four experiments.
+- Two honest variants beat the reference beyond noise.
+- The quadrotor experiment is where the method falls short most: sparse trajectories touch only curves on a 2D surface, and the reference's 3D boundary is coarse.
+- Brute force is bounded by the evaluator-owned oracle (12 demonstrations, 40 requests); test states are revealed only after acquisition.
+- The simple coverage sweep, a short hand-written acquisition rule, ranks below the reference.
 
 ## Not fixed, stated plainly
 
-- **The headline effect on g3 is in the paper's direction but not beyond noise:** reference − random +0.0017 [−0.0030, +0.0062] on 72 hidden instances. It is beyond noise on the complex-boundary task (+0.0028 [+0.0003, +0.0052]).
-  - Rejected-request diagnostic (development): every one of the reference's 962 rejected requests had an endpoint inside the true obstacle, and the expert's solver never failed.
-  - The rejections come from the paper's endpoint rule (Eq. 10, β = 0.3 / 0.55), which places endpoints just outside the sampled boundary.
-  - So the reference gets 8.3 of 12 demonstrations on g3 (random gets 12). A rejection gives the GP no information.
-  - Neither of the two setup levers that address this helped: a partial initial set and a larger request allowance. Spending the unused budget is a measured better variant (`better_topup`), not the paper's method.
-- **The paper's 0.9956 g3 accuracy is not reached** (reference 0.979). The paper's random baseline (0.9652) is below ours (0.977), because the restored noise floor also removes the random control's spurious regions.
-- **The noise-floor fix is a trade-off on g3, not a strict improvement.** Accuracy improves beyond noise and boundary metrics drop. The previous reference ties the new one in rank.
-- **Scope:** only the 2D double integrator is reproduced; the unicycle, quadcopter, 7-DOF arm and hardware experiments are not.
-- **Unspecified choices:** the reference depends on choices the paper leaves open, selected or confirmed on development only:
-  - four initial crossings, a twelve-demonstration budget and forty requests;
-  - P=4, the one-lengthscale Problem 3 region;
-  - the tied mean with ρ=0.1, η=1, unit-norm gradients;
-  - the 1e-4 noise floor.
+- **Unicycle uniform accuracy:** reference and random tie (g1: random ahead), for the hollow-interior reason above. Boundary metrics favour the reference beyond noise.
+- **Double-integrator g3 uniform accuracy:** the gap stays within noise (unchanged).
+- **Paper accuracies not reached:**
+  - unicycle g1 / g2 / g3: 0.955 / 0.989 / 0.974, against the paper's 0.9996 / 1.0 / 0.9956;
+  - quadrotor: 0.973, against 0.9919;
+  - our random control matches the paper's on the unicycle mean (0.9726 vs 0.9731) and is much stronger on the quadrotor (0.970 vs 0.9423); the shortfall is our reference (unicycle mean 0.9725 vs the paper's 0.9984).
+- **Instances differ from the paper's exact formulas.** They are private rotations, scalings, translations and deformations; the paper's numbers are kept under `_paper_reported_*` in `scoring/reference.json`.
+- **Quadrotor model.** It uses world-frame translational velocity rather than Sabatino's body-frame velocity: the same physics in different coordinates.
+- **Expert solve.** The expert solves Prob. 1 in position space and lifts the path. That is exact here, but it is not an IPOPT solve over the full state/control trajectory.
+- **Not reproduced:** the 7-DOF arm and hardware experiments, the 3D double integrator (g6), and g4.
+- **Unspecified choices**, selected or confirmed on development only:
+  - four initial crossings, twelve demonstrations and forty requests;
+  - Alg. 1 iterated (P = 4 per batch) until the budget is spent, rather than a fixed N_iters = 3;
+  - the tied prior mean with ρ = 0.1;
+  - the 1e-4 noise floor;
+  - unit-norm gradients;
+  - the one-lengthscale Problem 3 region.
+
+## Jobs
+
+| Job | What it ran | Outcome |
+|---|---|---|
+| `a9a7ce06-642` | Smoke test of the new tasks, expert, KKT and 3D GP | Checks passed; timing about 9 s (unicycle) and 27 s (quadrotor) per reference instance. Its accuracy numbers were invalid (my smoke script reused a stateful evaluation stream; evaluation is now idempotent) |
+| `d2baf85e-52c` | Development pilot, all members | Reference beats random on the unicycle; the paper-formula fit ranked highest (+0.455). 3D deformation enlarged |
+| `92153af0-4dd` | Final job | Stalled: the random control's unicycle methods stopped completing after their queries, with no error output. Cancelled; evaluator made robust (stderr drain, spawned workers, compact records) |
+| `b2b22cca-e77` | Final job, 3D RMS 0.35 | Exit 0, validation passed; the paper-formula fit still gained on the quadrotor (`hardening_rms035_summary.json`) |
+| `e87b2f87-237` | Final job, 3D RMS 0.52 | Exit 0, validation passed; this document's "after" numbers |
