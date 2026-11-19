@@ -5,4 +5,4 @@ action: submit
 gpus: 0
 test: false
 milestone: core_claim
-notes: "Final hardening job (resumed; completed reference records reused): evaluator now drains producer stderr, uses spawned workers and compact records; watchdog logs memory/process state. Controls on both splits, development and hidden-test audits, summary."
+notes: "Final hardening job with the larger matched 3D deformation (closing the published-formula fit on the quadrotor): checks, reference and random control rerun end to end on both splits (frozen, published), development and hidden-test audits, summary."

@@ -31,10 +31,10 @@
    ]
   },
   "evaluator_cohort_rank": {
-   "alt_zero_prior": -3.3677,
-   "better_fill": 0.1007,
-   "better_fill_topup": 0.2478,
-   "better_topup": 0.1707,
+   "alt_zero_prior": -3.348,
+   "better_fill": 0.1011,
+   "better_fill_topup": 0.2501,
+   "better_topup": 0.1713,
    "gp_acl": 0.0,
    "probe_constant_safe": null,
    "probe_contact_disk": null,
@@ -43,14 +43,14 @@
    "probe_impossible_predictions": null,
    "probe_over_budget": null,
    "shortcut_family_fit": -1.017,
-   "shortcut_paper_fit": -0.3509,
-   "simple_coverage_sweep": -0.5534,
-   "weaker_learned_prior": -1.3092,
-   "weaker_no_acquisition": -3.5495,
+   "shortcut_paper_fit": -0.6225,
+   "simple_coverage_sweep": -0.4647,
+   "weaker_learned_prior": -1.2808,
+   "weaker_no_acquisition": -3.5352,
    "weaker_no_gradients": null,
-   "weaker_raw_gradients": -5.2267,
-   "weaker_two_draws": -0.2612,
-   "random_baseline": -1.6097
+   "weaker_raw_gradients": -5.1718,
+   "weaker_two_draws": -0.2176,
+   "random_baseline": -1.5627
   },
   "core_cohort": [
    "gp_acl",
@@ -71,49 +71,49 @@
     0.0
    ],
    "random_baseline": [
-    -1.8202,
-    -2.2382,
-    -1.388
+    -1.6804,
+    -2.0947,
+    -1.2417
    ],
    "better_fill_topup": [
-    0.3533,
-    0.1198,
-    0.592
+    0.3568,
+    0.1178,
+    0.6012
    ],
    "better_fill": [
-    0.1814,
-    -0.0394,
-    0.3855
+    0.174,
+    -0.0438,
+    0.3779
    ],
    "better_topup": [
-    0.1727,
-    0.0564,
-    0.3021
+    0.18,
+    0.0592,
+    0.3077
    ],
    "weaker_no_acquisition": [
-    -4.187,
-    -4.6017,
-    -3.7593
+    -4.1619,
+    -4.5756,
+    -3.7515
    ],
    "weaker_two_draws": [
-    -0.3012,
-    -0.5237,
-    -0.0786
+    -0.1921,
+    -0.4262,
+    0.0456
    ],
    "weaker_raw_gradients": [
-    -6.4809,
-    -7.0228,
-    -5.937
+    -6.3359,
+    -6.8782,
+    -5.795
    ],
    "weaker_learned_prior": [
-    -1.3393,
-    -1.7761,
-    -0.9172
+    -1.1987,
+    -1.6265,
+    -0.7745
    ],
    "simple_coverage_sweep": [
-    -0.6698,
-    -1.103,
-    -0.233
+    -0.4846,
+    -0.9144,
+    -0.0502
    ]
   },
   "core_rank_by_experiment": {
@@ -127,61 +127,61 @@
     "double_integrator_g3": -0.2626,
     "complex_boundary_stress": -0.3666,
     "unicycle_paper_constraints": -0.673,
-    "quadcopter_hourglass": -0.518
+    "quadcopter_hourglass": -0.3782
    },
    "better_fill_topup": {
     "double_integrator_g3": 0.1457,
     "complex_boundary_stress": 0.2721,
     "unicycle_paper_constraints": 0.1862,
-    "quadcopter_hourglass": -0.2507
+    "quadcopter_hourglass": -0.2472
    },
    "better_fill": {
     "double_integrator_g3": 0.1966,
     "complex_boundary_stress": 0.149,
     "unicycle_paper_constraints": 0.1567,
-    "quadcopter_hourglass": -0.3209
+    "quadcopter_hourglass": -0.3283
    },
    "better_topup": {
     "double_integrator_g3": -0.0501,
     "complex_boundary_stress": 0.1175,
     "unicycle_paper_constraints": 0.0256,
-    "quadcopter_hourglass": 0.0796
+    "quadcopter_hourglass": 0.0869
    },
    "weaker_no_acquisition": {
     "double_integrator_g3": -0.9478,
     "complex_boundary_stress": -0.6459,
     "unicycle_paper_constraints": -1.5281,
-    "quadcopter_hourglass": -1.0653
+    "quadcopter_hourglass": -1.0402
    },
    "weaker_two_draws": {
     "double_integrator_g3": -0.0669,
     "complex_boundary_stress": -0.1337,
     "unicycle_paper_constraints": 0.0176,
-    "quadcopter_hourglass": -0.1183
+    "quadcopter_hourglass": -0.0092
    },
    "weaker_raw_gradients": {
     "double_integrator_g3": -1.1879,
     "complex_boundary_stress": -1.0462,
     "unicycle_paper_constraints": -2.5103,
-    "quadcopter_hourglass": -1.7366
+    "quadcopter_hourglass": -1.5916
    },
    "weaker_learned_prior": {
     "double_integrator_g3": 0.0091,
     "complex_boundary_stress": -0.7798,
     "unicycle_paper_constraints": -0.7132,
-    "quadcopter_hourglass": 0.1447
+    "quadcopter_hourglass": 0.2852
    },
    "simple_coverage_sweep": {
     "double_integrator_g3": -0.6025,
     "complex_boundary_stress": 0.0459,
     "unicycle_paper_constraints": -0.0074,
-    "quadcopter_hourglass": -0.1058
+    "quadcopter_hourglass": 0.0794
    },
    "alt_zero_prior": {
     "double_integrator_g3": -0.7014,
     "complex_boundary_stress": -0.7917,
     "unicycle_paper_constraints": -0.8299,
-    "quadcopter_hourglass": -1.1328
+    "quadcopter_hourglass": -1.1109
    },
    "shortcut_family_fit": {
     "double_integrator_g3": -1.0113,
@@ -193,14 +193,14 @@
     "double_integrator_g3": 0.0,
     "complex_boundary_stress": 0.0,
     "unicycle_paper_constraints": -0.2635,
-    "quadcopter_hourglass": 0.1976
+    "quadcopter_hourglass": 0.0069
    }
   },
   "core_plus_one_rank": {
    "alt_zero_prior": [
-    -3.4558,
-    -3.9535,
-    -3.0096
+    -3.4338,
+    -3.9288,
+    -2.9754
    ],
    "shortcut_family_fit": [
     -0.8417,
@@ -208,9 +208,9 @@
     -0.663
    ],
    "shortcut_paper_fit": [
-    -0.0659,
-    -0.4843,
-    0.3322
+    -0.2567,
+    -0.6516,
+    0.1323
    ]
   },
   "means": {
@@ -495,95 +495,95 @@
    },
    "quadcopter_hourglass": {
     "alt_zero_prior": {
-     "accuracy": 0.8236,
-     "balanced_accuracy": 0.729,
-     "near_boundary_balanced_accuracy": 0.6574,
-     "safe_recall": 0.6333,
-     "unsafe_recall": 0.8247
+     "accuracy": 0.8194,
+     "balanced_accuracy": 0.7278,
+     "near_boundary_balanced_accuracy": 0.657,
+     "safe_recall": 0.6174,
+     "unsafe_recall": 0.8381
     },
     "better_fill": {
-     "accuracy": 0.9718,
-     "balanced_accuracy": 0.739,
-     "near_boundary_balanced_accuracy": 0.6636,
-     "safe_recall": 0.7187,
-     "unsafe_recall": 0.7592
+     "accuracy": 0.9676,
+     "balanced_accuracy": 0.7381,
+     "near_boundary_balanced_accuracy": 0.661,
+     "safe_recall": 0.6887,
+     "unsafe_recall": 0.7875
     },
     "better_fill_topup": {
-     "accuracy": 0.9726,
-     "balanced_accuracy": 0.747,
-     "near_boundary_balanced_accuracy": 0.6695,
-     "safe_recall": 0.7158,
-     "unsafe_recall": 0.7781
+     "accuracy": 0.9687,
+     "balanced_accuracy": 0.7457,
+     "near_boundary_balanced_accuracy": 0.6666,
+     "safe_recall": 0.6906,
+     "unsafe_recall": 0.8009
     },
     "better_topup": {
-     "accuracy": 0.9781,
-     "balanced_accuracy": 0.7724,
-     "near_boundary_balanced_accuracy": 0.6892,
-     "safe_recall": 0.7786,
-     "unsafe_recall": 0.7661
+     "accuracy": 0.974,
+     "balanced_accuracy": 0.7703,
+     "near_boundary_balanced_accuracy": 0.6863,
+     "safe_recall": 0.7511,
+     "unsafe_recall": 0.7895
     },
     "gp_acl": {
-     "accuracy": 0.9771,
-     "balanced_accuracy": 0.7636,
-     "near_boundary_balanced_accuracy": 0.6827,
-     "safe_recall": 0.78,
-     "unsafe_recall": 0.7472
+     "accuracy": 0.9729,
+     "balanced_accuracy": 0.7621,
+     "near_boundary_balanced_accuracy": 0.68,
+     "safe_recall": 0.748,
+     "unsafe_recall": 0.7763
     },
     "shortcut_family_fit": {
-     "accuracy": 0.9771,
-     "balanced_accuracy": 0.7636,
-     "near_boundary_balanced_accuracy": 0.6827,
-     "safe_recall": 0.78,
-     "unsafe_recall": 0.7472
+     "accuracy": 0.9729,
+     "balanced_accuracy": 0.7621,
+     "near_boundary_balanced_accuracy": 0.68,
+     "safe_recall": 0.748,
+     "unsafe_recall": 0.7763
     },
     "shortcut_paper_fit": {
-     "accuracy": 0.9855,
-     "balanced_accuracy": 0.7932,
-     "near_boundary_balanced_accuracy": 0.6472,
-     "safe_recall": 0.8094,
-     "unsafe_recall": 0.7771
+     "accuracy": 0.9836,
+     "balanced_accuracy": 0.7455,
+     "near_boundary_balanced_accuracy": 0.6126,
+     "safe_recall": 0.7655,
+     "unsafe_recall": 0.7256
     },
     "simple_coverage_sweep": {
-     "accuracy": 0.9775,
-     "balanced_accuracy": 0.7546,
-     "near_boundary_balanced_accuracy": 0.6643,
-     "safe_recall": 0.7059,
-     "unsafe_recall": 0.8034
+     "accuracy": 0.9773,
+     "balanced_accuracy": 0.7602,
+     "near_boundary_balanced_accuracy": 0.6682,
+     "safe_recall": 0.724,
+     "unsafe_recall": 0.7964
     },
     "weaker_learned_prior": {
-     "accuracy": 0.9813,
-     "balanced_accuracy": 0.7506,
-     "near_boundary_balanced_accuracy": 0.687,
-     "safe_recall": 0.9498,
-     "unsafe_recall": 0.5514
+     "accuracy": 0.9811,
+     "balanced_accuracy": 0.749,
+     "near_boundary_balanced_accuracy": 0.684,
+     "safe_recall": 0.9427,
+     "unsafe_recall": 0.5554
     },
     "weaker_no_acquisition": {
-     "accuracy": 0.9629,
-     "balanced_accuracy": 0.6729,
-     "near_boundary_balanced_accuracy": 0.5917,
-     "safe_recall": 0.6732,
-     "unsafe_recall": 0.6727
+     "accuracy": 0.9601,
+     "balanced_accuracy": 0.6712,
+     "near_boundary_balanced_accuracy": 0.5915,
+     "safe_recall": 0.6607,
+     "unsafe_recall": 0.6816
     },
     "weaker_raw_gradients": {
-     "accuracy": 0.9507,
-     "balanced_accuracy": 0.5877,
-     "near_boundary_balanced_accuracy": 0.5595,
-     "safe_recall": 0.9065,
-     "unsafe_recall": 0.269
+     "accuracy": 0.9519,
+     "balanced_accuracy": 0.5911,
+     "near_boundary_balanced_accuracy": 0.5609,
+     "safe_recall": 0.9035,
+     "unsafe_recall": 0.2788
     },
     "weaker_two_draws": {
-     "accuracy": 0.9758,
-     "balanced_accuracy": 0.7522,
-     "near_boundary_balanced_accuracy": 0.6712,
-     "safe_recall": 0.7731,
-     "unsafe_recall": 0.7313
+     "accuracy": 0.9743,
+     "balanced_accuracy": 0.7533,
+     "near_boundary_balanced_accuracy": 0.6727,
+     "safe_recall": 0.7486,
+     "unsafe_recall": 0.758
     },
     "random_baseline": {
-     "accuracy": 0.9698,
-     "balanced_accuracy": 0.7301,
-     "near_boundary_balanced_accuracy": 0.6378,
-     "safe_recall": 0.6611,
-     "unsafe_recall": 0.7992
+     "accuracy": 0.9699,
+     "balanced_accuracy": 0.7288,
+     "near_boundary_balanced_accuracy": 0.6379,
+     "safe_recall": 0.6715,
+     "unsafe_recall": 0.7862
     }
    }
   },
@@ -1570,109 +1570,109 @@
     "alt_zero_prior": {
      "accuracy": [
       -0.1535,
-      -0.1681,
-      -0.1392
+      -0.1694,
+      -0.1375
      ],
      "balanced_accuracy": [
-      -0.0346,
-      -0.0476,
-      -0.0218
+      -0.0344,
+      -0.046,
+      -0.0225
      ],
      "near_boundary_balanced_accuracy": [
-      -0.0253,
-      -0.037,
-      -0.014
+      -0.023,
+      -0.0336,
+      -0.0126
      ],
      "safe_recall": [
-      -0.1467,
-      -0.1767,
-      -0.1159
+      -0.1306,
+      -0.1551,
+      -0.1064
      ],
      "unsafe_recall": [
-      0.0775,
-      0.0498,
-      0.1067
+      0.0618,
+      0.0404,
+      0.0845
      ]
     },
     "better_fill": {
      "accuracy": [
       -0.0053,
       -0.0061,
-      -0.0046
+      -0.0045
      ],
      "balanced_accuracy": [
-      -0.0246,
-      -0.0273,
-      -0.022
+      -0.024,
+      -0.0269,
+      -0.0212
      ],
      "near_boundary_balanced_accuracy": [
-      -0.0192,
-      -0.0214,
-      -0.0171
+      -0.0191,
+      -0.0216,
+      -0.0167
      ],
      "safe_recall": [
-      -0.0612,
-      -0.068,
-      -0.0546
+      -0.0593,
+      -0.0663,
+      -0.0523
      ],
      "unsafe_recall": [
-      0.012,
-      0.0093,
-      0.015
+      0.0112,
+      0.0091,
+      0.0136
      ]
     },
     "better_fill_topup": {
      "accuracy": [
-      -0.0045,
-      -0.0056,
-      -0.0034
+      -0.0041,
+      -0.0055,
+      -0.0026
      ],
      "balanced_accuracy": [
-      -0.0166,
-      -0.0236,
-      -0.0078
+      -0.0164,
+      -0.0227,
+      -0.0094
      ],
      "near_boundary_balanced_accuracy": [
-      -0.0133,
-      -0.0186,
-      -0.0066
+      -0.0134,
+      -0.018,
+      -0.0081
      ],
      "safe_recall": [
-      -0.0642,
-      -0.0731,
-      -0.0557
+      -0.0574,
+      -0.0684,
+      -0.0452
      ],
      "unsafe_recall": [
-      0.0309,
-      0.017,
-      0.0512
+      0.0246,
+      0.0153,
+      0.0364
      ]
     },
     "better_topup": {
      "accuracy": [
-      0.001,
-      0.0004,
-      0.0017
+      0.0012,
+      0.0003,
+      0.0023
      ],
      "balanced_accuracy": [
-      0.0088,
-      0.003,
-      0.0166
+      0.0082,
+      0.0034,
+      0.0139
      ],
      "near_boundary_balanced_accuracy": [
-      0.0065,
-      0.0021,
-      0.0123
+      0.0063,
+      0.0027,
+      0.0104
      ],
      "safe_recall": [
-      -0.0013,
-      -0.0079,
-      0.0036
+      0.0031,
+      -0.0044,
+      0.0119
      ],
      "unsafe_recall": [
-      0.0188,
-      0.005,
-      0.0397
+      0.0132,
+      0.0039,
+      0.0252
      ]
     },
     "shortcut_family_fit": {
@@ -1704,191 +1704,191 @@
     },
     "shortcut_paper_fit": {
      "accuracy": [
-      0.0084,
-      0.002,
-      0.0123
+      0.0107,
+      0.0082,
+      0.0134
      ],
      "balanced_accuracy": [
-      0.0296,
-      0.0171,
-      0.0415
+      -0.0166,
+      -0.0281,
+      -0.0053
      ],
      "near_boundary_balanced_accuracy": [
-      -0.0356,
-      -0.0465,
-      -0.0243
+      -0.0674,
+      -0.077,
+      -0.0577
      ],
      "safe_recall": [
-      0.0294,
-      -0.0024,
-      0.0592
+      0.0175,
+      -0.0134,
+      0.0487
      ],
      "unsafe_recall": [
-      0.0298,
-      -0.0033,
-      0.0651
+      -0.0507,
+      -0.0818,
+      -0.0198
      ]
     },
     "simple_coverage_sweep": {
      "accuracy": [
-      0.0004,
-      -0.0019,
-      0.0026
+      0.0044,
+      0.002,
+      0.007
      ],
      "balanced_accuracy": [
-      -0.009,
-      -0.0227,
-      0.0051
+      -0.0019,
+      -0.0128,
+      0.0091
      ],
      "near_boundary_balanced_accuracy": [
-      -0.0184,
-      -0.0304,
-      -0.0063
+      -0.0118,
+      -0.0219,
+      -0.0017
      ],
      "safe_recall": [
-      -0.0741,
-      -0.0998,
-      -0.0488
+      -0.024,
+      -0.0459,
+      -0.0022
      ],
      "unsafe_recall": [
-      0.0562,
-      0.0206,
-      0.0937
+      0.0201,
+      -0.0083,
+      0.0497
      ]
     },
     "weaker_learned_prior": {
      "accuracy": [
-      0.0041,
-      0.002,
-      0.0062
+      0.0082,
+      0.0055,
+      0.0111
      ],
      "balanced_accuracy": [
-      -0.013,
-      -0.0284,
-      0.0014
+      -0.0131,
+      -0.0263,
+      -0.0005
      ],
      "near_boundary_balanced_accuracy": [
-      0.0043,
-      -0.0092,
-      0.0175
+      0.004,
+      -0.0075,
+      0.0153
      ],
      "safe_recall": [
-      0.1698,
-      0.1518,
-      0.1883
+      0.1947,
+      0.1776,
+      0.2127
      ],
      "unsafe_recall": [
-      -0.1958,
-      -0.2266,
-      -0.1651
+      -0.2209,
+      -0.2492,
+      -0.1938
      ]
     },
     "weaker_no_acquisition": {
      "accuracy": [
-      -0.0143,
-      -0.0173,
-      -0.0113
+      -0.0127,
+      -0.0161,
+      -0.0095
      ],
      "balanced_accuracy": [
-      -0.0907,
-      -0.1018,
-      -0.08
+      -0.091,
+      -0.0997,
+      -0.0821
      ],
      "near_boundary_balanced_accuracy": [
-      -0.091,
-      -0.1003,
-      -0.0819
+      -0.0885,
+      -0.097,
+      -0.08
      ],
      "safe_recall": [
-      -0.1068,
-      -0.1265,
-      -0.0869
+      -0.0873,
+      -0.1093,
+      -0.065
      ],
      "unsafe_recall": [
-      -0.0745,
-      -0.1015,
-      -0.0484
+      -0.0947,
+      -0.119,
+      -0.0703
      ]
     },
     "weaker_raw_gradients": {
      "accuracy": [
-      -0.0264,
-      -0.029,
-      -0.0238
+      -0.0209,
+      -0.0241,
+      -0.0176
      ],
      "balanced_accuracy": [
-      -0.1759,
-      -0.1906,
-      -0.161
+      -0.171,
+      -0.1821,
+      -0.1594
      ],
      "near_boundary_balanced_accuracy": [
-      -0.1232,
-      -0.1352,
-      -0.1113
+      -0.1191,
+      -0.1286,
+      -0.1098
      ],
      "safe_recall": [
-      0.1265,
-      0.1032,
-      0.15
+      0.1555,
+      0.1299,
+      0.1807
      ],
      "unsafe_recall": [
-      -0.4782,
-      -0.5189,
-      -0.4354
+      -0.4975,
+      -0.5323,
+      -0.4626
      ]
     },
     "weaker_two_draws": {
      "accuracy": [
-      -0.0013,
-      -0.0031,
-      0.0005
+      0.0015,
+      -0.0009,
+      0.0041
      ],
      "balanced_accuracy": [
-      -0.0114,
-      -0.0217,
-      -0.0016
+      -0.0089,
+      -0.0182,
+      0.0004
      ],
      "near_boundary_balanced_accuracy": [
-      -0.0115,
-      -0.0207,
-      -0.0027
+      -0.0074,
+      -0.0161,
+      0.0013
      ],
      "safe_recall": [
-      -0.0069,
-      -0.0234,
-      0.009
+      0.0006,
+      -0.0171,
+      0.0184
      ],
      "unsafe_recall": [
-      -0.016,
-      -0.0347,
-      0.0033
+      -0.0183,
+      -0.0369,
+      0.0
      ]
     },
     "random_baseline": {
      "accuracy": [
-      -0.0073,
-      -0.0096,
-      -0.0052
+      -0.003,
+      -0.0053,
+      -0.0006
      ],
      "balanced_accuracy": [
-      -0.0335,
-      -0.0451,
-      -0.0213
+      -0.0333,
+      -0.0437,
+      -0.0232
      ],
      "near_boundary_balanced_accuracy": [
-      -0.0449,
-      -0.0552,
-      -0.0344
+      -0.0421,
+      -0.0519,
+      -0.0329
      ],
      "safe_recall": [
-      -0.1189,
-      -0.1366,
-      -0.1011
+      -0.0765,
+      -0.0986,
+      -0.0544
      ],
      "unsafe_recall": [
-      0.052,
-      0.0234,
-      0.082
+      0.0099,
+      -0.0197,
+      0.0391
      ]
     }
    }
@@ -1962,15 +1962,15 @@
  "development": {
   "failures": {},
   "evaluator_cohort_rank": {
-   "better_fill": 0.2408,
-   "better_fill_topup": 0.3522,
-   "better_topup": 0.187,
+   "better_fill": 0.2085,
+   "better_fill_topup": 0.3162,
+   "better_topup": 0.1961,
    "gp_acl": 0.0,
-   "shortcut_paper_fit": -0.314,
-   "simple_coverage_sweep": -0.5306,
-   "weaker_no_acquisition": -5.7149,
-   "weaker_two_draws": -0.6865,
-   "random_baseline": -3.2231
+   "shortcut_paper_fit": -0.6731,
+   "simple_coverage_sweep": -0.6799,
+   "weaker_no_acquisition": -5.8277,
+   "weaker_two_draws": -0.432,
+   "random_baseline": -3.0314
   },
   "core_cohort": [
    "gp_acl",
@@ -1989,39 +1989,39 @@
     0.0
    ],
    "random_baseline": [
-    -3.3974,
-    -4.3876,
-    -2.3835
+    -3.1653,
+    -4.2593,
+    -2.0281
    ],
    "better_fill_topup": [
-    0.2371,
-    -0.2935,
-    0.8036
+    0.2323,
+    -0.3076,
+    0.7938
    ],
    "better_fill": [
-    0.1276,
-    -0.3323,
-    0.6148
+    0.1191,
+    -0.3491,
+    0.6074
    ],
    "better_topup": [
-    0.1858,
-    -0.076,
-    0.4832
+    0.204,
+    -0.0563,
+    0.5091
    ],
    "weaker_no_acquisition": [
-    -6.031,
-    -6.9248,
-    -5.1086
+    -6.138,
+    -7.0662,
+    -5.1933
    ],
    "weaker_two_draws": [
-    -0.6625,
-    -1.298,
-    -0.0884
+    -0.4005,
+    -0.9672,
+    0.1277
    ],
    "simple_coverage_sweep": [
-    -0.4566,
-    -1.2251,
-    0.3382
+    -0.6252,
+    -1.4762,
+    0.252
    ]
   },
   "core_rank_by_experiment": {
@@ -2035,56 +2035,56 @@
     "double_integrator_g3": -0.3498,
     "complex_boundary_stress": -0.6946,
     "unicycle_paper_constraints": -1.8074,
-    "quadcopter_hourglass": -0.5456
+    "quadcopter_hourglass": -0.3135
    },
    "better_fill_topup": {
     "double_integrator_g3": 0.1346,
     "complex_boundary_stress": 0.3617,
     "unicycle_paper_constraints": 0.1637,
-    "quadcopter_hourglass": -0.4229
+    "quadcopter_hourglass": -0.4277
    },
    "better_fill": {
     "double_integrator_g3": 0.1843,
     "complex_boundary_stress": 0.2843,
     "unicycle_paper_constraints": 0.1638,
-    "quadcopter_hourglass": -0.5049
+    "quadcopter_hourglass": -0.5133
    },
    "better_topup": {
     "double_integrator_g3": 0.006,
     "complex_boundary_stress": 0.0688,
     "unicycle_paper_constraints": 0.0304,
-    "quadcopter_hourglass": 0.0806
+    "quadcopter_hourglass": 0.0988
    },
    "weaker_no_acquisition": {
     "double_integrator_g3": -1.239,
     "complex_boundary_stress": -0.9511,
     "unicycle_paper_constraints": -2.0458,
-    "quadcopter_hourglass": -1.7951
+    "quadcopter_hourglass": -1.9021
    },
    "weaker_two_draws": {
     "double_integrator_g3": -0.0605,
     "complex_boundary_stress": -0.4613,
     "unicycle_paper_constraints": 0.1399,
-    "quadcopter_hourglass": -0.2806
+    "quadcopter_hourglass": -0.0186
    },
    "simple_coverage_sweep": {
     "double_integrator_g3": -0.4877,
     "complex_boundary_stress": -0.2363,
     "unicycle_paper_constraints": -0.0079,
-    "quadcopter_hourglass": 0.2753
+    "quadcopter_hourglass": 0.1067
    },
    "shortcut_paper_fit": {
     "double_integrator_g3": 0.0,
     "complex_boundary_stress": 0.0,
     "unicycle_paper_constraints": -0.7049,
-    "quadcopter_hourglass": 0.3909
+    "quadcopter_hourglass": 0.0318
    }
   },
   "core_plus_one_rank": {
    "shortcut_paper_fit": [
-    -0.314,
-    -1.0521,
-    0.4524
+    -0.6731,
+    -1.5058,
+    0.2009
    ]
   },
   "means": {
@@ -2285,67 +2285,67 @@
    },
    "quadcopter_hourglass": {
     "better_fill": {
-     "accuracy": 0.9689,
-     "balanced_accuracy": 0.7379,
-     "near_boundary_balanced_accuracy": 0.6603,
-     "safe_recall": 0.6938,
-     "unsafe_recall": 0.782
+     "accuracy": 0.9679,
+     "balanced_accuracy": 0.7276,
+     "near_boundary_balanced_accuracy": 0.6506,
+     "safe_recall": 0.6894,
+     "unsafe_recall": 0.7658
     },
     "better_fill_topup": {
-     "accuracy": 0.9693,
-     "balanced_accuracy": 0.7426,
-     "near_boundary_balanced_accuracy": 0.6647,
-     "safe_recall": 0.6823,
-     "unsafe_recall": 0.8029
+     "accuracy": 0.9681,
+     "balanced_accuracy": 0.733,
+     "near_boundary_balanced_accuracy": 0.6548,
+     "safe_recall": 0.679,
+     "unsafe_recall": 0.7869
     },
     "better_topup": {
-     "accuracy": 0.9744,
-     "balanced_accuracy": 0.7658,
-     "near_boundary_balanced_accuracy": 0.6836,
-     "safe_recall": 0.7363,
-     "unsafe_recall": 0.7953
+     "accuracy": 0.9728,
+     "balanced_accuracy": 0.7577,
+     "near_boundary_balanced_accuracy": 0.675,
+     "safe_recall": 0.7367,
+     "unsafe_recall": 0.7787
     },
     "gp_acl": {
-     "accuracy": 0.974,
-     "balanced_accuracy": 0.7612,
-     "near_boundary_balanced_accuracy": 0.6794,
-     "safe_recall": 0.7481,
-     "unsafe_recall": 0.7744
+     "accuracy": 0.9725,
+     "balanced_accuracy": 0.7518,
+     "near_boundary_balanced_accuracy": 0.6704,
+     "safe_recall": 0.7454,
+     "unsafe_recall": 0.7583
     },
     "shortcut_paper_fit": {
-     "accuracy": 0.9882,
-     "balanced_accuracy": 0.7861,
-     "near_boundary_balanced_accuracy": 0.6395,
-     "safe_recall": 0.8264,
-     "unsafe_recall": 0.7457
+     "accuracy": 0.9848,
+     "balanced_accuracy": 0.744,
+     "near_boundary_balanced_accuracy": 0.6138,
+     "safe_recall": 0.7946,
+     "unsafe_recall": 0.6934
     },
     "simple_coverage_sweep": {
-     "accuracy": 0.9796,
-     "balanced_accuracy": 0.7674,
-     "near_boundary_balanced_accuracy": 0.6724,
-     "safe_recall": 0.7061,
-     "unsafe_recall": 0.8286
+     "accuracy": 0.9759,
+     "balanced_accuracy": 0.7503,
+     "near_boundary_balanced_accuracy": 0.6633,
+     "safe_recall": 0.7106,
+     "unsafe_recall": 0.7899
     },
     "weaker_no_acquisition": {
-     "accuracy": 0.9591,
-     "balanced_accuracy": 0.6763,
-     "near_boundary_balanced_accuracy": 0.5922,
-     "safe_recall": 0.6329,
-     "unsafe_recall": 0.7197
+     "accuracy": 0.9563,
+     "balanced_accuracy": 0.6687,
+     "near_boundary_balanced_accuracy": 0.5885,
+     "safe_recall": 0.6365,
+     "unsafe_recall": 0.7008
     },
     "weaker_two_draws": {
-     "accuracy": 0.9734,
-     "balanced_accuracy": 0.7434,
-     "near_boundary_balanced_accuracy": 0.6596,
-     "safe_recall": 0.753,
-     "unsafe_recall": 0.7338
+     "accuracy": 0.9728,
+     "balanced_accuracy": 0.7504,
+     "near_boundary_balanced_accuracy": 0.6654,
+     "safe_recall": 0.7227,
+     "unsafe_recall": 0.778
     },
     "random_baseline": {
-     "accuracy": 0.973,
-     "balanced_accuracy": 0.7262,
-     "near_boundary_balanced_accuracy": 0.6348,
-     "safe_recall": 0.6558,
-     "unsafe_recall": 0.7965
+     "accuracy": 0.9736,
+     "balanced_accuracy": 0.7305,
+     "near_boundary_balanced_accuracy": 0.6371,
+     "safe_recall": 0.6847,
+     "unsafe_recall": 0.7764
     }
    }
   },
@@ -3007,218 +3007,218 @@
    "quadcopter_hourglass": {
     "better_fill": {
      "accuracy": [
-      -0.0051,
-      -0.0066,
-      -0.0037
+      -0.0046,
+      -0.0059,
+      -0.0033
      ],
      "balanced_accuracy": [
-      -0.0233,
-      -0.0282,
-      -0.0184
+      -0.0242,
+      -0.0305,
+      -0.0183
      ],
      "near_boundary_balanced_accuracy": [
-      -0.0191,
-      -0.0231,
-      -0.0151
+      -0.0198,
+      -0.0249,
+      -0.015
      ],
      "safe_recall": [
-      -0.0543,
-      -0.0657,
-      -0.0426
+      -0.056,
+      -0.071,
+      -0.0421
      ],
      "unsafe_recall": [
-      0.0077,
-      0.004,
-      0.0133
+      0.0075,
+      0.0047,
+      0.0107
      ]
     },
     "better_fill_topup": {
      "accuracy": [
-      -0.0047,
-      -0.0066,
-      -0.0028
+      -0.0044,
+      -0.0059,
+      -0.003
      ],
      "balanced_accuracy": [
-      -0.0187,
-      -0.0272,
-      -0.0082
+      -0.0189,
+      -0.0293,
+      -0.0066
      ],
      "near_boundary_balanced_accuracy": [
-      -0.0147,
-      -0.0217,
-      -0.0065
+      -0.0156,
+      -0.0238,
+      -0.0061
      ],
      "safe_recall": [
-      -0.0658,
-      -0.0829,
-      -0.0504
+      -0.0663,
+      -0.0861,
+      -0.0499
      ],
      "unsafe_recall": [
-      0.0285,
-      0.0044,
-      0.0613
+      0.0286,
+      0.0069,
+      0.0637
      ]
     },
     "better_topup": {
      "accuracy": [
-      0.0004,
-      -0.0002,
-      0.0012
+      0.0003,
+      0.0,
+      0.0009
      ],
      "balanced_accuracy": [
-      0.0045,
-      -0.0022,
-      0.0131
+      0.0059,
+      0.0,
+      0.0152
      ],
      "near_boundary_balanced_accuracy": [
-      0.0042,
-      -0.0004,
-      0.0106
+      0.0046,
+      0.0,
+      0.0118
      ],
      "safe_recall": [
-      -0.0118,
-      -0.0285,
-      -0.0
+      -0.0087,
+      -0.0255,
+      0.0
      ],
      "unsafe_recall": [
-      0.0209,
-      -0.0027,
-      0.0547
+      0.0204,
+      0.0,
+      0.0558
      ]
     },
     "shortcut_paper_fit": {
      "accuracy": [
-      0.0141,
-      0.0103,
-      0.0183
+      0.0123,
+      0.0057,
+      0.0211
      ],
      "balanced_accuracy": [
-      0.0248,
-      0.0033,
-      0.0478
+      -0.0079,
+      -0.0363,
+      0.0218
      ],
      "near_boundary_balanced_accuracy": [
-      -0.0399,
-      -0.0594,
-      -0.0195
+      -0.0566,
+      -0.0805,
+      -0.0328
      ],
      "safe_recall": [
-      0.0783,
-      0.0209,
-      0.1369
+      0.0492,
+      -0.0415,
+      0.1402
      ],
      "unsafe_recall": [
-      -0.0287,
-      -0.0989,
-      0.0419
+      -0.0649,
+      -0.153,
+      0.0219
      ]
     },
     "simple_coverage_sweep": {
      "accuracy": [
-      0.0056,
-      0.0023,
-      0.009
+      0.0034,
+      -0.0023,
+      0.0103
      ],
      "balanced_accuracy": [
-      0.0061,
-      -0.0149,
-      0.0261
+      -0.0016,
+      -0.0244,
+      0.0223
      ],
      "near_boundary_balanced_accuracy": [
-      -0.007,
-      -0.0291,
-      0.0137
+      -0.0071,
+      -0.029,
+      0.0148
      ],
      "safe_recall": [
-      -0.042,
-      -0.0836,
-      -0.0042
+      -0.0347,
+      -0.0945,
+      0.0251
      ],
      "unsafe_recall": [
-      0.0542,
-      0.0117,
-      0.1033
+      0.0316,
+      -0.0381,
+      0.1119
      ]
     },
     "weaker_no_acquisition": {
      "accuracy": [
-      -0.0149,
-      -0.0221,
-      -0.0086
+      -0.0162,
+      -0.0249,
+      -0.0084
      ],
      "balanced_accuracy": [
-      -0.0849,
-      -0.102,
-      -0.0672
+      -0.0832,
+      -0.1026,
+      -0.0637
      ],
      "near_boundary_balanced_accuracy": [
-      -0.0872,
-      -0.1031,
-      -0.0722
+      -0.0819,
+      -0.1003,
+      -0.0627
      ],
      "safe_recall": [
-      -0.1152,
-      -0.1702,
-      -0.0628
+      -0.1089,
+      -0.1605,
+      -0.0616
      ],
      "unsafe_recall": [
-      -0.0546,
-      -0.1137,
-      0.0098
+      -0.0575,
+      -0.1051,
+      -0.0083
      ]
     },
     "weaker_two_draws": {
      "accuracy": [
-      -0.0006,
-      -0.0051,
-      0.0029
+      0.0003,
+      -0.0018,
+      0.0024
      ],
      "balanced_accuracy": [
-      -0.0178,
-      -0.0367,
-      -0.0002
+      -0.0014,
+      -0.0177,
+      0.0151
      ],
      "near_boundary_balanced_accuracy": [
-      -0.0198,
-      -0.0372,
-      -0.0041
+      -0.005,
+      -0.0218,
+      0.0122
      ],
      "safe_recall": [
-      0.0049,
-      -0.0296,
-      0.0364
+      -0.0226,
+      -0.0524,
+      0.0053
      ],
      "unsafe_recall": [
-      -0.0405,
-      -0.0791,
-      -0.0023
+      0.0198,
+      -0.017,
+      0.0567
      ]
     },
     "random_baseline": {
      "accuracy": [
-      -0.001,
-      -0.0049,
-      0.003
+      0.0011,
+      -0.0055,
+      0.0097
      ],
      "balanced_accuracy": [
-      -0.0351,
-      -0.0514,
-      -0.017
+      -0.0213,
+      -0.0442,
+      0.0008
      ],
      "near_boundary_balanced_accuracy": [
-      -0.0446,
-      -0.0592,
-      -0.0295
+      -0.0333,
+      -0.055,
+      -0.0128
      ],
      "safe_recall": [
-      -0.0923,
-      -0.1315,
-      -0.0527
+      -0.0607,
+      -0.0998,
+      -0.0181
      ],
      "unsafe_recall": [
-      0.0221,
-      -0.0303,
-      0.0783
+      0.0181,
+      -0.0245,
+      0.0646
      ]
     }
    }
