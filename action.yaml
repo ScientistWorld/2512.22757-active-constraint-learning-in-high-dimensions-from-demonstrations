@@ -1,8 +1,6 @@
 # Once you set action to 'submit' or 'done', STOP immediately.
 # Do NOT sleep, poll, or wait for jobs. The system reads this file
 # only after your turn ends.
-action: submit
-gpus: 0
-test: false
+action: done
 milestone: core_claim
-notes: "Final hardening job with the larger matched 3D deformation (closing the published-formula fit on the quadrotor): checks, reference and random control rerun end to end on both splits (frozen, published), development and hidden-test audits, summary."
+notes: "Added the paper's unicycle (g1-g3, 4D, T=30) and quadrotor (g5, 12D, T=20) experiments with evaluator-owned hidden instances and expert; reference runs full-dynamics KKT programs and 2D/3D GP-ACL; reference beats random beyond noise on the quadrotor (all metrics) and on unicycle boundary metrics (uniform accuracy ties); better variants above, ablations/random below; published-formula fit closed to -0.26 by a larger matched 3D deformation. See HARDENING.md."
